@@ -65,32 +65,41 @@ jobs:
           cat /tmp/curl_err.txt
           grep -q '"status":1' /tmp/resp.txt || { echo "::error::relay upload failed"; exit 1; }
 
-      # Upload every file under dist/assets/ (JS/CSS bundles) — chunked since
-      # some bundles can exceed a single POST comfortably
+      # Upload every file under dist/assets/ (JS/CSS bundles) in one POST each
+      # — chunked appends previously corrupted a bundle when two deploy runs
+      # overlapped, so this uploads whole-file and verifies the byte count
+      # the server reports back matches the local file exactly.
       - name: Upload assets
         run: |
           for f in dist/assets/*; do
             NAME=$(basename "$f")
+            LOCAL_SIZE=$(wc -c < "$f")
             base64 -w 0 "$f" > /tmp/enc.txt
-            rm -f /tmp/chunk_*
-            split -b 200000 -d -a 4 /tmp/enc.txt /tmp/chunk_
-            FIRST=1
-            for c in /tmp/chunk_*; do
-              if [ "$FIRST" = "1" ]; then MODE=w; FIRST=0; else MODE=a; fi
-              curl -sf "https://games.alphazone.com.au/_relay.php" \
-                -d "key=games-deploy-2026&name=${NAME}&target=assets&mode=${MODE}" \
-                --data-urlencode "data@$c"
-            done
-            echo "uploaded $NAME"
+            RESP=$(curl -sf "https://games.alphazone.com.au/_relay.php" \
+              -d "key=games-deploy-2026&name=${NAME}&target=assets&mode=w" \
+              --data-urlencode "data@/tmp/enc.txt")
+            echo "$NAME: $RESP (local: $LOCAL_SIZE bytes)"
+            REMOTE_SIZE=$(echo "$RESP" | sed -n 's/^ok:\([0-9]*\)$/\1/p')
+            if [ "$REMOTE_SIZE" != "$LOCAL_SIZE" ]; then
+              echo "::error::$NAME upload size mismatch (local $LOCAL_SIZE, remote $REMOTE_SIZE)"
+              exit 1
+            fi
           done
 
       # Upload index.html
       - name: Upload index.html
         run: |
+          LOCAL_SIZE=$(wc -c < dist/index.html)
           base64 -w 0 dist/index.html > /tmp/htmlb64.txt
-          curl -sf "https://games.alphazone.com.au/_relay.php" \
+          RESP=$(curl -sf "https://games.alphazone.com.au/_relay.php" \
             -d "key=games-deploy-2026&name=index.html&target=root&mode=w" \
-            --data-urlencode "data@/tmp/htmlb64.txt"
+            --data-urlencode "data@/tmp/htmlb64.txt")
+          echo "index.html: $RESP (local: $LOCAL_SIZE bytes)"
+          REMOTE_SIZE=$(echo "$RESP" | sed -n 's/^ok:\([0-9]*\)$/\1/p')
+          if [ "$REMOTE_SIZE" != "$LOCAL_SIZE" ]; then
+            echo "::error::index.html upload size mismatch (local $LOCAL_SIZE, remote $REMOTE_SIZE)"
+            exit 1
+          fi
 
       # Remove the old ash-journey / digimon-adventure games — safe to leave
       # this step in permanently, it's a no-op once they're gone

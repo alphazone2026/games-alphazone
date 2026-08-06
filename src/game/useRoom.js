@@ -51,11 +51,55 @@ function seatsFromObj(obj) {
   return seats;
 }
 
+function claimSeat(currentSeats, seatIndex, { forPlayerId, forName, ai }) {
+  if (currentSeats[seatIndex].playerId || currentSeats[seatIndex].isAI) return currentSeats;
+  const next = currentSeats.map((s) => ({ ...s }));
+  next[seatIndex] = ai
+    ? { seat: seatIndex, playerId: `ai-${seatIndex}`, name: AI_NAMES[seatIndex], isAI: true }
+    : { seat: seatIndex, playerId: forPlayerId, name: forName, isAI: false };
+  return next;
+}
+
+function vacateSeatIn(currentSeats, seatIndex) {
+  const next = currentSeats.map((s) => ({ ...s }));
+  next[seatIndex] = { seat: seatIndex, playerId: null, name: null, isAI: false };
+  return next;
+}
+
+function buildStartedGame(currentSeats, mode) {
+  const taken = currentSeats.filter((s) => s.playerId);
+  if (taken.length < 2) return null;
+  if (mode === "teams" && taken.length !== 4) return null;
+  const players = taken
+    .sort((a, b) => a.seat - b.seat)
+    .map((s) => ({ id: s.playerId, name: s.name, isAI: s.isAI }));
+  return createGame({ players, mode });
+}
+
+function applyActionSafe(currentGame, actingPlayerId, action) {
+  if (!currentGame) return currentGame;
+  try {
+    const result = applyAction(currentGame, actingPlayerId, action);
+    return { ...result.game };
+  } catch (err) {
+    console.warn("Illegal action ignored:", err.message);
+    return currentGame;
+  }
+}
+
 // Host-authoritative multiplayer room built on Firebase Realtime Database.
 // The first client to write `hostId` for a room becomes host: it owns the
 // Uno engine, applies both local and remote requests, drives AI turns, and
 // writes the resulting state, which Realtime Database pushes to everyone
 // else automatically. No custom backend server — just RTDB.
+//
+// The host never derives its next write from React state directly (state
+// updates land async, and Firebase can echo a write back into our own
+// `onValue` listener before the click handler's own setState calls have
+// settled, which — if the host read from the setState updater's `prev` —
+// could stomp the fresh echoed value with a stale one). Instead the host
+// always reads from `seatsRef`/`gameRefValue` ref mirrors that are updated
+// synchronously by the onValue listeners themselves.
 export function useRoom(roomCode, playerName, mode) {
   const [seats, setSeats] = useState(emptySeats());
   const [game, setGame] = useState(null);
@@ -65,16 +109,13 @@ export function useRoom(roomCode, playerName, mode) {
 
   const playerId = useRef(getPlayerId()).current;
   const isHostRef = useRef(false);
-  const gameRef = useRef(null);
+  const seatsRef = useRef(emptySeats());
+  const gameRefValue = useRef(null);
 
   useEffect(() => {
     isHostRef.current = isHost;
   }, [isHost]);
-  useEffect(() => {
-    gameRef.current = game;
-  }, [game]);
 
-  const roomRef = roomCode ? ref(db, `rooms/${roomCode}`) : null;
   const seatsPathRef = roomCode ? ref(db, `rooms/${roomCode}/seats`) : null;
   const gamePathRef = roomCode ? ref(db, `rooms/${roomCode}/game`) : null;
   const hostPathRef = roomCode ? ref(db, `rooms/${roomCode}/hostId`) : null;
@@ -97,51 +138,6 @@ export function useRoom(roomCode, playerName, mode) {
     [gamePathRef]
   );
 
-  const hostClaimSeat = useCallback(
-    (currentSeats, seatIndex, { forPlayerId, forName, ai }) => {
-      if (currentSeats[seatIndex].playerId || currentSeats[seatIndex].isAI) return currentSeats;
-      const next = currentSeats.map((s) => ({ ...s }));
-      next[seatIndex] = ai
-        ? { seat: seatIndex, playerId: `ai-${seatIndex}`, name: AI_NAMES[seatIndex], isAI: true }
-        : { seat: seatIndex, playerId: forPlayerId, name: forName, isAI: false };
-      return next;
-    },
-    []
-  );
-
-  const hostVacateSeat = useCallback((currentSeats, seatIndex) => {
-    const next = currentSeats.map((s) => ({ ...s }));
-    next[seatIndex] = { seat: seatIndex, playerId: null, name: null, isAI: false };
-    return next;
-  }, []);
-
-  const hostStartGame = useCallback(
-    (currentSeats) => {
-      const taken = currentSeats.filter((s) => s.playerId);
-      if (taken.length < 2) return null;
-      if (mode === "teams" && taken.length !== 4) return null;
-      const players = taken
-        .sort((a, b) => a.seat - b.seat)
-        .map((s) => ({ id: s.playerId, name: s.name, isAI: s.isAI }));
-      return createGame({ players, mode });
-    },
-    [mode]
-  );
-
-  const hostApplyAction = useCallback(
-    (currentGame, actingPlayerId, action) => {
-      if (!currentGame) return currentGame;
-      try {
-        const result = applyAction(currentGame, actingPlayerId, action);
-        return { ...result.game };
-      } catch (err) {
-        console.warn("Illegal action ignored:", err.message);
-        return currentGame;
-      }
-    },
-    []
-  );
-
   // Guests push a request; the host (whoever currently holds hostId) processes
   // and removes it. Requests left behind by a host that vanished mid-game are
   // picked up by whichever client claims host next.
@@ -156,44 +152,33 @@ export function useRoom(roomCode, playerName, mode) {
   const requestSeat = useCallback(
     (seatIndex, ai) => {
       if (isHostRef.current) {
-        setSeats((prev) => {
-          const next = hostClaimSeat(prev, seatIndex, { forPlayerId: playerId, forName: playerName, ai });
-          writeSeats(next);
-          return prev;
-        });
+        writeSeats(claimSeat(seatsRef.current, seatIndex, { forPlayerId: playerId, forName: playerName, ai }));
       } else {
         sendRequest("seat", { seatIndex, forPlayerId: playerId, forName: playerName, ai });
       }
     },
-    [hostClaimSeat, playerId, playerName, writeSeats, sendRequest]
+    [playerId, playerName, writeSeats, sendRequest]
   );
 
   const vacateSeat = useCallback(
     (seatIndex) => {
       if (isHostRef.current) {
-        setSeats((prev) => {
-          const next = hostVacateSeat(prev, seatIndex);
-          writeSeats(next);
-          return prev;
-        });
+        writeSeats(vacateSeatIn(seatsRef.current, seatIndex));
       } else {
         sendRequest("vacate", { seatIndex });
       }
     },
-    [hostVacateSeat, writeSeats, sendRequest]
+    [writeSeats, sendRequest]
   );
 
   const startGame = useCallback(() => {
     if (isHostRef.current) {
-      setSeats((prev) => {
-        const g = hostStartGame(prev);
-        if (g) writeGame(g);
-        return prev;
-      });
+      const g = buildStartedGame(seatsRef.current, mode);
+      if (g) writeGame(g);
     } else {
       sendRequest("start", {});
     }
-  }, [hostStartGame, writeGame, sendRequest]);
+  }, [mode, writeGame, sendRequest]);
 
   const resetGame = useCallback(() => {
     if (isHostRef.current) {
@@ -206,16 +191,12 @@ export function useRoom(roomCode, playerName, mode) {
   const sendAction = useCallback(
     (action) => {
       if (isHostRef.current) {
-        setGame((prev) => {
-          const next = hostApplyAction(prev, playerId, action);
-          writeGame(next);
-          return prev;
-        });
+        writeGame(applyActionSafe(gameRefValue.current, playerId, action));
       } else {
         sendRequest("action", { forPlayerId: playerId, action });
       }
     },
-    [hostApplyAction, playerId, writeGame, sendRequest]
+    [playerId, writeGame, sendRequest]
   );
 
   // Try to become host if nobody currently holds the slot.
@@ -233,12 +214,22 @@ export function useRoom(roomCode, playerName, mode) {
   useEffect(() => {
     if (!roomCode) return;
 
+    seatsRef.current = emptySeats();
+    gameRefValue.current = null;
     setSeats(emptySeats());
     setGame(null);
     setIsHost(false);
 
-    const unsubSeats = onValue(seatsPathRef, (snap) => setSeats(seatsFromObj(snap.val())));
-    const unsubGame = onValue(gamePathRef, (snap) => setGame(snap.val()));
+    const unsubSeats = onValue(seatsPathRef, (snap) => {
+      const next = seatsFromObj(snap.val());
+      seatsRef.current = next;
+      setSeats(next);
+    });
+    const unsubGame = onValue(gamePathRef, (snap) => {
+      const next = snap.val();
+      gameRefValue.current = next;
+      setGame(next);
+    });
 
     const unsubHost = onValue(hostPathRef, (snap) => {
       const hostId = snap.val();
@@ -266,31 +257,16 @@ export function useRoom(roomCode, playerName, mode) {
       remove(child(requestsPathRef, snap.key));
 
       if (kind === "seat") {
-        setSeats((prev) => {
-          const next = hostClaimSeat(prev, payload.seatIndex, payload);
-          writeSeats(next);
-          return prev;
-        });
+        writeSeats(claimSeat(seatsRef.current, payload.seatIndex, payload));
       } else if (kind === "vacate") {
-        setSeats((prev) => {
-          const next = hostVacateSeat(prev, payload.seatIndex);
-          writeSeats(next);
-          return prev;
-        });
+        writeSeats(vacateSeatIn(seatsRef.current, payload.seatIndex));
       } else if (kind === "start") {
-        setSeats((prev) => {
-          const g = hostStartGame(prev);
-          if (g) writeGame(g);
-          return prev;
-        });
+        const g = buildStartedGame(seatsRef.current, mode);
+        if (g) writeGame(g);
       } else if (kind === "reset") {
         writeGame(null);
       } else if (kind === "action") {
-        setGame((prev) => {
-          const next = hostApplyAction(prev, payload.forPlayerId, payload.action);
-          writeGame(next);
-          return prev;
-        });
+        writeGame(applyActionSafe(gameRefValue.current, payload.forPlayerId, payload.action));
       }
     });
 
@@ -312,11 +288,10 @@ export function useRoom(roomCode, playerName, mode) {
     const current = game.players[game.currentPlayerIndex];
     if (!current?.isAI) return;
     const timer = setTimeout(() => {
-      const next = hostApplyAction(game, current.id, chooseAIAction(game, current.id));
-      writeGame(next);
+      writeGame(applyActionSafe(gameRefValue.current, current.id, chooseAIAction(game, current.id)));
     }, 900);
     return () => clearTimeout(timer);
-  }, [isHost, game, hostApplyAction, writeGame]);
+  }, [isHost, game, writeGame]);
 
   return {
     playerId,

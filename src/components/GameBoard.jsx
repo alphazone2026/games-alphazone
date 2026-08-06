@@ -24,6 +24,7 @@ function Card({ card, onClick, disabled, small }) {
 }
 
 function cardLabel(card) {
+  if (card.type === "back") return "UNO";
   if (card.type === "wild4") return "+4";
   if (card.type === "wild") return "WILD";
   if (card.type === "draw2") return "+2";

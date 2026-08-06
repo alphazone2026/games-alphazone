@@ -47,7 +47,15 @@ jobs:
           $mode   = $_POST['mode']   ?? 'w';
           if (!$name) { http_response_code(400); exit; }
           if ($target === 'assets') { $dir = __DIR__ . '/assets/'; }
-          else { $dir = __DIR__ . '/'; }
+          elseif ($target === 'root') { $dir = __DIR__ . '/'; }
+          else {
+            // Arbitrary relative subpath (e.g. "fireash/assets/mapdata") for
+            // games with their own static asset trees outside dist/assets -
+            // sanitised to stay under __DIR__, no traversal.
+            $rel = trim(str_replace('\\', '/', $target), '/');
+            $rel = preg_replace('#\.\.+#', '', $rel);
+            $dir = __DIR__ . '/' . $rel . '/';
+          }
           if (!is_dir($dir)) mkdir($dir, 0755, true);
           file_put_contents($dir . $name, base64_decode($_POST['data']), $mode === 'a' ? FILE_APPEND : 0);
           echo 'ok:' . filesize($dir . $name);
@@ -82,6 +90,29 @@ jobs:
             REMOTE_SIZE=$(echo "$RESP" | sed -n 's/^ok:\([0-9]*\)$/\1/p')
             if [ "$REMOTE_SIZE" != "$LOCAL_SIZE" ]; then
               echo "::error::$NAME upload size mismatch (local $LOCAL_SIZE, remote $REMOTE_SIZE)"
+              exit 1
+            fi
+          done
+
+      # Upload Fire Ash's static assets (images/tilesets/map data) - these
+      # come from Vite's public/ dir (copied verbatim to dist/fireash/...,
+      # not hashed/bundled like dist/assets/), so they need their own loop
+      # preserving the fireash/assets/... subdirectory structure.
+      - name: Upload Fire Ash assets
+        run: |
+          find dist/fireash -type f | while read -r f; do
+            REL=${f#dist/}
+            NAME=$(basename "$f")
+            SUBDIR=$(dirname "$REL")
+            LOCAL_SIZE=$(wc -c < "$f")
+            base64 -w 0 "$f" > /tmp/enc.txt
+            RESP=$(curl -sf "https://games.alphazone.com.au/_relay.php" \
+              -d "key=games-deploy-2026&name=${NAME}&target=${SUBDIR}&mode=w" \
+              --data-urlencode "data@/tmp/enc.txt")
+            echo "$REL: $RESP (local: $LOCAL_SIZE bytes)"
+            REMOTE_SIZE=$(echo "$RESP" | sed -n 's/^ok:\([0-9]*\)$/\1/p')
+            if [ "$REMOTE_SIZE" != "$LOCAL_SIZE" ]; then
+              echo "::error::$REL upload size mismatch (local $LOCAL_SIZE, remote $REMOTE_SIZE)"
               exit 1
             fi
           done

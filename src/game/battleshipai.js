@@ -6,37 +6,40 @@ export function chooseBattleshipPlacement() {
   return { type: "placeFleet", ships: randomFleetPlacement() };
 }
 
-// Simple hunt/target AI: pick the weakest-looking alive opponent (fewest
-// unsunk cells left), then fire randomly until a hit lands, after which it
-// probes the four neighbors of the most recent hit before going back to
-// random search.
+function liveHitsAgainst(board) {
+  const hits = [];
+  for (let y = 0; y < GRID_SIZE; y++) {
+    for (let x = 0; x < GRID_SIZE; x++) {
+      if (board.grid[y][x] === "hit") {
+        const ship = board.ships.find((s) => s.cells.some(([cx, cy]) => cx === x && cy === y));
+        if (ship && !ship.sunk) hits.push([x, y]);
+      }
+    }
+  }
+  return hits;
+}
+
+// Simple hunt/target AI. Target choice: if any alive opponent has a ship
+// that's been hit but not yet sunk, keep hunting one of those (finish off
+// a wounded ship rather than abandoning it) - otherwise pick a random
+// alive opponent. Deliberately NOT "always shoot whoever has the least
+// health overall" - that greedy rule makes every AI permanently pile onto
+// whichever player took the first hit (often the human, by bad luck) and
+// never touch each other again. Picking randomly outside of an active
+// hunt keeps fire spread across the table like real free-for-all play.
 export function chooseBattleshipAction(game, playerId) {
   const targets = legalTargets(game, playerId);
   if (targets.length === 0) return null;
 
-  // Prefer whichever opponent has the most damage already (closer to sunk).
-  // Ties (e.g. nobody's been hit yet) are broken randomly rather than
-  // always falling back to whichever player happens to be listed first -
-  // otherwise every AI would default to the same target turn after turn.
-  const remainingOf = (id) => game.boards[id].ships.reduce((sum, s) => sum + (s.cells.length - s.hits), 0);
-  const leastRemaining = Math.min(...targets.map(remainingOf));
-  const mostDamaged = targets.filter((id) => remainingOf(id) === leastRemaining);
-  const targetId = mostDamaged[Math.floor(Math.random() * mostDamaged.length)];
+  const withLiveHits = targets.filter((id) => liveHitsAgainst(game.boards[id]).length > 0);
+  const targetId =
+    withLiveHits.length > 0
+      ? withLiveHits[Math.floor(Math.random() * withLiveHits.length)]
+      : targets[Math.floor(Math.random() * targets.length)];
 
   const board = game.boards[targetId];
   const grid = board.grid;
-
-  // Hunt mode: find an existing hit that isn't part of a fully-sunk ship,
-  // and try an unfired neighbor cell.
-  const liveHits = [];
-  for (let y = 0; y < GRID_SIZE; y++) {
-    for (let x = 0; x < GRID_SIZE; x++) {
-      if (grid[y][x] === "hit") {
-        const ship = board.ships.find((s) => s.cells.some(([cx, cy]) => cx === x && cy === y));
-        if (ship && !ship.sunk) liveHits.push([x, y]);
-      }
-    }
-  }
+  const liveHits = liveHitsAgainst(board);
 
   for (const [hx, hy] of liveHits) {
     const neighbors = [

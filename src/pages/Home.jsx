@@ -23,7 +23,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center px-4 py-10">
       <h1 className="text-4xl font-bold mb-1 tracking-tight">Alphazone Games</h1>
-      <p className="text-slate-400 mb-8">Card games, straight in your browser.</p>
+      <p className="text-slate-400 mb-8">Card and board games, straight in your browser.</p>
 
       <div className="w-full max-w-md bg-slate-800 rounded-xl p-6 shadow-xl space-y-6">
         <div>
@@ -60,6 +60,13 @@ export default function Home() {
             >
               Flip 7
               <div className="text-xs font-normal text-emerald-200">3-8 players, push your luck</div>
+            </button>
+            <button
+              className="rounded-lg bg-sky-600 hover:bg-sky-500 py-3 font-semibold transition col-span-2"
+              onClick={() => go(makeCode(), "battleship")}
+            >
+              Battleship
+              <div className="text-xs font-normal text-sky-200">2-6 players, free-for-all</div>
             </button>
           </div>
         </div>

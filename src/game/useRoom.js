@@ -16,6 +16,8 @@ import * as uno from "./uno.js";
 import { chooseAIAction } from "./ai.js";
 import * as flip7 from "./flip7.js";
 import { chooseFlip7Action } from "./flip7ai.js";
+import * as battleship from "./battleship.js";
+import { chooseBattleshipAction } from "./battleshipai.js";
 
 const AI_NAMES = ["Robo Red", "Ana Bot", "Circuit Sam", "Byte Betty", "Volt Vinny", "Chip Chan", "Data Dana", "Pixel Pete"];
 
@@ -68,6 +70,14 @@ const ENGINES = {
     chooseAI: chooseFlip7Action,
     canStart: (taken) => taken.length >= flip7.MIN_PLAYERS,
     maxSeats: flip7.MAX_PLAYERS,
+  },
+  battleship: {
+    createGame: (players) => battleship.createGame({ players }),
+    applyAction: battleship.applyAction,
+    legalMoves: battleship.legalTargets,
+    chooseAI: chooseBattleshipAction,
+    canStart: (taken) => taken.length >= battleship.MIN_PLAYERS,
+    maxSeats: battleship.MAX_PLAYERS,
   },
 };
 

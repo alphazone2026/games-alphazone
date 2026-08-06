@@ -4,17 +4,27 @@ import { useRoom } from "../game/useRoom.js";
 import Lobby from "../components/Lobby.jsx";
 import GameBoard from "../components/GameBoard.jsx";
 import Flip7Board from "../components/Flip7Board.jsx";
+import BattleshipBoard from "../components/BattleshipBoard.jsx";
+
+const VALID_GAMES = ["uno", "flip7", "battleship"];
 
 const GAME_LABELS = {
   uno: { classic: "Uno", teams: "Uno Teams" },
   flip7: { default: "Flip 7" },
+  battleship: { default: "Battleship" },
+};
+
+const BOARDS = {
+  flip7: Flip7Board,
+  battleship: BattleshipBoard,
 };
 
 export default function Room() {
   const { roomCode } = useParams();
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const gameId = params.get("game") === "flip7" ? "flip7" : "uno";
+  const requestedGame = params.get("game");
+  const gameId = VALID_GAMES.includes(requestedGame) ? requestedGame : "uno";
   const variant = gameId === "uno" ? (params.get("variant") === "teams" ? "teams" : "classic") : undefined;
   const name = sessionStorage.getItem("uno_player_name");
 
@@ -26,11 +36,12 @@ export default function Room() {
 
   if (!name) return null;
 
-  const label = gameId === "uno" ? GAME_LABELS.uno[variant] : GAME_LABELS.flip7.default;
+  const label = gameId === "uno" ? GAME_LABELS.uno[variant] : GAME_LABELS[gameId].default;
+  const Board = BOARDS[gameId] || GameBoard;
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center px-4 py-8">
-      <div className="w-full max-w-3xl flex items-center justify-between mb-6">
+      <div className="w-full max-w-4xl flex items-center justify-between mb-6">
         <button className="text-slate-400 hover:text-slate-200 text-sm" onClick={() => navigate("/")}>
           &larr; Leave
         </button>
@@ -43,10 +54,8 @@ export default function Room() {
 
       {!room.game || room.game.status === "finished" ? (
         <Lobby room={room} gameId={gameId} variant={variant} />
-      ) : gameId === "flip7" ? (
-        <Flip7Board room={room} />
       ) : (
-        <GameBoard room={room} />
+        <Board room={room} />
       )}
     </div>
   );

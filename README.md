@@ -51,13 +51,23 @@ requests left in the queue.
 
 ## Build & deploy
 
+Deploys automatically via GitHub Actions (`.github/workflows/deploy.yml`) on every push
+to `master`, mirroring the same cPanel relay-upload trick used by `alphazone-site` and
+`gilders-tms`. Docroot: `/home/hre8m7ym/games.alphazone.com.au`.
+
+**Repo secrets required** (Settings → Secrets and variables → Actions):
+- `GAMES_CPANEL_URL`, `GAMES_CPANEL_USER`, `GAMES_CPANEL_PASS` — same cPanel account as
+  `alphazone-site` (`AZ_CPANEL_*` secrets there), just pointed at the games subdomain.
+- `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_DATABASE_URL`,
+  `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID` — same values as your local `.env`.
+
+The app uses a hash router (`/#/room/ABCDE`) so no server-side URL rewriting is needed.
+
+Manual build/upload (fallback if Actions is unavailable):
 ```bash
 npm run build
 ```
-
-Upload the contents of `dist/` to the `games.alphazone.com.au` subdomain's document
-root. The app uses a hash router (`/#/room/ABCDE`) so no server-side URL rewriting is
-needed on shared/PHP hosting.
+Upload the contents of `dist/` to the subdomain's document root.
 
 ## Games
 

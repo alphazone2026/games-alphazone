@@ -1,0 +1,105 @@
+name: Build & Deploy to games.alphazone.com.au
+
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - 'dist/**'
+      - '.github/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Write .env
+        run: |
+          cat > .env << EOF
+          VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN=${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_DATABASE_URL=${{ secrets.VITE_FIREBASE_DATABASE_URL }}
+          VITE_FIREBASE_PROJECT_ID=${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID }}
+          EOF
+
+      - run: npm ci
+      - run: npm run build
+
+      # Upload relay script via cPanel (base64-encoded to avoid quoting issues)
+      - name: Upload relay
+        run: |
+          cat > /tmp/relay.php << 'PHPEOF'
+          <?php
+          if (($_POST['key'] ?? '') !== 'games-deploy-2026') { http_response_code(403); exit; }
+          $name   = basename($_POST['name'] ?? '');
+          $target = $_POST['target'] ?? 'assets';
+          $mode   = $_POST['mode']   ?? 'w';
+          if (!$name) { http_response_code(400); exit; }
+          if ($target === 'assets') { $dir = __DIR__ . '/assets/'; }
+          else { $dir = __DIR__ . '/'; }
+          if (!is_dir($dir)) mkdir($dir, 0755, true);
+          file_put_contents($dir . $name, base64_decode($_POST['data']), $mode === 'a' ? FILE_APPEND : 0);
+          echo 'ok:' . filesize($dir . $name);
+          PHPEOF
+          B64=$(base64 -w 0 /tmp/relay.php)
+          curl -sf "${{ secrets.GAMES_CPANEL_URL }}/execute/Fileman/save_file_content" \
+            -u "${{ secrets.GAMES_CPANEL_USER }}:${{ secrets.GAMES_CPANEL_PASS }}" \
+            --data-urlencode "dir=/home/hre8m7ym/games.alphazone.com.au" \
+            --data-urlencode "file=_relay.php" \
+            --data-urlencode "content@/tmp/relay.php"
+
+      # Upload every file under dist/assets/ (JS/CSS bundles) — chunked since
+      # some bundles can exceed a single POST comfortably
+      - name: Upload assets
+        run: |
+          for f in dist/assets/*; do
+            NAME=$(basename "$f")
+            base64 -w 0 "$f" > /tmp/enc.txt
+            rm -f /tmp/chunk_*
+            split -b 200000 -d -a 4 /tmp/enc.txt /tmp/chunk_
+            FIRST=1
+            for c in /tmp/chunk_*; do
+              if [ "$FIRST" = "1" ]; then MODE=w; FIRST=0; else MODE=a; fi
+              curl -sf "https://games.alphazone.com.au/_relay.php" \
+                -d "key=games-deploy-2026&name=${NAME}&target=assets&mode=${MODE}" \
+                --data-urlencode "data@$c"
+            done
+            echo "uploaded $NAME"
+          done
+
+      # Upload index.html
+      - name: Upload index.html
+        run: |
+          base64 -w 0 dist/index.html > /tmp/htmlb64.txt
+          curl -sf "https://games.alphazone.com.au/_relay.php" \
+            -d "key=games-deploy-2026&name=index.html&target=root&mode=w" \
+            --data-urlencode "data@/tmp/htmlb64.txt"
+
+      # Remove the old ash-journey / digimon-adventure games — safe to leave
+      # this step in permanently, it's a no-op once they're gone
+      - name: Remove retired games
+        continue-on-error: true
+        run: |
+          curl -sf "${{ secrets.GAMES_CPANEL_URL }}/execute/Fileman/fileop" \
+            -u "${{ secrets.GAMES_CPANEL_USER }}:${{ secrets.GAMES_CPANEL_PASS }}" \
+            --data-urlencode "op=unlink" \
+            --data-urlencode "sourcefiles=/home/hre8m7ym/games.alphazone.com.au/ash-journey" || true
+          curl -sf "${{ secrets.GAMES_CPANEL_URL }}/execute/Fileman/fileop" \
+            -u "${{ secrets.GAMES_CPANEL_USER }}:${{ secrets.GAMES_CPANEL_PASS }}" \
+            --data-urlencode "op=unlink" \
+            --data-urlencode "sourcefiles=/home/hre8m7ym/games.alphazone.com.au/digimon-adventure" || true
+
+      # Neutralise relay
+      - name: Neutralise relay
+        run: |
+          curl -sf "${{ secrets.GAMES_CPANEL_URL }}/execute/Fileman/save_file_content" \
+            -u "${{ secrets.GAMES_CPANEL_USER }}:${{ secrets.GAMES_CPANEL_PASS }}" \
+            -d "dir=%2Fhome%2Fhre8m7ym%2Fgames.alphazone.com.au&file=_relay.php&content=%3C%3Fphp+%2F%2F+disabled"
+          echo "Done — deployed to games.alphazone.com.au"

@@ -21,7 +21,7 @@ function cardLabel(card) {
   return String(card.value);
 }
 
-function Card({ card, onClick, disabled, size = "md" }) {
+function Card({ card, onClick, disabled, dim = false, size = "md" }) {
   const dims = { sm: "w-10 h-14 text-[10px]", md: "w-16 h-24 text-lg", lg: "w-20 h-28 text-xl" }[size];
   if (card.type === "back") {
     return (
@@ -41,7 +41,8 @@ function Card({ card, onClick, disabled, size = "md" }) {
       onClick={onClick}
       disabled={disabled}
       className={`${cls} ${dims} rounded-lg border-2 shadow-lg relative font-extrabold transition-all duration-150
-        ${disabled ? "opacity-40 grayscale cursor-not-allowed" : "hover:-translate-y-3 hover:shadow-xl cursor-pointer"}`}
+        ${dim ? "opacity-40 grayscale" : ""}
+        ${disabled ? "cursor-default" : "hover:-translate-y-3 hover:shadow-xl cursor-pointer"}`}
     >
       <span className="absolute top-1 left-1.5 text-[0.6em] leading-none drop-shadow">{label}</span>
       <span className="absolute bottom-1 right-1.5 text-[0.6em] leading-none rotate-180 drop-shadow">{label}</span>
@@ -239,6 +240,7 @@ export default function GameBoard({ room }) {
                 card={card}
                 onClick={() => playCard(card)}
                 disabled={!isMyTurn || !legalIds.has(card.id)}
+                dim={!isMyTurn || !legalIds.has(card.id)}
               />
             ))}
           </div>
@@ -263,9 +265,16 @@ export default function GameBoard({ room }) {
       </div>
 
       {pendingWildCardId && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-slate-800 rounded-xl p-6 text-center">
-            <div className="mb-4 font-semibold">Choose a color</div>
+        <div className="fixed inset-0 bg-black/25 backdrop-blur-[1px] flex items-center justify-center z-50">
+          <div className="bg-slate-800 rounded-xl p-6 text-center shadow-2xl border border-slate-600">
+            <div className="mb-1 font-semibold">Choose a color</div>
+            <div className="flex items-center justify-center gap-2 mb-4 text-xs text-slate-400">
+              <span>Current top card:</span>
+              <Card card={top} disabled size="sm" />
+              {game.activeColor && (
+                <span className={`inline-block w-3 h-3 rounded-full border border-white/50 ${dotColor(game.activeColor)}`} />
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-3">
               {COLORS.map((color) => (
                 <button

@@ -1,6 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { nanoid } from "nanoid";
-import { supabase } from "../lib/supabaseClient.js";
+import {
+  ref,
+  onValue,
+  set,
+  remove,
+  push,
+  runTransaction,
+  onDisconnect,
+  child,
+  onChildAdded,
+} from "firebase/database";
+import { db } from "../lib/firebaseClient.js";
 import { createGame, applyAction, legalMoves } from "./uno.js";
 import { chooseAIAction } from "./ai.js";
 
@@ -16,7 +27,7 @@ function getPlayerId() {
   return id;
 }
 
-function emptySeats(mode) {
+function emptySeats() {
   return Array.from({ length: MAX_SEATS }, (_, i) => ({
     seat: i,
     playerId: null,
@@ -25,221 +36,275 @@ function emptySeats(mode) {
   }));
 }
 
-// Host-authoritative multiplayer room built on a Supabase Realtime channel.
-// The client that joined presence first acts as host: it owns the Uno
-// engine, applies both local and remote actions, drives AI turns, and
-// broadcasts the resulting state. No database or server process needed.
+function seatsToObj(seats) {
+  const obj = {};
+  seats.forEach((s) => (obj[s.seat] = s));
+  return obj;
+}
+
+function seatsFromObj(obj) {
+  const seats = emptySeats();
+  if (!obj) return seats;
+  Object.values(obj).forEach((s) => {
+    if (s && typeof s.seat === "number") seats[s.seat] = s;
+  });
+  return seats;
+}
+
+// Host-authoritative multiplayer room built on Firebase Realtime Database.
+// The first client to write `hostId` for a room becomes host: it owns the
+// Uno engine, applies both local and remote requests, drives AI turns, and
+// writes the resulting state, which Realtime Database pushes to everyone
+// else automatically. No custom backend server — just RTDB.
 export function useRoom(roomCode, playerName, mode) {
-  const [seats, setSeats] = useState(emptySeats(mode));
+  const [seats, setSeats] = useState(emptySeats());
   const [game, setGame] = useState(null);
   const [isHost, setIsHost] = useState(false);
   const [connected, setConnected] = useState(false);
-  const [presenceIds, setPresenceIds] = useState([]);
+  const [presenceCount, setPresenceCount] = useState(0);
 
   const playerId = useRef(getPlayerId()).current;
-  const channelRef = useRef(null);
-  const stateRef = useRef({ seats: emptySeats(mode), game: null });
+  const isHostRef = useRef(false);
+  const gameRef = useRef(null);
 
-  const broadcastState = useCallback(() => {
-    const ch = channelRef.current;
-    if (!ch) return;
-    ch.send({
-      type: "broadcast",
-      event: "sync",
-      payload: { seats: stateRef.current.seats, game: stateRef.current.game },
-    });
+  useEffect(() => {
+    isHostRef.current = isHost;
+  }, [isHost]);
+  useEffect(() => {
+    gameRef.current = game;
+  }, [game]);
+
+  const roomRef = roomCode ? ref(db, `rooms/${roomCode}`) : null;
+  const seatsPathRef = roomCode ? ref(db, `rooms/${roomCode}/seats`) : null;
+  const gamePathRef = roomCode ? ref(db, `rooms/${roomCode}/game`) : null;
+  const hostPathRef = roomCode ? ref(db, `rooms/${roomCode}/hostId`) : null;
+  const requestsPathRef = roomCode ? ref(db, `rooms/${roomCode}/requests`) : null;
+  const presencePathRef = roomCode ? ref(db, `rooms/${roomCode}/presence`) : null;
+
+  const writeSeats = useCallback(
+    (seatsArr) => {
+      if (!seatsPathRef) return;
+      set(seatsPathRef, seatsToObj(seatsArr));
+    },
+    [seatsPathRef]
+  );
+
+  const writeGame = useCallback(
+    (gameObj) => {
+      if (!gamePathRef) return;
+      set(gamePathRef, gameObj);
+    },
+    [gamePathRef]
+  );
+
+  const hostClaimSeat = useCallback(
+    (currentSeats, seatIndex, { forPlayerId, forName, ai }) => {
+      if (currentSeats[seatIndex].playerId || currentSeats[seatIndex].isAI) return currentSeats;
+      const next = currentSeats.map((s) => ({ ...s }));
+      next[seatIndex] = ai
+        ? { seat: seatIndex, playerId: `ai-${seatIndex}`, name: AI_NAMES[seatIndex], isAI: true }
+        : { seat: seatIndex, playerId: forPlayerId, name: forName, isAI: false };
+      return next;
+    },
+    []
+  );
+
+  const hostVacateSeat = useCallback((currentSeats, seatIndex) => {
+    const next = currentSeats.map((s) => ({ ...s }));
+    next[seatIndex] = { seat: seatIndex, playerId: null, name: null, isAI: false };
+    return next;
   }, []);
 
-  const setSeatsAndSync = useCallback(
-    (updater) => {
-      stateRef.current.seats = typeof updater === "function" ? updater(stateRef.current.seats) : updater;
-      setSeats(stateRef.current.seats);
-      broadcastState();
+  const hostStartGame = useCallback(
+    (currentSeats) => {
+      const taken = currentSeats.filter((s) => s.playerId);
+      if (taken.length < 2) return null;
+      if (mode === "teams" && taken.length !== 4) return null;
+      const players = taken
+        .sort((a, b) => a.seat - b.seat)
+        .map((s) => ({ id: s.playerId, name: s.name, isAI: s.isAI }));
+      return createGame({ players, mode });
     },
-    [broadcastState]
+    [mode]
   );
-
-  const setGameAndSync = useCallback(
-    (updater) => {
-      stateRef.current.game = typeof updater === "function" ? updater(stateRef.current.game) : updater;
-      setGame(stateRef.current.game);
-      broadcastState();
-    },
-    [broadcastState]
-  );
-
-  // Host: claim an open seat for a human, or toggle AI fill on an open seat.
-  const hostClaimSeat = useCallback(
-    (seatIndex, { forPlayerId, forName, ai }) => {
-      setSeatsAndSync((prev) => {
-        const next = prev.map((s) => ({ ...s }));
-        if (next[seatIndex].playerId || next[seatIndex].isAI) return prev;
-        if (ai) {
-          next[seatIndex] = { seat: seatIndex, playerId: `ai-${seatIndex}`, name: AI_NAMES[seatIndex], isAI: true };
-        } else {
-          next[seatIndex] = { seat: seatIndex, playerId: forPlayerId, name: forName, isAI: false };
-        }
-        return next;
-      });
-    },
-    [setSeatsAndSync]
-  );
-
-  const hostVacateSeat = useCallback(
-    (seatIndex) => {
-      setSeatsAndSync((prev) => {
-        const next = prev.map((s) => ({ ...s }));
-        next[seatIndex] = { seat: seatIndex, playerId: null, name: null, isAI: false };
-        return next;
-      });
-    },
-    [setSeatsAndSync]
-  );
-
-  const hostStartGame = useCallback(() => {
-    const taken = stateRef.current.seats.filter((s) => s.playerId);
-    if (taken.length < 2) return;
-    if (mode === "teams" && taken.length !== 4) return;
-    const players = taken
-      .sort((a, b) => a.seat - b.seat)
-      .map((s) => ({ id: s.playerId, name: s.name, isAI: s.isAI }));
-    setGameAndSync(createGame({ players, mode }));
-  }, [mode, setGameAndSync]);
 
   const hostApplyAction = useCallback(
-    (actingPlayerId, action) => {
-      const current = stateRef.current.game;
-      if (!current) return;
+    (currentGame, actingPlayerId, action) => {
+      if (!currentGame) return currentGame;
       try {
-        const result = applyAction(current, actingPlayerId, action);
-        setGameAndSync({ ...result.game });
+        const result = applyAction(currentGame, actingPlayerId, action);
+        return { ...result.game };
       } catch (err) {
         console.warn("Illegal action ignored:", err.message);
+        return currentGame;
       }
     },
-    [setGameAndSync]
+    []
   );
 
-  // Send an action. Host applies directly; guests ask the host via broadcast.
-  const sendAction = useCallback(
-    (action) => {
-      if (isHost) {
-        hostApplyAction(playerId, action);
-      } else {
-        channelRef.current?.send({
-          type: "broadcast",
-          event: "request-action",
-          payload: { playerId, action },
-        });
-      }
+  // Guests push a request; the host (whoever currently holds hostId) processes
+  // and removes it. Requests left behind by a host that vanished mid-game are
+  // picked up by whichever client claims host next.
+  const sendRequest = useCallback(
+    (kind, payload) => {
+      if (!requestsPathRef) return;
+      push(requestsPathRef, { kind, payload, playerId, at: Date.now() });
     },
-    [isHost, hostApplyAction, playerId]
+    [requestsPathRef, playerId]
   );
 
   const requestSeat = useCallback(
     (seatIndex, ai) => {
-      if (isHost) {
-        hostClaimSeat(seatIndex, { forPlayerId: playerId, forName: playerName, ai });
-      } else {
-        channelRef.current?.send({
-          type: "broadcast",
-          event: "request-seat",
-          payload: { seatIndex, playerId, playerName, ai },
+      if (isHostRef.current) {
+        setSeats((prev) => {
+          const next = hostClaimSeat(prev, seatIndex, { forPlayerId: playerId, forName: playerName, ai });
+          writeSeats(next);
+          return prev;
         });
+      } else {
+        sendRequest("seat", { seatIndex, forPlayerId: playerId, forName: playerName, ai });
       }
     },
-    [isHost, hostClaimSeat, playerId, playerName]
+    [hostClaimSeat, playerId, playerName, writeSeats, sendRequest]
   );
 
   const vacateSeat = useCallback(
     (seatIndex) => {
-      if (isHost) {
-        hostVacateSeat(seatIndex);
+      if (isHostRef.current) {
+        setSeats((prev) => {
+          const next = hostVacateSeat(prev, seatIndex);
+          writeSeats(next);
+          return prev;
+        });
       } else {
-        channelRef.current?.send({ type: "broadcast", event: "request-vacate", payload: { seatIndex } });
+        sendRequest("vacate", { seatIndex });
       }
     },
-    [isHost, hostVacateSeat]
+    [hostVacateSeat, writeSeats, sendRequest]
   );
 
   const startGame = useCallback(() => {
-    if (isHost) hostStartGame();
-    else channelRef.current?.send({ type: "broadcast", event: "request-start", payload: {} });
-  }, [isHost, hostStartGame]);
-
-  const hostResetGame = useCallback(() => {
-    setGameAndSync(null);
-  }, [setGameAndSync]);
+    if (isHostRef.current) {
+      setSeats((prev) => {
+        const g = hostStartGame(prev);
+        if (g) writeGame(g);
+        return prev;
+      });
+    } else {
+      sendRequest("start", {});
+    }
+  }, [hostStartGame, writeGame, sendRequest]);
 
   const resetGame = useCallback(() => {
-    if (isHost) hostResetGame();
-    else channelRef.current?.send({ type: "broadcast", event: "request-reset", payload: {} });
-  }, [isHost, hostResetGame]);
+    if (isHostRef.current) {
+      writeGame(null);
+    } else {
+      sendRequest("reset", {});
+    }
+  }, [writeGame, sendRequest]);
+
+  const sendAction = useCallback(
+    (action) => {
+      if (isHostRef.current) {
+        setGame((prev) => {
+          const next = hostApplyAction(prev, playerId, action);
+          writeGame(next);
+          return prev;
+        });
+      } else {
+        sendRequest("action", { forPlayerId: playerId, action });
+      }
+    },
+    [hostApplyAction, playerId, writeGame, sendRequest]
+  );
+
+  // Try to become host if nobody currently holds the slot.
+  const tryClaimHost = useCallback(() => {
+    if (!hostPathRef) return;
+    runTransaction(hostPathRef, (current) => (current === null ? playerId : current)).then((result) => {
+      const won = result.committed && result.snapshot.val() === playerId;
+      setIsHost(won);
+      if (won) {
+        onDisconnect(hostPathRef).remove();
+      }
+    });
+  }, [hostPathRef, playerId]);
 
   useEffect(() => {
     if (!roomCode) return;
-    const channel = supabase.channel(`uno-room-${roomCode}`, {
-      config: { presence: { key: playerId }, broadcast: { self: false } },
-    });
-    channelRef.current = channel;
 
-    channel.on("presence", { event: "sync" }, () => {
-      const state = channel.presenceState();
-      const ids = Object.keys(state)
-        .map((id) => ({ id, joinedAt: state[id][0]?.joinedAt || 0 }))
-        .sort((a, b) => a.joinedAt - b.joinedAt);
-      setPresenceIds(ids.map((x) => x.id));
-      const hostId = ids[0]?.id;
-      setIsHost(hostId === playerId);
-    });
+    setSeats(emptySeats());
+    setGame(null);
+    setIsHost(false);
 
-    channel.on("broadcast", { event: "sync" }, ({ payload }) => {
-      stateRef.current = { seats: payload.seats, game: payload.game };
-      setSeats(payload.seats);
-      setGame(payload.game);
+    const unsubSeats = onValue(seatsPathRef, (snap) => setSeats(seatsFromObj(snap.val())));
+    const unsubGame = onValue(gamePathRef, (snap) => setGame(snap.val()));
+
+    const unsubHost = onValue(hostPathRef, (snap) => {
+      const hostId = snap.val();
+      if (hostId === null) {
+        tryClaimHost();
+      } else {
+        setIsHost(hostId === playerId);
+      }
     });
 
-    // Host-only handlers for guest requests.
-    channel.on("broadcast", { event: "request-seat" }, ({ payload }) => {
-      if (!isHostRef.current) return;
-      hostClaimSeat(payload.seatIndex, { forPlayerId: payload.playerId, forName: payload.playerName, ai: payload.ai });
-    });
-    channel.on("broadcast", { event: "request-vacate" }, ({ payload }) => {
-      if (!isHostRef.current) return;
-      hostVacateSeat(payload.seatIndex);
-    });
-    channel.on("broadcast", { event: "request-start" }, () => {
-      if (!isHostRef.current) return;
-      hostStartGame();
-    });
-    channel.on("broadcast", { event: "request-action" }, ({ payload }) => {
-      if (!isHostRef.current) return;
-      hostApplyAction(payload.playerId, payload.action);
-    });
-    channel.on("broadcast", { event: "request-reset" }, () => {
-      if (!isHostRef.current) return;
-      hostResetGame();
+    const presenceRef = child(presencePathRef, playerId);
+    onDisconnect(presenceRef).remove();
+    set(presenceRef, { name: playerName, at: Date.now() });
+    const unsubPresence = onValue(presencePathRef, (snap) => {
+      const val = snap.val();
+      setPresenceCount(val ? Object.keys(val).length : 0);
     });
 
-    channel.subscribe(async (status) => {
-      if (status === "SUBSCRIBED") {
-        await channel.track({ joinedAt: Date.now() });
-        setConnected(true);
-        broadcastState();
+    const unsubConnInfo = onValue(ref(db, ".info/connected"), (snap) => setConnected(!!snap.val()));
+
+    // Host-only: drain the request queue.
+    const unsubRequests = onChildAdded(requestsPathRef, (snap) => {
+      if (!isHostRef.current) return;
+      const { kind, payload } = snap.val() || {};
+      remove(child(requestsPathRef, snap.key));
+
+      if (kind === "seat") {
+        setSeats((prev) => {
+          const next = hostClaimSeat(prev, payload.seatIndex, payload);
+          writeSeats(next);
+          return prev;
+        });
+      } else if (kind === "vacate") {
+        setSeats((prev) => {
+          const next = hostVacateSeat(prev, payload.seatIndex);
+          writeSeats(next);
+          return prev;
+        });
+      } else if (kind === "start") {
+        setSeats((prev) => {
+          const g = hostStartGame(prev);
+          if (g) writeGame(g);
+          return prev;
+        });
+      } else if (kind === "reset") {
+        writeGame(null);
+      } else if (kind === "action") {
+        setGame((prev) => {
+          const next = hostApplyAction(prev, payload.forPlayerId, payload.action);
+          writeGame(next);
+          return prev;
+        });
       }
     });
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubSeats();
+      unsubGame();
+      unsubHost();
+      unsubPresence();
+      unsubConnInfo();
+      unsubRequests();
+      remove(presenceRef);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomCode]);
-
-  // Keep a ref mirror of isHost for use inside stable broadcast handlers above.
-  const isHostRef = useRef(isHost);
-  useEffect(() => {
-    isHostRef.current = isHost;
-  }, [isHost]);
 
   // Host drives AI turns.
   useEffect(() => {
@@ -247,11 +312,11 @@ export function useRoom(roomCode, playerName, mode) {
     const current = game.players[game.currentPlayerIndex];
     if (!current?.isAI) return;
     const timer = setTimeout(() => {
-      const action = chooseAIAction(game, current.id);
-      hostApplyAction(current.id, action);
+      const next = hostApplyAction(game, current.id, chooseAIAction(game, current.id));
+      writeGame(next);
     }, 900);
     return () => clearTimeout(timer);
-  }, [isHost, game, hostApplyAction]);
+  }, [isHost, game, hostApplyAction, writeGame]);
 
   return {
     playerId,
@@ -259,7 +324,7 @@ export function useRoom(roomCode, playerName, mode) {
     connected,
     seats,
     game,
-    presenceCount: presenceIds.length,
+    presenceCount,
     requestSeat,
     vacateSeat,
     startGame,

@@ -73,7 +73,7 @@ export function createGame({ players, mode = "classic", rng = Math.random }) {
 
   const game = {
     mode,
-    players: players.map((p, i) => ({ ...p, team: mode === "teams" ? i % 2 : undefined })),
+    players: players.map((p, i) => ({ ...p, team: mode === "teams" ? i % 2 : null })),
     hands,
     deck,
     discard,

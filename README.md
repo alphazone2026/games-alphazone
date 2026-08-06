@@ -8,24 +8,46 @@ Live target: `games.alphazone.com.au`
 ## How multiplayer works
 
 No custom backend server — the app is a static React build. Realtime sync between
-players happens over a [Supabase](https://supabase.com) Realtime channel (broadcast +
-presence only, no database tables required), so it can be hosted as static files
-alongside `alphazone-site` on regular PHP/cPanel-style hosting.
+players happens over a [Firebase Realtime Database](https://firebase.google.com/docs/database)
+(just a JSON tree, no Cloud Functions), so it can be hosted as static files alongside
+`alphazone-site` on regular PHP/cPanel-style hosting.
 
-The browser tab that joins a room first becomes the **host**: it runs the game engine,
-applies every move (its own and other players'), drives the AI turns, and broadcasts
-the resulting state to everyone else in the room. If the host's tab closes, the next
-player to join becomes host for future rooms (mid-game host handoff isn't implemented
-yet — see below).
+Each room is a node under `rooms/{roomCode}` in the database. Whichever browser tab
+successfully claims `rooms/{roomCode}/hostId` (via an atomic transaction) becomes the
+**host**: it runs the game engine, applies every move (its own and other players', the
+latter arriving via a small `requests` queue in the same room node), drives the AI
+turns, and writes the resulting state — which Realtime Database then pushes to
+everyone else automatically. If the host disconnects, `hostId` is cleared
+(`onDisconnect().remove()`) and the next client to notice claims it, picking up any
+requests left in the queue.
 
 ## Setup
 
-1. Create a free Supabase project at supabase.com (you only need the project URL and
-   anon public key — no tables, no auth needed).
-2. Copy `.env.example` to `.env` and fill in `VITE_SUPABASE_URL` and
-   `VITE_SUPABASE_ANON_KEY`.
-3. `npm install`
-4. `npm run dev`
+1. Create a free Firebase project at [console.firebase.google.com](https://console.firebase.google.com).
+2. Add a **Web app** to the project (Project settings → General → Your apps) to get
+   the config values below.
+3. Enable **Realtime Database** (Build → Realtime Database → Create Database). Since
+   there's no login system, set the rules to allow open read/write on the `rooms`
+   path only:
+   ```json
+   {
+     "rules": {
+       "rooms": {
+         "$roomCode": {
+           ".read": true,
+           ".write": true
+         }
+       },
+       ".read": false,
+       ".write": false
+     }
+   }
+   ```
+4. Copy `.env.example` to `.env` and fill in the `VITE_FIREBASE_*` values from step 2
+   (`VITE_FIREBASE_DATABASE_URL` is the Realtime Database URL shown on its page, e.g.
+   `https://your-project-default-rtdb.firebaseio.com`).
+5. `npm install`
+6. `npm run dev`
 
 ## Build & deploy
 

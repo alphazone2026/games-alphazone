@@ -149,15 +149,20 @@ function partnerOf(game, player) {
 }
 
 // Anyone can call UNO on anyone at any time (it's not turn-gated). Calling on
-// yourself while pending clears the exposure; calling on someone else who
-// hasn't called yet catches them for a 2-card penalty.
+// yourself while pending clears the exposure; calling on an opponent who
+// hasn't called yet catches them for a 2-card penalty. In Teams, catching
+// your own teammate just clears the exposure too — no penalty, since that
+// would only hurt your own team's card count.
 function callUno(game, callerId) {
   if (!game.unoPending) return;
   const pendingId = game.unoPending.playerId;
   const caller = game.players.find((p) => p.id === callerId);
   const pendingPlayer = game.players.find((p) => p.id === pendingId);
+  const sameTeam = game.mode === "teams" && caller.team === pendingPlayer.team;
   if (callerId === pendingId) {
     game.log.push(`${pendingPlayer.name} calls UNO!`);
+  } else if (sameTeam) {
+    game.log.push(`${caller.name} calls UNO for teammate ${pendingPlayer.name} — no penalty`);
   } else {
     drawCards(game, pendingId, 2);
     game.log.push(`${caller.name} catches ${pendingPlayer.name} without UNO! ${pendingPlayer.name} draws 2`);

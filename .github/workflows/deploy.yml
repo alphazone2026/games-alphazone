@@ -8,6 +8,10 @@ on:
       - '.github/**'
   workflow_dispatch:
 
+concurrency:
+  group: deploy-games-alphazone
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest

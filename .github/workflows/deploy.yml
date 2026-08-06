@@ -49,13 +49,17 @@ jobs:
           echo 'ok:' . filesize($dir . $name);
           PHPEOF
           B64=$(base64 -w 0 /tmp/relay.php)
-          RESP=$(curl -s "${{ secrets.GAMES_CPANEL_URL }}/execute/Fileman/save_file_content" \
+          HTTP_CODE=$(curl -s -o /tmp/resp.txt -w "%{http_code}" "${{ secrets.GAMES_CPANEL_URL }}/execute/Fileman/save_file_content" \
             -u "${{ secrets.GAMES_CPANEL_USER }}:${{ secrets.GAMES_CPANEL_PASS }}" \
             --data-urlencode "dir=/home/hre8m7ym/games.alphazone.com.au" \
             --data-urlencode "file=_relay.php" \
-            --data-urlencode "content@/tmp/relay.php")
-          echo "cPanel response: $RESP"
-          echo "$RESP" | grep -q '"status":1' || { echo "::error::relay upload failed"; exit 1; }
+            --data-urlencode "content@/tmp/relay.php" 2>/tmp/curl_err.txt)
+          echo "HTTP status: $HTTP_CODE"
+          echo "Response body:"
+          cat /tmp/resp.txt
+          echo "Curl stderr:"
+          cat /tmp/curl_err.txt
+          grep -q '"status":1' /tmp/resp.txt || { echo "::error::relay upload failed"; exit 1; }
 
       # Upload every file under dist/assets/ (JS/CSS bundles) — chunked since
       # some bundles can exceed a single POST comfortably

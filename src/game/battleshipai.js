@@ -15,13 +15,13 @@ export function chooseBattleshipAction(game, playerId) {
   if (targets.length === 0) return null;
 
   // Prefer whichever opponent has the most damage already (closer to sunk).
-  const targetId = targets.reduce((best, id) => {
-    const board = game.boards[id];
-    const remaining = board.ships.reduce((sum, s) => sum + (s.cells.length - s.hits), 0);
-    const bestBoard = game.boards[best];
-    const bestRemaining = bestBoard.ships.reduce((sum, s) => sum + (s.cells.length - s.hits), 0);
-    return remaining < bestRemaining ? id : best;
-  }, targets[0]);
+  // Ties (e.g. nobody's been hit yet) are broken randomly rather than
+  // always falling back to whichever player happens to be listed first -
+  // otherwise every AI would default to the same target turn after turn.
+  const remainingOf = (id) => game.boards[id].ships.reduce((sum, s) => sum + (s.cells.length - s.hits), 0);
+  const leastRemaining = Math.min(...targets.map(remainingOf));
+  const mostDamaged = targets.filter((id) => remainingOf(id) === leastRemaining);
+  const targetId = mostDamaged[Math.floor(Math.random() * mostDamaged.length)];
 
   const board = game.boards[targetId];
   const grid = board.grid;

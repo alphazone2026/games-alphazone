@@ -62,11 +62,18 @@ export default function Home() {
               <div className="text-xs font-normal text-emerald-200">3-8 players, push your luck</div>
             </button>
             <button
-              className="rounded-lg bg-sky-600 hover:bg-sky-500 py-3 font-semibold transition col-span-2"
+              className="rounded-lg bg-sky-600 hover:bg-sky-500 py-3 font-semibold transition"
               onClick={() => go(makeCode(), "battleship")}
             >
               Battleship
               <div className="text-xs font-normal text-sky-200">2-6 players, free-for-all</div>
+            </button>
+            <button
+              className="rounded-lg bg-amber-700 hover:bg-amber-600 py-3 font-semibold transition"
+              onClick={() => go(makeCode(), "catan")}
+            >
+              Catan
+              <div className="text-xs font-normal text-amber-200">3-4 players, full rules</div>
             </button>
           </div>
         </div>

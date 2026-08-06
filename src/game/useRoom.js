@@ -18,24 +18,29 @@ import * as flip7 from "./flip7.js";
 import { chooseFlip7Action } from "./flip7ai.js";
 import * as battleship from "./battleship.js";
 import { chooseBattleshipAction } from "./battleshipai.js";
+import * as catan from "./catan/catan.js";
+import { chooseCatanAction, chooseCatanDiscard, chooseCatanTradeResponse } from "./catan/catanai.js";
 
 const AI_NAMES = ["Robo Red", "Ana Bot", "Circuit Sam", "Byte Betty", "Volt Vinny", "Chip Chan", "Data Dana", "Pixel Pete"];
 
 const EMPTY_ARRAY_MARKER = "__emptyArray__";
+const EMPTY_OBJECT_MARKER = "__emptyObject__";
 
 // Firebase Realtime Database silently drops keys whose value is an empty
 // array/object (there's nothing to store, so the key just doesn't come
-// back). Flip 7 hands start as [] each round, which made the whole `hands`
-// object vanish entirely and crash the board. Swap empty arrays for a
-// marker object on the way out, and back again on the way in.
+// back) — this bit both Flip 7 (hands start as []) and Catan (buildings/
+// roads/mustDiscard start as {}). Swap empty arrays/objects for a marker
+// object on the way out, and back again on the way in.
 function sanitizeForFirebase(value) {
   if (Array.isArray(value)) {
     if (value.length === 0) return { [EMPTY_ARRAY_MARKER]: true };
     return value.map(sanitizeForFirebase);
   }
   if (value && typeof value === "object") {
+    const keys = Object.keys(value);
+    if (keys.length === 0) return { [EMPTY_OBJECT_MARKER]: true };
     const out = {};
-    for (const k of Object.keys(value)) out[k] = sanitizeForFirebase(value[k]);
+    for (const k of keys) out[k] = sanitizeForFirebase(value[k]);
     return out;
   }
   return value;
@@ -44,6 +49,7 @@ function sanitizeForFirebase(value) {
 function desanitizeFromFirebase(value) {
   if (value && typeof value === "object") {
     if (value[EMPTY_ARRAY_MARKER]) return [];
+    if (value[EMPTY_OBJECT_MARKER]) return {};
     if (Array.isArray(value)) return value.map(desanitizeFromFirebase);
     const out = {};
     for (const k of Object.keys(value)) out[k] = desanitizeFromFirebase(value[k]);
@@ -78,6 +84,14 @@ const ENGINES = {
     chooseAI: chooseBattleshipAction,
     canStart: (taken) => taken.length >= battleship.MIN_PLAYERS,
     maxSeats: battleship.MAX_PLAYERS,
+  },
+  catan: {
+    createGame: (players) => catan.createGame({ players }),
+    applyAction: catan.applyAction,
+    legalMoves: catan.legalMoves,
+    chooseAI: chooseCatanAction,
+    canStart: (taken) => taken.length >= 3 && taken.length <= 4,
+    maxSeats: 4,
   },
 };
 
@@ -356,7 +370,9 @@ export function useRoom(roomCode, playerName, { gameId = "uno", variant } = {}) 
     const current = game.players[game.currentPlayerIndex];
     if (!current?.isAI) return;
     const timer = setTimeout(() => {
-      writeGame(applyActionSafe(engine, gameRefValue.current, current.id, engine.chooseAI(game, current.id)));
+      const action = engine.chooseAI(game, current.id);
+      if (!action) return; // e.g. Catan AI waiting on another player's setup step
+      writeGame(applyActionSafe(engine, gameRefValue.current, current.id, action));
     }, 900);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -399,6 +415,52 @@ export function useRoom(roomCode, playerName, { gameId = "uno", variant } = {}) 
     return () => timers.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isHost, unoSignature, writeGame]);
+
+  // Catan: AI players owing a discard (after a 7) resolve it automatically —
+  // this can be true for AIs even when it isn't their turn, so it needs its
+  // own watcher separate from the main AI-turn effect.
+  const catanDiscardSignature =
+    gameId === "catan" && game?.mustDiscard ? Object.keys(game.mustDiscard).sort().join(",") : null;
+  useEffect(() => {
+    if (!isHost || !catanDiscardSignature) return;
+    const aiOwing = game.players.filter((p) => p.isAI && game.mustDiscard[p.id]);
+    const timers = aiOwing.map((ai) =>
+      setTimeout(() => {
+        const current = gameRefValue.current;
+        if (!current?.mustDiscard?.[ai.id]) return;
+        const discard = chooseCatanDiscard(current, ai.id);
+        if (!discard) return;
+        writeGame(applyActionSafe(engine, current, ai.id, { type: "discard", resources: discard }));
+      }, 1200 + Math.random() * 1000)
+    );
+    return () => timers.forEach(clearTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHost, catanDiscardSignature, writeGame]);
+
+  // Catan: AI players respond to a pending trade offer that isn't their own.
+  const catanTradeSignature =
+    gameId === "catan" && game?.pendingTrade
+      ? `${game.pendingTrade.fromPlayerId}:${JSON.stringify(game.pendingTrade.give)}:${JSON.stringify(
+          game.pendingTrade.want
+        )}`
+      : null;
+  useEffect(() => {
+    if (!isHost || !catanTradeSignature) return;
+    const trade = game.pendingTrade;
+    const aiResponders = game.players.filter((p) => p.isAI && p.id !== trade.fromPlayerId && !(p.id in trade.responses));
+    const timers = aiResponders.map((ai) =>
+      setTimeout(() => {
+        const current = gameRefValue.current;
+        if (!current?.pendingTrade || current.pendingTrade.fromPlayerId !== trade.fromPlayerId) return;
+        if (ai.id in current.pendingTrade.responses) return;
+        const accept = chooseCatanTradeResponse(current, ai.id);
+        if (accept === null) return;
+        writeGame(applyActionSafe(engine, current, ai.id, { type: "respondTrade", accept }));
+      }, 1000 + Math.random() * 1500)
+    );
+    return () => timers.forEach(clearTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHost, catanTradeSignature, writeGame]);
 
   return {
     playerId,

@@ -88,6 +88,9 @@ export default function Lobby({ room, gameId, variant }) {
         {gameId === "battleship" && takenCount < 2 && (
           <p className="text-slate-400 text-sm">Battleship needs at least 2 players (real players or AI).</p>
         )}
+        {gameId === "catan" && takenCount < 3 && (
+          <p className="text-slate-400 text-sm">Catan needs 3-4 players (real players or AI).</p>
+        )}
         {canStart && !isHost && (
           <p className="text-slate-400 text-sm">Waiting for the room host to start the game.</p>
         )}

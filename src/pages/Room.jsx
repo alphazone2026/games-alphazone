@@ -5,18 +5,21 @@ import Lobby from "../components/Lobby.jsx";
 import GameBoard from "../components/GameBoard.jsx";
 import Flip7Board from "../components/Flip7Board.jsx";
 import BattleshipBoard from "../components/BattleshipBoard.jsx";
+import CatanBoard from "../components/CatanBoard.jsx";
 
-const VALID_GAMES = ["uno", "flip7", "battleship"];
+const VALID_GAMES = ["uno", "flip7", "battleship", "catan"];
 
 const GAME_LABELS = {
   uno: { classic: "Uno", teams: "Uno Teams" },
   flip7: { default: "Flip 7" },
   battleship: { default: "Battleship" },
+  catan: { default: "Catan" },
 };
 
 const BOARDS = {
   flip7: Flip7Board,
   battleship: BattleshipBoard,
+  catan: CatanBoard,
 };
 
 export default function Room() {
@@ -41,7 +44,7 @@ export default function Room() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center px-4 py-8">
-      <div className="w-full max-w-4xl flex items-center justify-between mb-6">
+      <div className="w-full max-w-5xl flex items-center justify-between mb-6">
         <button className="text-slate-400 hover:text-slate-200 text-sm" onClick={() => navigate("/")}>
           &larr; Leave
         </button>

@@ -1,10 +1,9 @@
-export default function Lobby({ room, mode }) {
-  const { seats, playerId, isHost, requestSeat, vacateSeat, startGame, resetGame, game } = room;
+export default function Lobby({ room, gameId, variant }) {
+  const { seats, playerId, isHost, requestSeat, vacateSeat, startGame, resetGame, game, canStart } = room;
 
+  const isTeams = gameId === "uno" && variant === "teams";
   const mySeat = seats.find((s) => s.playerId === playerId);
   const takenCount = seats.filter((s) => s.playerId).length;
-  const enoughPlayers = mode === "teams" ? takenCount === 4 : takenCount >= 2;
-  const canStart = enoughPlayers && isHost;
 
   return (
     <div className="w-full max-w-3xl">
@@ -28,12 +27,12 @@ export default function Lobby({ room, mode }) {
               key={seat.seat}
               className={`rounded-xl border p-4 flex items-center justify-between ${
                 seat.playerId ? "bg-slate-800 border-slate-600" : "bg-slate-800/40 border-dashed border-slate-700"
-              } ${mode === "teams" ? (seat.seat % 2 === 0 ? "ring-1 ring-sky-500/40" : "ring-1 ring-orange-500/40") : ""}`}
+              } ${isTeams ? (seat.seat % 2 === 0 ? "ring-1 ring-sky-500/40" : "ring-1 ring-orange-500/40") : ""}`}
             >
               <div>
                 <div className="text-xs text-slate-500">
                   Seat {seat.seat + 1}
-                  {mode === "teams" && (
+                  {isTeams && (
                     <span className={seat.seat % 2 === 0 ? "text-sky-400" : "text-orange-400"}>
                       {" "}
                       · Team {seat.seat % 2 === 0 ? "A" : "B"}
@@ -80,10 +79,13 @@ export default function Lobby({ room, mode }) {
 
       <div className="text-center space-y-2">
         {!mySeat && <p className="text-slate-400 text-sm">Pick a seat to join the game.</p>}
-        {mode === "teams" && takenCount < 4 && (
+        {isTeams && takenCount < 4 && (
           <p className="text-slate-400 text-sm">Uno Teams needs all 4 seats filled (real players or AI).</p>
         )}
-        {enoughPlayers && !isHost && (
+        {gameId === "flip7" && takenCount < 3 && (
+          <p className="text-slate-400 text-sm">Flip 7 needs at least 3 players (real players or AI).</p>
+        )}
+        {canStart && !isHost && (
           <p className="text-slate-400 text-sm">Waiting for the room host to start the game.</p>
         )}
         {isHost && (

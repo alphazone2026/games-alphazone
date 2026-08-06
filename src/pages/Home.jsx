@@ -8,15 +8,16 @@ export default function Home() {
   const navigate = useNavigate();
   const [name, setName] = useState(() => sessionStorage.getItem("uno_player_name") || "");
   const [joinCode, setJoinCode] = useState("");
-  const [mode, setMode] = useState("classic");
 
-  function go(roomCode, chosenMode) {
+  function go(roomCode, gameId, variant) {
     if (!name.trim()) {
       alert("Enter your name first");
       return;
     }
     sessionStorage.setItem("uno_player_name", name.trim());
-    navigate(`/room/${roomCode.toUpperCase()}?mode=${chosenMode}`);
+    const params = new URLSearchParams({ game: gameId });
+    if (variant) params.set("variant", variant);
+    navigate(`/room/${roomCode.toUpperCase()}?${params.toString()}`);
   }
 
   return (
@@ -41,17 +42,24 @@ export default function Home() {
           <div className="grid grid-cols-2 gap-3">
             <button
               className="rounded-lg bg-indigo-600 hover:bg-indigo-500 py-3 font-semibold transition"
-              onClick={() => go(makeCode(), "classic")}
+              onClick={() => go(makeCode(), "uno", "classic")}
             >
               Uno
               <div className="text-xs font-normal text-indigo-200">2-4 players</div>
             </button>
             <button
               className="rounded-lg bg-fuchsia-600 hover:bg-fuchsia-500 py-3 font-semibold transition"
-              onClick={() => go(makeCode(), "teams")}
+              onClick={() => go(makeCode(), "uno", "teams")}
             >
               Uno Teams
               <div className="text-xs font-normal text-fuchsia-200">4 players, 2v2</div>
+            </button>
+            <button
+              className="rounded-lg bg-emerald-600 hover:bg-emerald-500 py-3 font-semibold transition col-span-2"
+              onClick={() => go(makeCode(), "flip7")}
+            >
+              Flip 7
+              <div className="text-xs font-normal text-emerald-200">3-8 players, push your luck</div>
             </button>
           </div>
         </div>
@@ -69,13 +77,13 @@ export default function Home() {
             <button
               className="rounded-lg bg-slate-700 hover:bg-slate-600 px-4 font-semibold transition disabled:opacity-40"
               disabled={joinCode.trim().length < 4}
-              onClick={() => go(joinCode.trim(), "classic")}
+              onClick={() => go(joinCode.trim(), "uno", "classic")}
             >
               Join
             </button>
           </div>
           <p className="text-xs text-slate-500 mt-2">
-            The room's game mode is set by whoever created it — you'll join whatever they picked.
+            The room's game and mode are set by whoever created it — you'll join whatever they picked.
           </p>
         </div>
       </div>

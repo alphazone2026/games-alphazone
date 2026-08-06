@@ -1,9 +1,10 @@
 export default function Lobby({ room, mode }) {
-  const { seats, playerId, requestSeat, vacateSeat, startGame, resetGame, game } = room;
+  const { seats, playerId, isHost, requestSeat, vacateSeat, startGame, resetGame, game } = room;
 
   const mySeat = seats.find((s) => s.playerId === playerId);
   const takenCount = seats.filter((s) => s.playerId).length;
-  const canStart = mode === "teams" ? takenCount === 4 : takenCount >= 2;
+  const enoughPlayers = mode === "teams" ? takenCount === 4 : takenCount >= 2;
+  const canStart = enoughPlayers && isHost;
 
   return (
     <div className="w-full max-w-3xl">
@@ -82,13 +83,18 @@ export default function Lobby({ room, mode }) {
         {mode === "teams" && takenCount < 4 && (
           <p className="text-slate-400 text-sm">Uno Teams needs all 4 seats filled (real players or AI).</p>
         )}
-        <button
-          className="rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed px-6 py-3 font-semibold"
-          disabled={!canStart}
-          onClick={startGame}
-        >
-          Start game
-        </button>
+        {enoughPlayers && !isHost && (
+          <p className="text-slate-400 text-sm">Waiting for the room host to start the game.</p>
+        )}
+        {isHost && (
+          <button
+            className="rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed px-6 py-3 font-semibold"
+            disabled={!canStart}
+            onClick={startGame}
+          >
+            Start game
+          </button>
+        )}
       </div>
     </div>
   );

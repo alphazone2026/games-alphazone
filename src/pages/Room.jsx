@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useRoom } from "../game/useRoom.js";
 import Lobby from "../components/Lobby.jsx";
@@ -10,12 +11,13 @@ export default function Room() {
   const mode = params.get("mode") === "teams" ? "teams" : "classic";
   const name = sessionStorage.getItem("uno_player_name");
 
-  if (!name) {
-    navigate("/");
-    return null;
-  }
-
   const room = useRoom(roomCode, name, mode);
+
+  useEffect(() => {
+    if (!name) navigate("/");
+  }, [name, navigate]);
+
+  if (!name) return null;
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center px-4 py-8">

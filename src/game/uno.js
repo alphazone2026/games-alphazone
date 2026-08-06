@@ -84,6 +84,7 @@ export function createGame({ players, mode = "classic", rng = Math.random }) {
     status: "playing", // playing | finished
     winnerId: null,
     winningTeam: null,
+    unoPending: null, // { playerId } — set when a player drops to 1 card and hasn't been resolved yet
     log: ["Game started"],
   };
 
@@ -142,11 +143,45 @@ export function legalMoves(game, playerId) {
   return hand.filter((c) => cardMatches(c, top, game.activeColor));
 }
 
-// action: { type: 'play', cardId, chosenColor? } | { type: 'draw' }
+function partnerOf(game, player) {
+  if (game.mode !== "teams") return null;
+  return game.players.find((p) => p.team === player.team && p.id !== player.id) || null;
+}
+
+// Anyone can call UNO on anyone at any time (it's not turn-gated). Calling on
+// yourself while pending clears the exposure; calling on someone else who
+// hasn't called yet catches them for a 2-card penalty.
+function callUno(game, callerId) {
+  if (!game.unoPending) return;
+  const pendingId = game.unoPending.playerId;
+  const caller = game.players.find((p) => p.id === callerId);
+  const pendingPlayer = game.players.find((p) => p.id === pendingId);
+  if (callerId === pendingId) {
+    game.log.push(`${pendingPlayer.name} calls UNO!`);
+  } else {
+    drawCards(game, pendingId, 2);
+    game.log.push(`${caller.name} catches ${pendingPlayer.name} without UNO! ${pendingPlayer.name} draws 2`);
+  }
+  game.unoPending = null;
+}
+
+// action: { type: 'play', cardId, chosenColor? } | { type: 'draw' } | { type: 'callUno' }
 export function applyAction(game, playerId, action, rng = Math.random) {
   if (game.status !== "playing") throw new Error("Game already finished");
+
+  if (action.type === "callUno") {
+    callUno(game, playerId);
+    return { game };
+  }
+
   const player = game.players[game.currentPlayerIndex];
   if (player.id !== playerId) throw new Error("Not this player's turn");
+
+  // Nobody caught you before your own next turn came around — you're safe.
+  if (game.unoPending && game.unoPending.playerId === playerId) {
+    game.unoPending = null;
+  }
+
   const hand = game.hands[playerId];
 
   if (action.type === "draw") {
@@ -191,11 +226,27 @@ export function applyAction(game, playerId, action, rng = Math.random) {
     }
 
     if (hand.length === 0) {
-      finishRound(game, player);
-      return { game };
+      const partner = partnerOf(game, player);
+      if (partner && game.hands[partner.id].length > 0) {
+        const partnerHand = game.hands[partner.id];
+        const count = Math.ceil(partnerHand.length / 2);
+        const shuffledIdx = shuffle(partnerHand.map((_, i) => i), rng).slice(0, count);
+        const taken = shuffledIdx
+          .sort((a, b) => b - a)
+          .map((i) => partnerHand.splice(i, 1)[0]);
+        hand.push(...taken);
+        game.log.push(`${player.name} went out and takes ${count} cards from teammate ${partner.name}`);
+        // hand is no longer empty, fall through to normal card-effect handling below
+      } else {
+        finishRound(game, player);
+        return { game };
+      }
     }
+
     if (hand.length === 1) {
-      game.log.push(`${player.name} calls UNO!`);
+      game.unoPending = { playerId: player.id };
+    } else if (game.unoPending && game.unoPending.playerId === player.id) {
+      game.unoPending = null;
     }
 
     switch (card.type) {

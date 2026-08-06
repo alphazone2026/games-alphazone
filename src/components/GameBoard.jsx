@@ -2,35 +2,111 @@ import { useState } from "react";
 import { describeCard, COLORS } from "../game/uno.js";
 
 const COLOR_CLASSES = {
-  red: "bg-red-600 border-red-400",
-  yellow: "bg-yellow-500 border-yellow-300 text-slate-900",
-  green: "bg-green-600 border-green-400",
-  blue: "bg-blue-600 border-blue-400",
-  wild: "bg-gradient-to-br from-red-500 via-yellow-400 to-blue-500 border-slate-200",
+  red: "bg-gradient-to-br from-red-500 to-red-700 border-red-300",
+  yellow: "bg-gradient-to-br from-yellow-300 to-yellow-500 border-yellow-200 text-slate-900",
+  green: "bg-gradient-to-br from-green-500 to-green-700 border-green-300",
+  blue: "bg-gradient-to-br from-blue-500 to-blue-700 border-blue-300",
+  wild: "bg-gradient-to-br from-slate-800 to-slate-950 border-slate-500",
 };
 
-function Card({ card, onClick, disabled, small }) {
+const SYMBOL = { skip: "⊘", reverse: "⇄", draw2: "+2", wild: "★", wild4: "+4", back: "" };
+
+function cardLabel(card) {
+  if (card.type === "back") return "";
+  if (card.type === "wild4") return "+4";
+  if (card.type === "wild") return "★";
+  if (card.type === "draw2") return "+2";
+  if (card.type === "skip") return "⊘";
+  if (card.type === "reverse") return "⇄";
+  return String(card.value);
+}
+
+function Card({ card, onClick, disabled, size = "md" }) {
+  const dims = { sm: "w-10 h-14 text-[10px]", md: "w-16 h-24 text-lg", lg: "w-20 h-28 text-xl" }[size];
+  if (card.type === "back") {
+    return (
+      <div
+        className={`${dims} rounded-lg border-2 border-slate-200/70 shadow-lg bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center relative overflow-hidden`}
+      >
+        <div className="absolute inset-1 rounded-md border border-white/20 rotate-12 bg-gradient-to-br from-red-600/40 via-yellow-400/30 to-blue-600/40" />
+        <span className="relative font-black italic text-white/90 text-xs tracking-tighter drop-shadow">UNO</span>
+      </div>
+    );
+  }
   const cls = COLOR_CLASSES[card.color] || COLOR_CLASSES.wild;
+  const label = cardLabel(card);
+  const isWild = card.color === "wild";
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`${cls} ${small ? "w-12 h-16 text-xs" : "w-16 h-24 text-sm"} rounded-lg border-2 font-bold text-white shadow-md flex items-center justify-center text-center px-1 transition
-        ${disabled ? "opacity-40 cursor-not-allowed" : "hover:-translate-y-2 cursor-pointer"}`}
+      className={`${cls} ${dims} rounded-lg border-2 shadow-lg relative font-extrabold transition-all duration-150
+        ${disabled ? "opacity-40 grayscale cursor-not-allowed" : "hover:-translate-y-3 hover:shadow-xl cursor-pointer"}`}
     >
-      {cardLabel(card)}
+      <span className="absolute top-1 left-1.5 text-[0.6em] leading-none drop-shadow">{label}</span>
+      <span className="absolute bottom-1 right-1.5 text-[0.6em] leading-none rotate-180 drop-shadow">{label}</span>
+      <span className="absolute inset-0 flex items-center justify-center">
+        <span
+          className={`inline-flex items-center justify-center rounded-full ${
+            isWild ? "" : "bg-white/15"
+          } w-[65%] h-[75%] -rotate-12`}
+        >
+          <span className="drop-shadow">
+            {isWild ? (
+              <span className="grid grid-cols-2 gap-0.5">
+                <span className="w-2.5 h-2.5 rounded-sm bg-red-500 inline-block" />
+                <span className="w-2.5 h-2.5 rounded-sm bg-yellow-400 inline-block" />
+                <span className="w-2.5 h-2.5 rounded-sm bg-green-500 inline-block" />
+                <span className="w-2.5 h-2.5 rounded-sm bg-blue-500 inline-block" />
+              </span>
+            ) : (
+              label
+            )}
+          </span>
+        </span>
+      </span>
     </button>
   );
 }
 
-function cardLabel(card) {
-  if (card.type === "back") return "UNO";
-  if (card.type === "wild4") return "+4";
-  if (card.type === "wild") return "WILD";
-  if (card.type === "draw2") return "+2";
-  if (card.type === "skip") return "SKIP";
-  if (card.type === "reverse") return "REV";
-  return String(card.value);
+// Seat layout around an oval table, self always anchored at the bottom.
+const SEAT_POSITIONS = {
+  2: ["bottom-2 left-1/2 -translate-x-1/2", "top-2 left-1/2 -translate-x-1/2 rotate-180"],
+  3: [
+    "bottom-2 left-1/2 -translate-x-1/2",
+    "top-1/3 left-2 -translate-y-1/2",
+    "top-1/3 right-2 -translate-y-1/2",
+  ],
+  4: [
+    "bottom-2 left-1/2 -translate-x-1/2",
+    "top-1/2 left-2 -translate-y-1/2",
+    "top-2 left-1/2 -translate-x-1/2",
+    "top-1/2 right-2 -translate-y-1/2",
+  ],
+};
+
+function PlayerBadge({ player, cardCount, isCurrent, isMe, team, positionClass }) {
+  return (
+    <div className={`absolute ${positionClass} flex flex-col items-center gap-1`}>
+      <div
+        className={`px-3 py-1.5 rounded-full border text-center shadow-md backdrop-blur-sm transition-colors ${
+          isCurrent ? "border-amber-300 bg-amber-400/20 ring-2 ring-amber-300/60" : "border-white/20 bg-slate-900/60"
+        }`}
+      >
+        <div className="text-xs font-semibold text-white flex items-center gap-1 justify-center">
+          {player.isAI && <span className="text-[10px]">🤖</span>}
+          {player.name}
+          {isMe && <span className="text-indigo-300">(you)</span>}
+        </div>
+        {team != null && (
+          <div className={`text-[9px] ${team === 0 ? "text-sky-300" : "text-orange-300"}`}>
+            Team {team === 0 ? "A" : "B"}
+          </div>
+        )}
+        <div className="text-[10px] text-slate-300">{cardCount} cards</div>
+      </div>
+    </div>
+  );
 }
 
 export default function GameBoard({ room }) {
@@ -46,6 +122,14 @@ export default function GameBoard({ room }) {
   const currentPlayer = game.players[game.currentPlayerIndex];
   const isMyTurn = currentPlayer?.id === playerId;
   const legalIds = new Set(myLegalMoves.map((c) => c.id));
+  const partner =
+    game.mode === "teams" && me ? game.players.find((p) => p.team === me.team && p.id !== me.id) : null;
+  const unoPendingPlayer = game.unoPending && game.players.find((p) => p.id === game.unoPending.playerId);
+
+  // Rotate seating so "me" (or seat 0 if spectating) always renders at the bottom.
+  const meIndex = me ? game.players.findIndex((p) => p.id === playerId) : 0;
+  const seatedPlayers = game.players.map((_, i) => game.players[(meIndex + i) % game.players.length]);
+  const positions = SEAT_POSITIONS[game.players.length] || SEAT_POSITIONS[4];
 
   function playCard(card) {
     if (card.color === "wild") {
@@ -61,7 +145,7 @@ export default function GameBoard({ room }) {
   }
 
   return (
-    <div className="w-full max-w-3xl">
+    <div className="w-full max-w-4xl">
       {game.mode === "teams" && (
         <div className="text-center text-sm mb-3 text-slate-400">
           <span className="text-sky-400 font-semibold">Team A</span> (seats 1 &amp; 3) vs{" "}
@@ -69,41 +153,48 @@ export default function GameBoard({ room }) {
         </div>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
-        {game.players.map((p) => (
-          <div
+      {/* Table */}
+      <div
+        className="relative w-full mx-auto rounded-[45%] border-[10px] border-[#5c3a21] shadow-2xl"
+        style={{
+          aspectRatio: "16 / 10",
+          background:
+            "radial-gradient(ellipse at center, #1d6b3f 0%, #145030 60%, #0e3a22 100%)",
+          boxShadow: "inset 0 0 60px rgba(0,0,0,0.5), 0 20px 40px rgba(0,0,0,0.4)",
+        }}
+      >
+        {seatedPlayers.map((p, i) => (
+          <PlayerBadge
             key={p.id}
-            className={`rounded-lg border p-3 text-center ${
-              currentPlayer?.id === p.id ? "border-indigo-400 bg-indigo-900/40" : "border-slate-700 bg-slate-800"
-            }`}
-          >
-            <div className="text-sm font-semibold truncate">
-              {p.name} {p.id === playerId && "(you)"}
-            </div>
-            {game.mode === "teams" && (
-              <div className={`text-[10px] ${p.team === 0 ? "text-sky-400" : "text-orange-400"}`}>
-                Team {p.team === 0 ? "A" : "B"}
-              </div>
-            )}
-            <div className="text-xs text-slate-400 mt-1">{game.hands[p.id].length} cards</div>
-          </div>
+            player={p}
+            cardCount={game.hands[p.id].length}
+            isCurrent={currentPlayer?.id === p.id}
+            isMe={p.id === playerId}
+            team={game.mode === "teams" ? p.team : null}
+            positionClass={positions[i]}
+          />
         ))}
-      </div>
 
-      <div className="flex items-center justify-center gap-8 mb-6">
-        <div className="text-center">
-          <div className="text-xs text-slate-500 mb-1">Draw pile ({game.deck.length})</div>
-          <Card card={{ color: "wild", type: "back" }} disabled onClick={() => {}} small={false} />
-        </div>
-        <div className="text-center">
-          <div className="text-xs text-slate-500 mb-1">
-            Discard {game.activeColor && <span className={`inline-block w-2 h-2 rounded-full ml-1 ${dotColor(game.activeColor)}`} />}
+        {/* Center piles */}
+        <div className="absolute inset-0 flex items-center justify-center gap-6">
+          <div className="text-center">
+            <Card card={{ color: "wild", type: "back" }} disabled onClick={() => {}} />
+            <div className="text-[10px] text-slate-300 mt-1">{game.deck.length} left</div>
           </div>
-          <Card card={top} disabled onClick={() => {}} />
+          <div className="text-center relative">
+            <Card card={top} disabled onClick={() => {}} />
+            {game.activeColor && (
+              <span
+                className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white/70 ${dotColor(
+                  game.activeColor
+                )}`}
+              />
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="text-center text-sm mb-4 text-slate-300">
+      <div className="text-center text-sm my-4 text-slate-300">
         {isMyTurn
           ? game.pendingDraw > 0
             ? `Your turn — play a Draw card or draw ${game.pendingDraw}`
@@ -122,8 +213,24 @@ export default function GameBoard({ room }) {
         </div>
       )}
 
+      {unoPendingPlayer && !isSpectator && (
+        <div className="flex flex-col items-center gap-1 mb-4">
+          <button
+            className="rounded-full bg-red-600 hover:bg-red-500 animate-pulse px-6 py-2 text-sm font-extrabold tracking-wide shadow-lg shadow-red-900/50"
+            onClick={() => sendAction({ type: "callUno" })}
+          >
+            UNO!
+          </button>
+          <div className="text-xs text-slate-500">
+            {unoPendingPlayer.id === playerId
+              ? "Call it before someone catches you!"
+              : `${unoPendingPlayer.name} hasn't called UNO — catch them!`}
+          </div>
+        </div>
+      )}
+
       {!isSpectator && (
-        <div className="mt-6">
+        <div className="mt-4">
           <div className="text-xs text-slate-500 mb-2 text-center">Your hand</div>
           <div className="flex flex-wrap gap-2 justify-center">
             {myHand.map((card) => (
@@ -138,7 +245,18 @@ export default function GameBoard({ room }) {
         </div>
       )}
 
-      <div className="mt-8 bg-slate-800/60 rounded-lg p-3 max-h-32 overflow-y-auto text-xs text-slate-400 space-y-1">
+      {partner && (
+        <div className="mt-6">
+          <div className="text-xs text-slate-500 mb-2 text-center">{partner.name}'s hand (your teammate)</div>
+          <div className="flex flex-wrap gap-2 justify-center opacity-90">
+            {game.hands[partner.id].map((card) => (
+              <Card key={card.id} card={card} disabled onClick={() => {}} size="sm" />
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="mt-6 bg-slate-800/60 rounded-lg p-3 max-h-32 overflow-y-auto text-xs text-slate-400 space-y-1">
         {game.log.slice(-8).map((line, i) => (
           <div key={i}>{line}</div>
         ))}

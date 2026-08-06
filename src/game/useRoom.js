@@ -293,6 +293,31 @@ export function useRoom(roomCode, playerName, mode) {
     return () => clearTimeout(timer);
   }, [isHost, game, writeGame]);
 
+  // Host schedules AI reactions to a pending UNO call: the exposed player is
+  // likely to call it for themselves, others have a smaller chance to catch
+  // them, each after a random 2-4s "thinking" delay.
+  const unoSignature =
+    game && game.unoPending ? `${game.unoPending.playerId}:${game.discard.length}` : null;
+  useEffect(() => {
+    if (!isHost || !unoSignature) return;
+    const aiPlayers = game.players.filter((p) => p.isAI);
+    const pendingId = game.unoPending.playerId;
+    const timers = aiPlayers.map((ai) => {
+      const delay = 2000 + Math.random() * 2000;
+      return setTimeout(() => {
+        const current = gameRefValue.current;
+        if (!current?.unoPending) return;
+        if (`${current.unoPending.playerId}:${current.discard.length}` !== unoSignature) return;
+        const isSelf = ai.id === pendingId;
+        if (Math.random() < (isSelf ? 0.9 : 0.5)) {
+          writeGame(applyActionSafe(current, ai.id, { type: "callUno" }));
+        }
+      }, delay);
+    });
+    return () => timers.forEach(clearTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHost, unoSignature, writeGame]);
+
   return {
     playerId,
     isHost,

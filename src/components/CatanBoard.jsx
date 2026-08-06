@@ -2,13 +2,15 @@ import { useState } from "react";
 import { BOARD } from "../game/catan/geometry.js";
 import { RESOURCES, COST, playerVictoryPoints, bestRateFor } from "../game/catan/catan.js";
 
-const RESOURCE_COLOR = {
-  wood: "#2f6b3a",
-  brick: "#b0522f",
-  sheep: "#8fc94e",
-  wheat: "#e5b93a",
-  ore: "#8a8f99",
-  desert: "#d8c79a",
+// Light/dark pair per resource, used to give each hex a lit, beveled look
+// via a radial gradient instead of a flat fill.
+const RESOURCE_GRADIENT = {
+  wood: ["#3f8a4f", "#1f4e28"],
+  brick: ["#cf6a41", "#7c3517"],
+  sheep: ["#aee06a", "#5f9a2c"],
+  wheat: ["#f3d267", "#c99518"],
+  ore: ["#aab0bb", "#5c626e"],
+  desert: ["#eadfc0", "#b6a476"],
 };
 const RESOURCE_ICON = { wood: "🌲", brick: "🧱", sheep: "🐑", wheat: "🌾", ore: "⛰️" };
 
@@ -50,40 +52,64 @@ function Board({ game, mode, inSetup, onVertexClick, onEdgeClick, playerId }) {
     maxY = Math.max(...ys) + 140;
 
   return (
-    <svg viewBox={`${minX} ${minY} ${maxX - minX} ${maxY - minY}`} className="w-full max-w-2xl mx-auto">
-      {BOARD.tiles.map((t) => {
-        const resource = game.tileResource[t.id];
-        return (
-          <g key={t.id}>
-            <polygon points={hexPoints(t.x, t.y)} fill={RESOURCE_COLOR[resource]} stroke="#1e293b" strokeWidth="2" />
-            {resource !== "desert" && (
-              <text x={t.x} y={t.y - 30} textAnchor="middle" fontSize="26">
-                {RESOURCE_ICON[resource]}
-              </text>
-            )}
-            {game.tileNumber[t.id] && (
-              <g>
-                <circle cx={t.x} cy={t.y + 15} r="20" fill="#fdf6e3" stroke="#1e293b" strokeWidth="1.5" />
-                <text
-                  x={t.x}
-                  y={t.y + 23}
-                  textAnchor="middle"
-                  fontSize="20"
-                  fontWeight="bold"
-                  fill={numberColor(game.tileNumber[t.id])}
-                >
-                  {game.tileNumber[t.id]}
+    <div className="wood-frame rounded-full p-4 mx-auto" style={{ maxWidth: 620 }}>
+      <svg viewBox={`${minX} ${minY} ${maxX - minX} ${maxY - minY}`} className="w-full mx-auto block">
+        <defs>
+          {Object.entries(RESOURCE_GRADIENT).map(([r, [light, dark]]) => (
+            <radialGradient key={r} id={`hex-${r}`} cx="35%" cy="30%" r="75%">
+              <stop offset="0%" stopColor={light} />
+              <stop offset="100%" stopColor={dark} />
+            </radialGradient>
+          ))}
+          <radialGradient id="token-face" cx="35%" cy="30%" r="75%">
+            <stop offset="0%" stopColor="#fffdf6" />
+            <stop offset="100%" stopColor="#e8dcb8" />
+          </radialGradient>
+          <filter id="tile-shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#000" floodOpacity="0.45" />
+          </filter>
+        </defs>
+
+        {BOARD.tiles.map((t) => {
+          const resource = game.tileResource[t.id];
+          return (
+            <g key={t.id} filter="url(#tile-shadow)">
+              <polygon
+                points={hexPoints(t.x, t.y)}
+                fill={`url(#hex-${resource})`}
+                stroke="#1a2e1f"
+                strokeWidth="3"
+              />
+              <polygon points={hexPoints(t.x, t.y)} fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="1" />
+              {resource !== "desert" && (
+                <text x={t.x} y={t.y - 30} textAnchor="middle" fontSize="26" style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.6))" }}>
+                  {RESOURCE_ICON[resource]}
                 </text>
-              </g>
-            )}
-            {game.robberTileId === t.id && (
-              <text x={t.x} y={t.y + 5} textAnchor="middle" fontSize="30">
-                🥷
-              </text>
-            )}
-          </g>
-        );
-      })}
+              )}
+              {game.tileNumber[t.id] && (
+                <g>
+                  <circle cx={t.x} cy={t.y + 15} r="20" fill="url(#token-face)" stroke="#6b5730" strokeWidth="1.5" />
+                  <circle cx={t.x} cy={t.y + 15} r="20" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1" />
+                  <text
+                    x={t.x}
+                    y={t.y + 23}
+                    textAnchor="middle"
+                    fontSize="20"
+                    fontWeight="bold"
+                    fill={numberColor(game.tileNumber[t.id])}
+                  >
+                    {game.tileNumber[t.id]}
+                  </text>
+                </g>
+              )}
+              {game.robberTileId === t.id && (
+                <text x={t.x} y={t.y + 5} textAnchor="middle" fontSize="30" style={{ filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.7))" }}>
+                  🥷
+                </text>
+              )}
+            </g>
+          );
+        })}
 
       {BOARD.edges.map((e) => {
         const v1 = BOARD.vertices[e.v1];
@@ -160,22 +186,27 @@ function Board({ game, mode, inSetup, onVertexClick, onEdgeClick, playerId }) {
           </text>
         );
       })}
-    </svg>
+      </svg>
+    </div>
   );
 }
 
-function ResRow({ resources, onClick, disabledCheck }) {
+// Renders each resource as a little playing-card tile with a slight fanned
+// rotation, like a hand of cards laid on the table.
+function ResRow({ resources, onClick, disabledCheck, fan = true }) {
+  const mid = (RESOURCES.length - 1) / 2;
   return (
-    <div className="flex gap-2 justify-center flex-wrap">
-      {RESOURCES.map((r) => (
+    <div className="flex gap-1.5 justify-center flex-wrap py-1">
+      {RESOURCES.map((r, i) => (
         <button
           key={r}
           disabled={disabledCheck?.(r)}
           onClick={() => onClick?.(r)}
-          className="flex flex-col items-center px-2 py-1 rounded-lg bg-slate-800 border border-slate-700 disabled:opacity-30 hover:bg-slate-700 min-w-[48px]"
+          style={fan ? { transform: `rotate(${(i - mid) * 4}deg)` } : undefined}
+          className="card-face flex flex-col items-center justify-center rounded-md w-11 h-14 shrink-0 disabled:opacity-30 hover:-translate-y-1 transition-transform"
         >
-          <span className="text-lg">{RESOURCE_ICON[r]}</span>
-          <span className="text-xs">{resources[r] || 0}</span>
+          <span className="text-lg leading-none">{RESOURCE_ICON[r]}</span>
+          <span className="text-xs font-bold mt-1">{resources[r] || 0}</span>
         </button>
       ))}
     </div>
@@ -257,10 +288,9 @@ export default function CatanBoard({ room }) {
           {game.players.map((p) => (
             <div
               key={p.id}
-              className="px-3 py-1.5 rounded-full text-xs border flex items-center gap-1.5"
+              className="wood-panel px-3 py-1.5 rounded-full text-xs text-amber-50 flex items-center gap-1.5"
               style={{
-                borderColor: p.color,
-                background: current?.id === p.id ? `${p.color}33` : "transparent",
+                boxShadow: current?.id === p.id ? `0 0 0 2px ${p.color}, 0 4px 12px rgba(0,0,0,0.45)` : undefined,
               }}
             >
               <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: p.color }} />
@@ -270,7 +300,7 @@ export default function CatanBoard({ room }) {
           ))}
         </div>
 
-        <div className="text-center text-sm mb-3 text-slate-300">
+        <div className="text-center text-sm mb-3 text-amber-50/90">
           {game.status === "finished"
             ? game.log[game.log.length - 1]
             : inSetup
@@ -300,9 +330,9 @@ export default function CatanBoard({ room }) {
 
         {((game.pendingRobber && isMyTurn) || pendingKnightIndex !== null) && (
           <div className="mt-3 text-center">
-            <div className="text-xs text-slate-400 mb-2">Choose a tile to move the robber to, then confirm.</div>
+            <div className="text-xs text-emerald-50/60 mb-2">Choose a tile to move the robber to, then confirm.</div>
             <select
-              className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm mr-2"
+              className="wood-panel text-amber-50 rounded px-2 py-1 text-sm mr-2"
               value={robberTarget ?? ""}
               onChange={(e) => setRobberTarget(Number(e.target.value))}
             >
@@ -323,7 +353,7 @@ export default function CatanBoard({ room }) {
           </div>
         )}
 
-        <div className="mt-4 bg-slate-800/60 rounded-lg p-3 max-h-32 overflow-y-auto text-xs text-slate-400 space-y-1">
+        <div className="mt-4 felt-panel rounded-lg p-3 max-h-32 overflow-y-auto text-xs text-emerald-50/70 space-y-1">
           {game.log.slice(-10).map((line, i) => (
             <div key={i}>{line}</div>
           ))}
@@ -332,8 +362,8 @@ export default function CatanBoard({ room }) {
 
       {!isSpectator && (
         <div className="space-y-4">
-          <div className="bg-slate-800 rounded-xl p-3 border border-slate-700">
-            <div className="text-xs text-slate-500 mb-2">Your resources</div>
+          <div className="felt-panel rounded-xl p-3">
+            <div className="text-xs text-emerald-50/60 mb-1">Your resources</div>
             <ResRow resources={myRes} />
           </div>
 
@@ -386,25 +416,25 @@ export default function CatanBoard({ room }) {
             <div className="space-y-2">
               <div className="grid grid-cols-3 gap-2">
                 <button
-                  className={`text-xs rounded-lg py-2 border ${mode === "road" ? "bg-indigo-700 border-indigo-400" : "bg-slate-800 border-slate-700"}`}
+                  className={`text-xs rounded-lg py-2 border ${mode === "road" ? "bg-indigo-700 border-indigo-400" : "wood-panel text-amber-50/80"}`}
                   onClick={() => setMode(mode === "road" ? null : "road")}
                 >
                   Road
                 </button>
                 <button
-                  className={`text-xs rounded-lg py-2 border ${mode === "settlement" ? "bg-indigo-700 border-indigo-400" : "bg-slate-800 border-slate-700"}`}
+                  className={`text-xs rounded-lg py-2 border ${mode === "settlement" ? "bg-indigo-700 border-indigo-400" : "wood-panel text-amber-50/80"}`}
                   onClick={() => setMode(mode === "settlement" ? null : "settlement")}
                 >
                   Settlement
                 </button>
                 <button
-                  className={`text-xs rounded-lg py-2 border ${mode === "city" ? "bg-indigo-700 border-indigo-400" : "bg-slate-800 border-slate-700"}`}
+                  className={`text-xs rounded-lg py-2 border ${mode === "city" ? "bg-indigo-700 border-indigo-400" : "wood-panel text-amber-50/80"}`}
                   onClick={() => setMode(mode === "city" ? null : "city")}
                 >
                   City
                 </button>
               </div>
-              <div className="text-[10px] text-slate-500 text-center">
+              <div className="text-[10px] text-emerald-50/50 text-center">
                 Road {COST.road.wood}🌲{COST.road.brick}🧱 · Settlement 1 each · City {COST.city.wheat}🌾{COST.city.ore}⛰️
               </div>
 
@@ -416,8 +446,8 @@ export default function CatanBoard({ room }) {
               </button>
 
               {game.devCards[playerId]?.filter((c) => !c.played && c.type !== "victoryPoint").length > 0 && (
-                <div className="bg-slate-800 rounded-lg p-2 border border-slate-700">
-                  <div className="text-[10px] text-slate-500 mb-1">Play a dev card</div>
+                <div className="felt-panel rounded-lg p-2">
+                  <div className="text-[10px] text-emerald-50/50 mb-1">Play a dev card</div>
                   <div className="flex flex-wrap gap-1">
                     {game.devCards[playerId].map(
                       (c, i) =>
@@ -437,8 +467,8 @@ export default function CatanBoard({ room }) {
                 </div>
               )}
 
-              <div className="bg-slate-800 rounded-lg p-2 border border-slate-700 space-y-1">
-                <div className="text-[10px] text-slate-500">Bank trade</div>
+              <div className="felt-panel rounded-lg p-2 space-y-1">
+                <div className="text-[10px] text-emerald-50/50">Bank trade</div>
                 <div className="flex items-center gap-1 justify-center text-xs">
                   <select className="bg-slate-900 rounded px-1 py-0.5" value={tradeGive || ""} onChange={(e) => setTradeGive(e.target.value)}>
                     <option value="">give…</option>
@@ -471,7 +501,7 @@ export default function CatanBoard({ room }) {
                 </button>
               </div>
 
-              <button className="w-full text-xs bg-slate-800 border border-slate-700 rounded-lg py-1.5" onClick={() => setShowPropose(true)}>
+              <button className="w-full text-xs wood-panel text-amber-50 rounded-lg py-1.5" onClick={() => setShowPropose(true)}>
                 Propose player trade
               </button>
 
@@ -517,14 +547,14 @@ export default function CatanBoard({ room }) {
 
       {devCardChoice !== null && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-slate-800 rounded-xl p-6 border border-slate-600 text-center space-y-2">
+          <div className="card-face rounded-xl p-6 text-center space-y-2">
             {(() => {
               const card = game.devCards[playerId][devCardChoice];
               if (card.type === "knight") {
                 return (
                   <>
                     <div className="font-semibold mb-2">Play Knight?</div>
-                    <div className="text-xs text-slate-400 mb-2">You'll pick where to move the robber next.</div>
+                    <div className="text-xs text-slate-600 mb-2">You'll pick where to move the robber next.</div>
                     <button
                       className="bg-indigo-600 px-4 py-2 rounded-lg text-sm"
                       onClick={() => {
@@ -541,7 +571,7 @@ export default function CatanBoard({ room }) {
                 return (
                   <>
                     <div className="font-semibold mb-2">Play Road Building?</div>
-                    <div className="text-xs text-slate-400 mb-2">Grants 2 free roads — build them from the Road button.</div>
+                    <div className="text-xs text-slate-600 mb-2">Grants 2 free roads — build them from the Road button.</div>
                     <button
                       className="bg-indigo-600 px-4 py-2 rounded-lg text-sm"
                       onClick={() => {
@@ -604,7 +634,7 @@ export default function CatanBoard({ room }) {
               );
             })()}
             <button
-              className="text-xs text-slate-400 mt-2 block mx-auto"
+              className="text-xs text-slate-500 mt-2 block mx-auto"
               onClick={() => {
                 setDevCardChoice(null);
                 setYopFirst(null);
@@ -618,14 +648,14 @@ export default function CatanBoard({ room }) {
 
       {showPropose && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-slate-800 rounded-xl p-6 border border-slate-600 text-center space-y-3 w-80">
+          <div className="card-face rounded-xl p-6 text-center space-y-3 w-80">
             <div className="font-semibold">Propose a trade</div>
             <div>
-              <div className="text-xs text-slate-400 mb-1">You give</div>
+              <div className="text-xs text-slate-600 mb-1">You give</div>
               <ResRow resources={proposeGive} onClick={(r) => setProposeGive((p) => ({ ...p, [r]: ((p[r] || 0) + 1) % 4 }))} />
             </div>
             <div>
-              <div className="text-xs text-slate-400 mb-1">You want</div>
+              <div className="text-xs text-slate-600 mb-1">You want</div>
               <ResRow resources={proposeWant} onClick={(r) => setProposeWant((p) => ({ ...p, [r]: ((p[r] || 0) + 1) % 4 }))} />
             </div>
             <div className="flex gap-2">

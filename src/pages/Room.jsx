@@ -43,16 +43,18 @@ export default function Room() {
   const Board = BOARDS[gameId] || GameBoard;
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center px-4 py-8">
-      <div className="w-full max-w-5xl flex items-center justify-between mb-6">
-        <button className="text-slate-400 hover:text-slate-200 text-sm" onClick={() => navigate("/")}>
+    <div className="min-h-screen tabletop text-slate-100 flex flex-col items-center px-4 py-8">
+      <div className="w-full max-w-5xl flex items-center justify-between mb-6 wood-panel rounded-xl px-4 py-2.5">
+        <button className="text-amber-100/70 hover:text-amber-50 text-sm" onClick={() => navigate("/")}>
           &larr; Leave
         </button>
         <div className="text-center">
-          <div className="text-2xl font-bold tracking-widest">{roomCode}</div>
-          <div className="text-xs text-slate-500">{label}</div>
+          <div className="text-2xl font-bold tracking-widest text-amber-50" style={{ textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}>
+            {roomCode}
+          </div>
+          <div className="text-xs text-amber-100/50">{label}</div>
         </div>
-        <div className="text-xs text-slate-500 w-16 text-right">{room.connected ? "online" : "connecting…"}</div>
+        <div className="text-xs text-amber-100/50 w-16 text-right">{room.connected ? "online" : "connecting…"}</div>
       </div>
 
       {!room.game || room.game.status === "finished" ? (

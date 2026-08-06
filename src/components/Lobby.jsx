@@ -25,12 +25,12 @@ export default function Lobby({ room, gameId, variant }) {
           return (
             <div
               key={seat.seat}
-              className={`rounded-xl border p-4 flex items-center justify-between ${
-                seat.playerId ? "bg-slate-800 border-slate-600" : "bg-slate-800/40 border-dashed border-slate-700"
+              className={`rounded-xl p-4 flex items-center justify-between ${
+                seat.playerId ? "wood-panel" : "felt-panel border-dashed border-2 border-emerald-100/10"
               } ${isTeams ? (seat.seat % 2 === 0 ? "ring-1 ring-sky-500/40" : "ring-1 ring-orange-500/40") : ""}`}
             >
               <div>
-                <div className="text-xs text-slate-500">
+                <div className={`text-xs ${seat.playerId ? "text-amber-100/50" : "text-emerald-50/40"}`}>
                   Seat {seat.seat + 1}
                   {isTeams && (
                     <span className={seat.seat % 2 === 0 ? "text-sky-400" : "text-orange-400"}>
@@ -39,8 +39,8 @@ export default function Lobby({ room, gameId, variant }) {
                     </span>
                   )}
                 </div>
-                <div className="font-semibold">
-                  {seat.name || <span className="text-slate-500">Empty</span>}
+                <div className={`font-semibold ${seat.playerId ? "text-amber-50" : "text-emerald-50/40"}`}>
+                  {seat.name || "Empty"}
                   {seat.isAI && <span className="ml-2 text-xs bg-slate-700 px-2 py-0.5 rounded-full">AI</span>}
                   {isMe && <span className="ml-2 text-xs bg-indigo-600 px-2 py-0.5 rounded-full">You</span>}
                 </div>
@@ -78,21 +78,21 @@ export default function Lobby({ room, gameId, variant }) {
       </div>
 
       <div className="text-center space-y-2">
-        {!mySeat && <p className="text-slate-400 text-sm">Pick a seat to join the game.</p>}
+        {!mySeat && <p className="text-emerald-50/60 text-sm">Pick a seat to join the game.</p>}
         {isTeams && takenCount < 4 && (
-          <p className="text-slate-400 text-sm">Uno Teams needs all 4 seats filled (real players or AI).</p>
+          <p className="text-emerald-50/60 text-sm">Uno Teams needs all 4 seats filled (real players or AI).</p>
         )}
         {gameId === "flip7" && takenCount < 3 && (
-          <p className="text-slate-400 text-sm">Flip 7 needs at least 3 players (real players or AI).</p>
+          <p className="text-emerald-50/60 text-sm">Flip 7 needs at least 3 players (real players or AI).</p>
         )}
         {gameId === "battleship" && takenCount < 2 && (
-          <p className="text-slate-400 text-sm">Battleship needs at least 2 players (real players or AI).</p>
+          <p className="text-emerald-50/60 text-sm">Battleship needs at least 2 players (real players or AI).</p>
         )}
         {gameId === "catan" && takenCount < 3 && (
-          <p className="text-slate-400 text-sm">Catan needs 3-4 players (real players or AI).</p>
+          <p className="text-emerald-50/60 text-sm">Catan needs 3-4 players (real players or AI).</p>
         )}
         {canStart && !isHost && (
-          <p className="text-slate-400 text-sm">Waiting for the room host to start the game.</p>
+          <p className="text-emerald-50/60 text-sm">Waiting for the room host to start the game.</p>
         )}
         {isHost && (
           <button

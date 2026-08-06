@@ -90,11 +90,11 @@ function PlayerBadge({ player, cardCount, isCurrent, isMe, team, positionClass }
   return (
     <div className={`absolute ${positionClass} flex flex-col items-center gap-1`}>
       <div
-        className={`px-3 py-1.5 rounded-full border text-center shadow-md backdrop-blur-sm transition-colors ${
-          isCurrent ? "border-amber-300 bg-amber-400/20 ring-2 ring-amber-300/60" : "border-white/20 bg-slate-900/60"
+        className={`wood-panel px-3 py-1.5 rounded-full text-center transition-shadow ${
+          isCurrent ? "ring-2 ring-amber-300/70" : ""
         }`}
       >
-        <div className="text-xs font-semibold text-white flex items-center gap-1 justify-center">
+        <div className="text-xs font-semibold text-amber-50 flex items-center gap-1 justify-center">
           {player.isAI && <span className="text-[10px]">🤖</span>}
           {player.name}
           {isMe && <span className="text-indigo-300">(you)</span>}
@@ -104,7 +104,7 @@ function PlayerBadge({ player, cardCount, isCurrent, isMe, team, positionClass }
             Team {team === 0 ? "A" : "B"}
           </div>
         )}
-        <div className="text-[10px] text-slate-300">{cardCount} cards</div>
+        <div className="text-[10px] text-amber-100/60">{cardCount} cards</div>
       </div>
     </div>
   );
@@ -148,54 +148,54 @@ export default function GameBoard({ room }) {
   return (
     <div className="w-full max-w-4xl">
       {game.mode === "teams" && (
-        <div className="text-center text-sm mb-3 text-slate-400">
+        <div className="text-center text-sm mb-3 text-emerald-50/70">
           <span className="text-sky-400 font-semibold">Team A</span> (seats 1 &amp; 3) vs{" "}
           <span className="text-orange-400 font-semibold">Team B</span> (seats 2 &amp; 4)
         </div>
       )}
 
       {/* Table */}
-      <div
-        className="relative w-full mx-auto rounded-[45%] border-[10px] border-[#5c3a21] shadow-2xl"
-        style={{
-          aspectRatio: "16 / 10",
-          background:
-            "radial-gradient(ellipse at center, #1d6b3f 0%, #145030 60%, #0e3a22 100%)",
-          boxShadow: "inset 0 0 60px rgba(0,0,0,0.5), 0 20px 40px rgba(0,0,0,0.4)",
-        }}
-      >
-        {seatedPlayers.map((p, i) => (
-          <PlayerBadge
-            key={p.id}
-            player={p}
-            cardCount={game.hands[p.id].length}
-            isCurrent={currentPlayer?.id === p.id}
-            isMe={p.id === playerId}
-            team={game.mode === "teams" ? p.team : null}
-            positionClass={positions[i]}
-          />
-        ))}
+      <div className="relative w-full mx-auto rounded-[45%] wood-frame" style={{ aspectRatio: "16 / 10" }}>
+        <div
+          className="absolute inset-[10px] rounded-[45%]"
+          style={{
+            background: "radial-gradient(ellipse at center, #1d6b3f 0%, #145030 60%, #0e3a22 100%)",
+            boxShadow: "inset 0 0 60px rgba(0,0,0,0.5)",
+          }}
+        >
+          {seatedPlayers.map((p, i) => (
+            <PlayerBadge
+              key={p.id}
+              player={p}
+              cardCount={game.hands[p.id].length}
+              isCurrent={currentPlayer?.id === p.id}
+              isMe={p.id === playerId}
+              team={game.mode === "teams" ? p.team : null}
+              positionClass={positions[i]}
+            />
+          ))}
 
-        {/* Center piles */}
-        <div className="absolute inset-0 flex items-center justify-center gap-6">
-          <div className="text-center">
-            <Card card={{ color: "wild", type: "back" }} disabled onClick={() => {}} />
-            <div className="text-[10px] text-slate-300 mt-1">{game.deck.length} left</div>
-          </div>
-          <div className="text-center relative">
-            <Card card={top} disabled onClick={() => {}} />
-            {game.activeColor && (
-              <span
-                className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white/70 ${dotColor(
-                  game.activeColor
-                )}`}
-              />
-            )}
+          {/* Center piles */}
+          <div className="absolute inset-0 flex items-center justify-center gap-6">
+            <div className="text-center">
+              <Card card={{ color: "wild", type: "back" }} disabled onClick={() => {}} />
+              <div className="text-[10px] text-emerald-50/70 mt-1">{game.deck.length} left</div>
+            </div>
+            <div className="text-center relative">
+              <Card card={top} disabled onClick={() => {}} />
+              {game.activeColor && (
+                <span
+                  className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white/70 ${dotColor(
+                    game.activeColor
+                  )}`}
+                />
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="text-center text-sm my-4 text-slate-300">
+      <div className="text-center text-sm my-4 text-amber-50/90">
         {isMyTurn
           ? game.pendingDraw > 0
             ? `Your turn — play a Draw card or draw ${game.pendingDraw}`
@@ -206,7 +206,7 @@ export default function GameBoard({ room }) {
       {isMyTurn && (
         <div className="flex justify-center mb-4">
           <button
-            className="rounded-lg bg-slate-700 hover:bg-slate-600 px-4 py-2 text-sm font-semibold"
+            className="wood-panel text-amber-50 rounded-lg px-4 py-2 text-sm font-semibold hover:brightness-110"
             onClick={() => sendAction({ type: "draw" })}
           >
             {game.pendingDraw > 0 ? `Draw ${game.pendingDraw}` : "Draw a card"}
@@ -222,7 +222,7 @@ export default function GameBoard({ room }) {
           >
             UNO!
           </button>
-          <div className="text-xs text-slate-500">
+          <div className="text-xs text-emerald-50/50">
             {unoPendingPlayer.id === playerId
               ? "Call it before someone catches you!"
               : `${unoPendingPlayer.name} hasn't called UNO — catch them!`}
@@ -232,7 +232,7 @@ export default function GameBoard({ room }) {
 
       {!isSpectator && (
         <div className="mt-4">
-          <div className="text-xs text-slate-500 mb-2 text-center">Your hand</div>
+          <div className="text-xs text-emerald-50/50 mb-2 text-center">Your hand</div>
           <div className="flex flex-wrap gap-2 justify-center">
             {myHand.map((card) => (
               <Card
@@ -249,7 +249,7 @@ export default function GameBoard({ room }) {
 
       {partner && (
         <div className="mt-6">
-          <div className="text-xs text-slate-500 mb-2 text-center">{partner.name}'s hand (your teammate)</div>
+          <div className="text-xs text-emerald-50/50 mb-2 text-center">{partner.name}'s hand (your teammate)</div>
           <div className="flex flex-wrap gap-2 justify-center opacity-90">
             {game.hands[partner.id].map((card) => (
               <Card key={card.id} card={card} disabled onClick={() => {}} size="sm" />
@@ -258,7 +258,7 @@ export default function GameBoard({ room }) {
         </div>
       )}
 
-      <div className="mt-6 bg-slate-800/60 rounded-lg p-3 max-h-32 overflow-y-auto text-xs text-slate-400 space-y-1">
+      <div className="mt-6 felt-panel rounded-lg p-3 max-h-32 overflow-y-auto text-xs text-emerald-50/70 space-y-1">
         {game.log.slice(-8).map((line, i) => (
           <div key={i}>{line}</div>
         ))}
@@ -266,9 +266,9 @@ export default function GameBoard({ room }) {
 
       {pendingWildCardId && (
         <div className="fixed inset-0 bg-black/25 backdrop-blur-[1px] flex items-center justify-center z-50">
-          <div className="bg-slate-800 rounded-xl p-6 text-center shadow-2xl border border-slate-600">
+          <div className="card-face rounded-xl p-6 text-center shadow-2xl">
             <div className="mb-1 font-semibold">Choose a color</div>
-            <div className="flex items-center justify-center gap-2 mb-4 text-xs text-slate-400">
+            <div className="flex items-center justify-center gap-2 mb-4 text-xs text-slate-500">
               <span>Current top card:</span>
               <Card card={top} disabled size="sm" />
               {game.activeColor && (

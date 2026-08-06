@@ -20,7 +20,7 @@ function GridHeader() {
   return (
     <div className="flex ml-6">
       {COLS.map((c) => (
-        <div key={c} className="w-7 h-5 text-[10px] text-slate-500 flex items-center justify-center">
+        <div key={c} className="w-7 h-5 text-[10px] text-amber-100/60 flex items-center justify-center">
           {c}
         </div>
       ))}
@@ -30,11 +30,11 @@ function GridHeader() {
 
 function Grid({ board, revealShips, onCellClick, disabled }) {
   return (
-    <div className="inline-block">
+    <div className="wood-frame rounded-lg p-2.5 inline-block">
       <GridHeader />
       {board.grid.map((row, y) => (
         <div key={y} className="flex items-center">
-          <div className="w-6 h-7 text-[10px] text-slate-500 flex items-center justify-center">{y + 1}</div>
+          <div className="w-6 h-7 text-[10px] text-amber-100/60 flex items-center justify-center">{y + 1}</div>
           {row.map((cell, x) => {
             const isShip = cell === "ship" && revealShips;
             const isHit = cell === "hit";
@@ -45,9 +45,9 @@ function Grid({ board, revealShips, onCellClick, disabled }) {
                 key={x}
                 disabled={!clickable}
                 onClick={() => onCellClick?.(x, y)}
-                className={`w-7 h-7 border border-slate-700 flex items-center justify-center text-xs
-                  ${isHit ? "bg-red-600" : isMiss ? "bg-slate-600" : isShip ? "bg-slate-500" : "bg-sky-900/60"}
-                  ${clickable ? "hover:bg-sky-700 cursor-pointer" : ""}
+                className={`w-7 h-7 border border-black/30 flex items-center justify-center text-xs
+                  ${isHit ? "bg-red-600" : isMiss ? "bg-slate-500" : isShip ? "bg-slate-400" : "bg-gradient-to-br from-sky-700 to-sky-950"}
+                  ${clickable ? "hover:brightness-125 cursor-pointer" : ""}
                 `}
               >
                 {isHit ? "✹" : isMiss ? "•" : ""}
@@ -71,11 +71,11 @@ function PlacementGrid({ placedShips, nextLength, horizontal, onPlace }) {
   const previewSet = new Set(previewCells.map(([x, y]) => `${x},${y}`));
 
   return (
-    <div className="inline-block" onMouseLeave={() => setHover(null)}>
+    <div className="wood-frame rounded-lg p-2.5 inline-block" onMouseLeave={() => setHover(null)}>
       <GridHeader />
       {Array.from({ length: GRID_SIZE }, (_, y) => (
         <div key={y} className="flex items-center">
-          <div className="w-6 h-7 text-[10px] text-slate-500 flex items-center justify-center">{y + 1}</div>
+          <div className="w-6 h-7 text-[10px] text-amber-100/60 flex items-center justify-center">{y + 1}</div>
           {Array.from({ length: GRID_SIZE }, (_, x) => {
             const key = `${x},${y}`;
             const isShip = occupied.has(key);
@@ -90,15 +90,15 @@ function PlacementGrid({ placedShips, nextLength, horizontal, onPlace }) {
                   if (placementInvalid(cells, placedShips)) return;
                   onPlace(x, y);
                 }}
-                className={`w-7 h-7 border border-slate-700 flex items-center justify-center text-xs
+                className={`w-7 h-7 border border-black/30 flex items-center justify-center text-xs
                   ${
                     isShip
-                      ? "bg-slate-500"
+                      ? "bg-slate-400"
                       : isPreview
                       ? previewInvalid
                         ? "bg-red-700/70"
                         : "bg-emerald-700/70"
-                      : "bg-sky-900/60"
+                      : "bg-gradient-to-br from-sky-700 to-sky-950"
                   }
                   ${nextLength ? "hover:cursor-pointer" : ""}
                 `}
@@ -121,18 +121,18 @@ function FleetPlacement({ room }) {
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className="text-sm text-slate-300">Deploy your fleet — click a cell to place the highlighted ship</div>
+      <div className="text-sm text-amber-50/90">Deploy your fleet — click a cell to place the highlighted ship</div>
 
       <div className="flex gap-2 text-xs">
         {FLEET.map((len, i) => (
           <span
             key={i}
-            className={`px-2 py-1 rounded border ${
+            className={`px-2 py-1 rounded wood-panel ${
               i < placedShips.length
-                ? "border-slate-700 bg-slate-800 line-through text-slate-600"
+                ? "line-through text-amber-100/30"
                 : i === placedShips.length
-                ? "border-amber-400 bg-amber-400/20 text-slate-200"
-                : "border-slate-700 text-slate-400"
+                ? "ring-2 ring-amber-300/70 text-amber-50"
+                : "text-amber-100/70"
             }`}
           >
             {len}
@@ -150,21 +150,21 @@ function FleetPlacement({ room }) {
       <div className="flex flex-wrap gap-2 justify-center">
         <button
           onClick={() => setHorizontal((h) => !h)}
-          className="text-xs px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700"
+          className="text-xs px-3 py-1.5 rounded-lg wood-panel text-amber-50 hover:brightness-110"
         >
           Rotate ({horizontal ? "horizontal" : "vertical"})
         </button>
         <button
           disabled={placedShips.length === 0}
           onClick={() => setPlacedShips((s) => s.slice(0, -1))}
-          className="text-xs px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="text-xs px-3 py-1.5 rounded-lg wood-panel text-amber-50 hover:brightness-110 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           Undo
         </button>
         <button
           disabled={placedShips.length === 0}
           onClick={() => setPlacedShips([])}
-          className="text-xs px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="text-xs px-3 py-1.5 rounded-lg wood-panel text-amber-50 hover:brightness-110 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           Reset
         </button>
@@ -177,7 +177,7 @@ function FleetPlacement({ room }) {
         </button>
       </div>
 
-      <div className="text-xs text-slate-500">
+      <div className="text-xs text-emerald-50/60">
         {readyPlayers.length}/{game.players.length} ready
         {readyPlayers.length > 0 && ` — ${readyPlayers.map((p) => p.name).join(", ")}`}
       </div>
@@ -196,8 +196,8 @@ function PlacingPhase({ room }) {
         {game.players.map((p) => (
           <div
             key={p.id}
-            className={`px-3 py-1.5 rounded-full text-xs border ${
-              game.ready[p.id] ? "border-emerald-400 bg-emerald-400/20" : "border-slate-600 bg-slate-800"
+            className={`wood-panel px-3 py-1.5 rounded-full text-xs text-amber-50 ${
+              game.ready[p.id] ? "ring-2 ring-emerald-400/70" : ""
             }`}
           >
             {p.isAI && "🤖 "}
@@ -207,9 +207,9 @@ function PlacingPhase({ room }) {
       </div>
 
       {isSpectator ? (
-        <div className="text-sm text-slate-400">Waiting for players to deploy their fleets…</div>
+        <div className="text-sm text-emerald-50/70">Waiting for players to deploy their fleets…</div>
       ) : game.ready[playerId] ? (
-        <div className="text-sm text-slate-400">Fleet deployed — waiting for other players…</div>
+        <div className="text-sm text-emerald-50/70">Fleet deployed — waiting for other players…</div>
       ) : (
         <FleetPlacement room={room} />
       )}
@@ -241,12 +241,8 @@ export default function BattleshipBoard({ room }) {
         {game.players.map((p) => (
           <div
             key={p.id}
-            className={`px-3 py-1.5 rounded-full text-xs border ${
-              !game.alive[p.id]
-                ? "border-slate-700 bg-slate-800 text-slate-500 line-through"
-                : current?.id === p.id
-                ? "border-amber-400 bg-amber-400/20"
-                : "border-slate-600 bg-slate-800"
+            className={`wood-panel px-3 py-1.5 rounded-full text-xs text-amber-50 ${
+              !game.alive[p.id] ? "opacity-50 line-through" : current?.id === p.id ? "ring-2 ring-amber-300/70" : ""
             }`}
           >
             {p.isAI && "🤖 "}
@@ -255,7 +251,7 @@ export default function BattleshipBoard({ room }) {
         ))}
       </div>
 
-      <div className="text-center text-sm mb-4 text-slate-300">
+      <div className="text-center text-sm mb-4 text-amber-50/90">
         {game.status === "finished"
           ? game.log[game.log.length - 1]
           : isMyTurn
@@ -268,7 +264,7 @@ export default function BattleshipBoard({ room }) {
           <div className="flex flex-wrap gap-6 justify-center mb-8">
             {opponents.map((p) => (
               <div key={p.id} className={`flex flex-col items-center ${!game.alive[p.id] ? "opacity-40" : ""}`}>
-                <div className="text-xs text-slate-500 mb-2">
+                <div className="text-xs text-amber-100/60 mb-2">
                   {p.name}
                   {!game.alive[p.id] && " (sunk)"}
                 </div>
@@ -283,13 +279,13 @@ export default function BattleshipBoard({ room }) {
           </div>
 
           <div className="flex flex-col items-center mb-6">
-            <div className="text-xs text-slate-500 mb-2">Your fleet</div>
+            <div className="text-xs text-amber-100/60 mb-2">Your fleet</div>
             <Grid board={game.boards[playerId]} revealShips />
           </div>
         </>
       )}
 
-      <div className="mt-4 bg-slate-800/60 rounded-lg p-3 max-h-40 overflow-y-auto text-xs text-slate-400 space-y-1">
+      <div className="mt-4 felt-panel rounded-lg p-3 max-h-40 overflow-y-auto text-xs text-emerald-50/70 space-y-1">
         {game.log.slice(-10).map((line, i) => (
           <div key={i}>{line}</div>
         ))}

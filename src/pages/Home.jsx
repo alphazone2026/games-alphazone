@@ -21,15 +21,17 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center px-4 py-10">
-      <h1 className="text-4xl font-bold mb-1 tracking-tight">Alphazone Games</h1>
-      <p className="text-slate-400 mb-8">Card and board games, straight in your browser.</p>
+    <div className="min-h-screen tabletop text-slate-100 flex flex-col items-center px-4 py-10">
+      <h1 className="text-4xl font-bold mb-1 tracking-tight text-amber-50" style={{ textShadow: "0 2px 6px rgba(0,0,0,0.5)" }}>
+        Alphazone Games
+      </h1>
+      <p className="text-emerald-50/60 mb-8">Card and board games, straight in your browser.</p>
 
-      <div className="w-full max-w-md bg-slate-800 rounded-xl p-6 shadow-xl space-y-6">
+      <div className="w-full max-w-md wood-panel rounded-xl p-6 space-y-6">
         <div>
-          <label className="block text-sm text-slate-400 mb-1">Your name</label>
+          <label className="block text-sm text-amber-100/60 mb-1">Your name</label>
           <input
-            className="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full rounded-lg bg-black/30 border border-white/10 text-amber-50 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={16}
@@ -38,7 +40,7 @@ export default function Home() {
         </div>
 
         <div>
-          <div className="text-sm text-slate-400 mb-2">Create a new game</div>
+          <div className="text-sm text-amber-100/60 mb-2">Create a new game</div>
           <div className="grid grid-cols-2 gap-3">
             <button
               className="rounded-lg bg-indigo-600 hover:bg-indigo-500 py-3 font-semibold transition"
@@ -78,11 +80,11 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="border-t border-slate-700 pt-5">
-          <div className="text-sm text-slate-400 mb-2">Join a room with a code</div>
+        <div className="border-t border-white/10 pt-5">
+          <div className="text-sm text-amber-100/60 mb-2">Join a room with a code</div>
           <div className="flex gap-2">
             <input
-              className="flex-1 rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="flex-1 rounded-lg bg-black/30 border border-white/10 text-amber-50 px-3 py-2 uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500"
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
               maxLength={5}
@@ -96,7 +98,7 @@ export default function Home() {
               Join
             </button>
           </div>
-          <p className="text-xs text-slate-500 mt-2">
+          <p className="text-xs text-amber-100/40 mt-2">
             The room's game and mode are set by whoever created it — you'll join whatever they picked.
           </p>
         </div>
@@ -112,7 +114,7 @@ export default function Home() {
         </Link>
       </div>
 
-      <p className="text-slate-600 text-xs mt-10">More games coming soon.</p>
+      <p className="text-emerald-50/30 text-xs mt-10">More games coming soon.</p>
     </div>
   );
 }

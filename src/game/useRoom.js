@@ -17,7 +17,7 @@ import { chooseAIAction } from "./ai.js";
 import * as flip7 from "./flip7.js";
 import { chooseFlip7Action } from "./flip7ai.js";
 import * as battleship from "./battleship.js";
-import { chooseBattleshipAction } from "./battleshipai.js";
+import { chooseBattleshipAction, chooseBattleshipPlacement } from "./battleshipai.js";
 import * as catan from "./catan/catan.js";
 import { chooseCatanAction, chooseCatanDiscard, chooseCatanTradeResponse } from "./catan/catanai.js";
 
@@ -82,6 +82,7 @@ const ENGINES = {
     applyAction: battleship.applyAction,
     legalMoves: battleship.legalTargets,
     chooseAI: chooseBattleshipAction,
+    chooseAIPlacement: chooseBattleshipPlacement,
     canStart: (taken) => taken.length >= battleship.MIN_PLAYERS,
     maxSeats: battleship.MAX_PLAYERS,
   },
@@ -362,6 +363,25 @@ export function useRoom(roomCode, playerName, { gameId = "uno", variant } = {}) 
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomCode]);
+
+  // Host: AI seats auto-deploy their fleet as soon as a "placing" phase
+  // starts (currently only Battleship uses this status).
+  useEffect(() => {
+    if (!isHost || !game || game.status !== "placing" || !engine.chooseAIPlacement) return;
+    const aiToPlace = game.players.filter((p) => p.isAI && !game.ready[p.id]);
+    if (aiToPlace.length === 0) return;
+    const timers = aiToPlace.map((ai) =>
+      setTimeout(() => {
+        const current = gameRefValue.current;
+        if (!current || current.status !== "placing" || current.ready[ai.id]) return;
+        const action = engine.chooseAIPlacement(current, ai.id);
+        if (!action) return;
+        writeGame(applyActionSafe(engine, current, ai.id, action));
+      }, 500 + Math.random() * 800)
+    );
+    return () => timers.forEach(clearTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHost, game, writeGame]);
 
   // Host drives AI turns.
   useEffect(() => {

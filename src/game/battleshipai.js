@@ -1,4 +1,10 @@
-import { GRID_SIZE, legalTargets } from "./battleship.js";
+import { GRID_SIZE, legalTargets, randomFleetPlacement } from "./battleship.js";
+
+// AI seats deploy immediately with a random valid fleet, same submission
+// shape a human's placement UI sends.
+export function chooseBattleshipPlacement() {
+  return { type: "placeFleet", ships: randomFleetPlacement() };
+}
 
 // Simple hunt/target AI: pick the weakest-looking alive opponent (fewest
 // unsunk cells left), then fire randomly until a hit lands, after which it

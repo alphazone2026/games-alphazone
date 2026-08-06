@@ -2,8 +2,13 @@
 // player gets their own grid, and on your turn you pick any still-alive
 // opponent and a cell to fire at. Last player with an unsunk fleet wins.
 //
-// Simplification vs. classic 1v1 Battleship: fleets are auto-placed (no
-// manual ship-placement UI) and a hit does not grant an extra turn.
+// Games start in a "placing" phase: each player deploys their own fleet
+// (submitted as one "placeFleet" action once they've positioned every
+// ship) and the game moves to "playing" once everyone is ready. AI seats
+// auto-place a random valid fleet the same way a human submits one.
+//
+// Simplification vs. classic 1v1 Battleship: a hit does not grant an extra
+// turn.
 
 const GRID_SIZE = 8;
 const FLEET = [4, 3, 3, 2, 2];
@@ -35,7 +40,9 @@ function fits(grid, cells) {
   return cells.every(([x, y]) => x >= 0 && x < GRID_SIZE && y >= 0 && y < GRID_SIZE && grid[y][x] === "empty");
 }
 
-function placeFleet(rng) {
+// A random valid fleet, in the same shape a client submits via "placeFleet"
+// ({ x, y, length, horizontal } per ship) - used to auto-deploy AI seats.
+export function randomFleetPlacement(rng = Math.random) {
   const grid = emptyGrid();
   const ships = [];
   for (const len of FLEET) {
@@ -47,34 +54,58 @@ function placeFleet(rng) {
       const cells = cellsFor(x, y, len, horizontal);
       if (fits(grid, cells)) {
         cells.forEach(([cx, cy]) => (grid[cy][cx] = "ship"));
-        ships.push({ cells, hits: 0, sunk: false });
+        ships.push({ x, y, length: len, horizontal });
         placed = true;
       }
     }
+  }
+  return ships;
+}
+
+// Validates a client-submitted fleet (exactly one ship per FLEET length,
+// all in-bounds, none overlapping) and builds the board it produces, or
+// returns null if the submission is invalid.
+function validateFleetPlacement(shipsInput) {
+  if (!Array.isArray(shipsInput) || shipsInput.length !== FLEET.length) return null;
+  const remaining = FLEET.slice();
+  const grid = emptyGrid();
+  const ships = [];
+  for (const s of shipsInput) {
+    if (!s || typeof s.x !== "number" || typeof s.y !== "number" || typeof s.length !== "number") return null;
+    const idx = remaining.indexOf(s.length);
+    if (idx === -1) return null;
+    remaining.splice(idx, 1);
+    const cells = cellsFor(s.x, s.y, s.length, !!s.horizontal);
+    if (!fits(grid, cells)) return null;
+    cells.forEach(([cx, cy]) => (grid[cy][cx] = "ship"));
+    ships.push({ cells, hits: 0, sunk: false });
   }
   return { grid, ships };
 }
 
 // players: [{ id, name, isAI }]
-export function createGame({ players, rng = Math.random }) {
+export function createGame({ players }) {
   if (players.length < MIN_PLAYERS || players.length > MAX_PLAYERS) {
     throw new Error(`Battleship needs ${MIN_PLAYERS}-${MAX_PLAYERS} players`);
   }
   const boards = {};
+  const ready = {};
   const alive = {};
   for (const p of players) {
-    boards[p.id] = placeFleet(rng);
+    boards[p.id] = { grid: emptyGrid(), ships: [] };
+    ready[p.id] = false;
     alive[p.id] = true;
   }
   return {
     gameId: "battleship",
     players,
     boards,
+    ready,
     alive,
     currentPlayerIndex: 0,
-    status: "playing",
+    status: "placing",
     winnerId: null,
-    log: ["Game started — fleets deployed"],
+    log: ["Deploy your fleet — game starts once everyone is ready"],
   };
 }
 
@@ -98,8 +129,26 @@ export function legalTargets(game, playerId) {
   return game.players.filter((p) => p.id !== playerId && game.alive[p.id]).map((p) => p.id);
 }
 
-// action: { type: 'fire', targetPlayerId, x, y }
+// action: { type: 'placeFleet', ships: [{x,y,length,horizontal}, ...] }
+//       | { type: 'fire', targetPlayerId, x, y }
 export function applyAction(game, playerId, action) {
+  if (game.status === "placing") {
+    if (action.type !== "placeFleet") throw new Error("Deploy your fleet first");
+    if (game.ready[playerId]) throw new Error("Fleet already deployed");
+    const board = validateFleetPlacement(action.ships);
+    if (!board) throw new Error("Invalid fleet placement");
+    game.boards[playerId] = board;
+    game.ready[playerId] = true;
+    const player = game.players.find((p) => p.id === playerId);
+    game.log.push(`${player.name} has deployed their fleet`);
+    if (game.players.every((p) => game.ready[p.id])) {
+      game.status = "playing";
+      game.currentPlayerIndex = 0;
+      game.log.push("All fleets deployed — battle begins!");
+    }
+    return { game };
+  }
+
   if (game.status !== "playing") throw new Error("Game already finished");
   const player = game.players[game.currentPlayerIndex];
   if (player.id !== playerId) throw new Error("Not this player's turn");

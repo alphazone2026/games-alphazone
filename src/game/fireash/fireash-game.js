@@ -283,10 +283,17 @@ const WARPS = [
   { map: 42, x: 3,  y: 24, dir: "down", toMap: 33, toX: 23, toY: 28 },
   { map: 33, x: 44, y: 19, dir: "up",   toMap: 42, toX: 32, toY: 27 },
   { map: 42, x: 32, y: 28, dir: "down", toMap: 33, toX: 44, toY: 19 },
-  // Oak's Lab stairs - CONFIRMED by direct testing.
-  { map: 42, x: 38, y: 19, dir: "left", toMap: 48, toX: 14, toY: 4 },
-  // Lab's return stairs - NOT independently confirmed, placed by symmetry
-  // with the pair above (approach from the right, step left).
+  // Oak's Lab stairs. The stairs graphic itself (37-38,18-20) is fully
+  // impassable railing/steps in the real per-tile data - the event tile at
+  // (38,19) is real, but every tile adjacent to it is ALSO impassable, so
+  // it can never actually be reached by walking (confirmed stuck in
+  // testing - see screenshot report). Real RPG Maker "player touch" events
+  // fire on BUMPING the tile from an adjacent walkable square, not on
+  // standing on the (impassable) event tile itself - so the warp is
+  // triggered from the last walkable tile before the stairs, (36,19),
+  // walking right into them, matching how the door warps already work.
+  { map: 42, x: 36, y: 19, dir: "right", toMap: 48, toX: 14, toY: 4 },
+  // Lab's return stairs - own tile is walkable, so this one already worked.
   { map: 48, x: 14, y: 3,  dir: "left", toMap: 42, toX: 36, toY: 19 },
   // Player's house internal 2nd floor connector - NOT independently
   // confirmed; approach tiles guessed one step off the real event

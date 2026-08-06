@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { GRID_SIZE } from "../game/battleship.js";
 
 const COLS = Array.from({ length: GRID_SIZE }, (_, i) => String.fromCharCode(65 + i));
@@ -43,7 +42,6 @@ function Grid({ board, revealShips, onCellClick, disabled }) {
 
 export default function BattleshipBoard({ room }) {
   const { game, playerId, sendAction } = room;
-  const [selectedTargetId, setSelectedTargetId] = useState(null);
 
   if (!game) return null;
 
@@ -52,9 +50,8 @@ export default function BattleshipBoard({ room }) {
   const current = game.players[game.currentPlayerIndex];
   const isMyTurn = current?.id === playerId && game.status === "playing" && game.alive[playerId];
   const opponents = game.players.filter((p) => p.id !== playerId);
-  const targetId = selectedTargetId && game.alive[selectedTargetId] ? selectedTargetId : opponents.find((p) => game.alive[p.id])?.id;
 
-  function fire(x, y) {
+  function fire(targetId, x, y) {
     if (!isMyTurn || !targetId) return;
     sendAction({ type: "fire", targetPlayerId: targetId, x, y });
   }
@@ -89,31 +86,22 @@ export default function BattleshipBoard({ room }) {
 
       {!isSpectator && (
         <>
-          {opponents.length > 1 && (
-            <div className="flex flex-wrap gap-2 justify-center mb-4">
-              {opponents.map((p) => (
-                <button
-                  key={p.id}
-                  disabled={!game.alive[p.id]}
-                  onClick={() => setSelectedTargetId(p.id)}
-                  className={`text-xs px-3 py-1.5 rounded-lg border disabled:opacity-30 disabled:cursor-not-allowed ${
-                    targetId === p.id ? "border-indigo-400 bg-indigo-900/40" : "border-slate-700 bg-slate-800"
-                  }`}
-                >
+          <div className="flex flex-wrap gap-6 justify-center mb-8">
+            {opponents.map((p) => (
+              <div key={p.id} className={`flex flex-col items-center ${!game.alive[p.id] ? "opacity-40" : ""}`}>
+                <div className="text-xs text-slate-500 mb-2">
                   {p.name}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {targetId && (
-            <div className="flex flex-col items-center mb-8">
-              <div className="text-xs text-slate-500 mb-2">
-                Firing at {game.players.find((p) => p.id === targetId)?.name}
+                  {!game.alive[p.id] && " (sunk)"}
+                </div>
+                <Grid
+                  board={game.boards[p.id]}
+                  revealShips={false}
+                  onCellClick={(x, y) => fire(p.id, x, y)}
+                  disabled={!isMyTurn || !game.alive[p.id]}
+                />
               </div>
-              <Grid board={game.boards[targetId]} revealShips={false} onCellClick={fire} disabled={!isMyTurn} />
-            </div>
-          )}
+            ))}
+          </div>
 
           <div className="flex flex-col items-center mb-6">
             <div className="text-xs text-slate-500 mb-2">Your fleet</div>

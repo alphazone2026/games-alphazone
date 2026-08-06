@@ -77,6 +77,32 @@ Upload the contents of `dist/` to the subdomain's document root.
 
 More games planned — see the game selection screen on the home page.
 
+## Fire Ash (single-player pilot)
+
+`/fireash` is a from-scratch Phaser 3 recreation of the opening of the RPG Maker XP
+fangame "Fire Ash" (Professor Oak intro → gender select → name entry → walk to Oak's
+Lab), using real assets/tile data extracted from the original game, not placeholders.
+
+- Game code: `src/game/fireash/fireash-game.js` (Phaser scenes) + `src/pages/FireAsh.jsx`
+  (React wrapper that mounts/unmounts the Phaser instance on route enter/exit).
+- Static assets (tilesets, portraits, map JSON): `public/fireash/assets/` — copied
+  verbatim by Vite to `dist/fireash/assets/` on build, **not** part of the hashed
+  `dist/assets/` bundle, so the deploy workflow uploads them with a separate step
+  ("Upload Fire Ash assets") that preserves the subdirectory structure.
+- The original source game lives outside this repo, in a separate Pokemon-mods
+  project synced via `alphazone2026/pokemon-mods-sync`. Extending Fire Ash further
+  (more maps/regions) means re-extracting `.rxdata` tile/event data from that project
+  the same way this pilot's assets were extracted — this repo only has the exported
+  PNGs/JSON, not the RPG Maker source.
+- Collision/warps are a simplified reimplementation (exact-tile + required-facing-
+  direction matching in `WARPS` in `fireash-game.js`), not a full port of RGSS engine
+  behavior — good enough for the recreated opening area, but any new map added will
+  need its own warp entries hand-verified against the real game's door/stair tiles.
+- **Known issue:** GitHub Actions `push` triggers have not reliably fired for this
+  repo's `deploy.yml` (workflow stayed `active` but two consecutive pushes didn't
+  trigger a run). Workaround: `gh workflow run deploy.yml --repo alphazone2026/games-alphazone`
+  to deploy manually until the cause is found.
+
 ## Known limitations (MVP)
 
 - If the host disconnects mid-game, the game state is lost for that room (no

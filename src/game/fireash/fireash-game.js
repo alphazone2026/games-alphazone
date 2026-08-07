@@ -667,27 +667,35 @@ class MapScene extends Phaser.Scene {
     if (this.talking) this.advanceTalk();
     else this.tryInteract();
   }
-  // Real "player touch"-style interact: check the tile directly in front of
-  // the player (their last-faced direction) for an NPC, the starter ball,
-  // or the rival.
+  // Real "player touch"-style interact. Checks the tile in front of the
+  // player (their last-faced direction) first, then falls back to the
+  // other three adjacent tiles - a strict facing-only check turned out to
+  // be too fragile in practice (release the direction key a moment before
+  // pressing Z, e.g. right after bumping into an NPC, and this.facing can
+  // end up not matching where you actually walked from, making a
+  // perfectly adjacent NPC seem unresponsive).
   tryInteract() {
     if (this.warping || this.moving) return;
-    const [dx, dy] = DELTA[this.facing];
-    const tx = this.tileX + dx, ty = this.tileY + dy;
-    const npc = this.npcs.find((n) => n.x === tx && n.y === ty);
-    if (npc) {
-      this.startTalk(npc.messages);
-      return;
-    }
-    if (this.starterBall && STARTER_BALL.x === tx && STARTER_BALL.y === ty) {
-      this.startBallInteraction();
-      return;
-    }
-    if (this.rivalSprite && RIVAL_BATTLE.x === tx && RIVAL_BATTLE.y === ty) {
-      if (rivalDefeated) {
-        this.startTalk(["Gary: Hmph. Get stronger before you challenge me again."]);
-      } else {
-        this.startRivalBattle();
+    const dirsToCheck = [this.facing, ...Object.keys(DELTA).filter((d) => d !== this.facing)];
+    for (const dir of dirsToCheck) {
+      const [dx, dy] = DELTA[dir];
+      const tx = this.tileX + dx, ty = this.tileY + dy;
+      const npc = this.npcs.find((n) => n.x === tx && n.y === ty);
+      if (npc) {
+        this.startTalk(npc.messages);
+        return;
+      }
+      if (this.starterBall && STARTER_BALL.x === tx && STARTER_BALL.y === ty) {
+        this.startBallInteraction();
+        return;
+      }
+      if (this.rivalSprite && RIVAL_BATTLE.x === tx && RIVAL_BATTLE.y === ty) {
+        if (rivalDefeated) {
+          this.startTalk(["Gary: Hmph. Get stronger before you challenge me again."]);
+        } else {
+          this.startRivalBattle();
+        }
+        return;
       }
     }
   }
@@ -773,6 +781,17 @@ class MapScene extends Phaser.Scene {
   tryWarp(dir) {
     const w = warpMatch(this.mapId, this.tileX, this.tileY, dir);
     if (!w) return false;
+    // Forced stop, no button press needed - matches how these openings
+    // always block you from wandering off before you've got your first
+    // Pokémon. Not from a specific extracted event (out of scope for this
+    // pass), but a reasonable real-feeling gate rather than letting you
+    // wander Route 1 with no team at all.
+    if (w.map === 33 && w.toMap === 76 && !hasPikachu) {
+      if (!this.talking) {
+        this.startTalk(["I should go see Professor Oak and get my first Pokémon before heading out."]);
+      }
+      return true;
+    }
     this.warping = true;
     this.cameras.main.fadeOut(250, 0, 0, 0);
     this.cameras.main.once("camerafadeoutcomplete", () => {

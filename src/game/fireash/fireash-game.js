@@ -884,47 +884,55 @@ class MapScene extends Phaser.Scene {
     const dirsToCheck = [this.facing, ...Object.keys(DELTA).filter((d) => d !== this.facing)];
     for (const dir of dirsToCheck) {
       const [dx, dy] = DELTA[dir];
-      const tx = this.tileX + dx, ty = this.tileY + dy;
-      const npc = this.npcs.find((n) => n.x === tx && n.y === ty);
-      if (npc) {
-        if (npc.giveItemId && !inventory[npc.giveItemId]) {
-          addItem(npc.giveItemId, 1);
-        }
-        this.startTalk(npc.messages);
-        return;
+      if (this.handleInteractionAt(this.tileX + dx, this.tileY + dy)) return;
+    }
+  }
+  // Shared by tryInteract (Z/Space press) and the blocked-movement bump
+  // below (walking into an NPC also just talks to them - waiting for
+  // this.facing to line up with a separate button press turned out to be
+  // an unnecessary extra step players kept getting stuck on). Returns
+  // true if something at (tx,ty) handled the interaction.
+  handleInteractionAt(tx, ty) {
+    const npc = this.npcs.find((n) => n.x === tx && n.y === ty);
+    if (npc) {
+      if (npc.giveItemId && !inventory[npc.giveItemId]) {
+        addItem(npc.giveItemId, 1);
       }
-      if (this.starterBall && STARTER_BALL.x === tx && STARTER_BALL.y === ty) {
-        this.startBallInteraction();
-        return;
+      this.startTalk(npc.messages);
+      return true;
+    }
+    if (this.starterBall && STARTER_BALL.x === tx && STARTER_BALL.y === ty) {
+      this.startBallInteraction();
+      return true;
+    }
+    if (this.rivalSprite && RIVAL_BATTLE.x === tx && RIVAL_BATTLE.y === ty) {
+      if (rivalDefeated) {
+        this.startTalk(["Gary: Hmph. Get stronger before you challenge me again."]);
+      } else {
+        this.startRivalBattle();
       }
-      if (this.rivalSprite && RIVAL_BATTLE.x === tx && RIVAL_BATTLE.y === ty) {
-        if (rivalDefeated) {
-          this.startTalk(["Gary: Hmph. Get stronger before you challenge me again."]);
+      return true;
+    }
+    const sign = this.signs.find((s) => s.x === tx && s.y === ty);
+    if (sign) {
+      if (sign.giveFlag === "pokedex") {
+        if (hasPokedex) {
+          this.startTalk(["You already have a Pokédex."]);
         } else {
-          this.startRivalBattle();
-        }
-        return;
-      }
-      const sign = this.signs.find((s) => s.x === tx && s.y === ty);
-      if (sign) {
-        if (sign.giveFlag === "pokedex") {
-          if (hasPokedex) {
-            this.startTalk(["You already have a Pokédex."]);
-          } else {
-            hasPokedex = true;
-            this.startTalk(sign.messages);
-          }
-        } else {
+          hasPokedex = true;
           this.startTalk(sign.messages);
         }
-        return;
+      } else {
+        this.startTalk(sign.messages);
       }
-      const ball = this.itemBalls.find((b) => b.x === tx && b.y === ty);
-      if (ball) {
-        this.collectItemBall(ball);
-        return;
-      }
+      return true;
     }
+    const ball = this.itemBalls.find((b) => b.x === tx && b.y === ty);
+    if (ball) {
+      this.collectItemBall(ball);
+      return true;
+    }
+    return false;
   }
   collectItemBall(ball) {
     addItem(ball.itemId, 1);
@@ -1097,6 +1105,10 @@ class MapScene extends Phaser.Scene {
       if (this.debugText) {
         this.debugText.setText(this.debugText.text + "  BLOCKED trying (" + targetX + "," + targetY + ") dir=" + dir);
       }
+      // Walking straight into an NPC/sign/ball also just interacts with
+      // it directly - don't make bumping into Gary a dead end that then
+      // requires a separate, precisely-aimed Z press to do anything.
+      if (targetHasNpc && !this.talking) this.handleInteractionAt(targetX, targetY);
       return; // blocked - face the direction but don't move (matches real game feel)
     }
 

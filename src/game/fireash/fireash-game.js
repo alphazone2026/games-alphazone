@@ -28,7 +28,6 @@ let trainerName = "";
 let trainerGender = null; // "boy" or "girl"
 let hasPikachu = false;
 let hasPokedex = false;
-let rivalDefeated = false;
 let playerLevel = 5; // Pikachu's level, bumped slightly after each win
 
 // Strips this game's own RGSS/Pokemon Essentials message control codes
@@ -55,7 +54,6 @@ function cleanRgssText(str) {
 function getObjectiveText() {
   if (!hasPikachu) return "Objective: Head to Professor Oak's Lab and get your first Pokémon.";
   if (!hasPokedex) return "Objective: Pick up your Pokédex before leaving the Lab.";
-  if (!rivalDefeated) return "Objective: Head out to Route 1 and continue your adventure!";
   return "Objective: Explore Route 1 and catch some Pokémon!";
 }
 
@@ -63,6 +61,10 @@ function getObjectiveText() {
 // sheet (down/left/right/up, matching the player_boy/player_girl frame
 // layout already used below) to show as that NPC's static "standing" pose.
 const DIR_ROW = { 2: 0, 4: 1, 6: 2, 8: 3 };
+// Same 4-row layout, keyed by our own "up"/"down"/... direction strings
+// instead of RPG Maker's 2/4/6/8 codes - used for facing a wandering NPC
+// and for walk animations (walkNpcAway, wander).
+const FACE_ROW = { down: 0, left: 1, right: 2, up: 3 };
 
 // Real NPCs, positions, facing, and dialogue, extracted directly from this
 // game's own Map033 (Pallet Town) and Map042 (house interiors) event data -
@@ -81,6 +83,15 @@ const NPCS = [
       "Gary: So \\PN, you woke up late. What a loser. It's a shame, because I ended up getting the best Pokémon.",
       "It's good to have a grandfather in the business, isn't it.\\nCatch you later, \\PN.",
     ],
+    // Real event data (Map033 event id 14, page 0's own "Set Move Route"
+    // command, confirmed directly against Map033.rxdata): turn toward
+    // player, Through ON, Move Down x8, Through OFF - he walks straight
+    // down the bridge, not up or around, and ignores collision doing it
+    // (matched here since our simplified engine has no real collision on
+    // this tween anyway).
+    leaveAfterTalk: true,
+    leaveDir: "down",
+    leaveTiles: 8,
   },
   {
     map: 33, x: 19, y: 26, dir: 2, sprite: "npc_vendor", name: "Vendor",
@@ -91,11 +102,14 @@ const NPCS = [
     ],
   },
   {
-    map: 33, x: 30, y: 27, dir: 2, sprite: "npc_oakfan1", name: "Person",
+    // Real event data (event id 61) has move_type 1 ("Random") - this one
+    // wanders on its own timer instead of standing still.
+    map: 33, x: 30, y: 27, dir: 2, sprite: "npc_oakfan1", name: "Person", wander: true,
     messages: ["Professor Oak focuses on Pokémon and human relationships in his research."],
   },
   {
-    map: 33, x: 12, y: 35, dir: 2, sprite: "npc_06", name: "Person",
+    // Real event data (event id 23) is also move_type 1 ("Random").
+    map: 33, x: 12, y: 35, dir: 2, sprite: "npc_06", name: "Person", wander: true,
     messages: ["Feeling slow? Press the 'F' or 'F7' key.", "Want to save faster? Press the left 'Alt' key."],
   },
   {
@@ -129,7 +143,7 @@ const NPCS = [
   // data has 2 pages: page 0 (no switch set) is blank/invisible, page 1
   // (switch 38) is her actual greeting - and switch 38 is unconditionally
   // turned on by this game's own "Beginning" event the moment you appear
-  // in your bedroom (see RIVAL_BATTLE-adjacent note below), so in practice
+  // in your bedroom, so in practice
   // she's always in this state. Using page 1's sprite/facing/text as her
   // one permanent appearance rather than modeling the switch.
   {
@@ -232,7 +246,6 @@ function saveGame({ mapId, tileX, tileY }) {
     trainerGender,
     hasPikachu,
     hasPokedex,
-    rivalDefeated,
     playerLevel,
     inventory,
     collectedItemBalls: [...collectedItemBalls],
@@ -253,7 +266,6 @@ function applySave(data) {
   trainerGender = data.trainerGender;
   hasPikachu = !!data.hasPikachu;
   hasPokedex = !!data.hasPokedex;
-  rivalDefeated = !!data.rivalDefeated;
   playerLevel = data.playerLevel || 5;
   inventory = data.inventory || {};
   collectedItemBalls = new Set(data.collectedItemBalls || []);
@@ -266,16 +278,14 @@ function applySave(data) {
 // classic 3-ball choice - that's the real event data, not a simplification.
 const STARTER_BALL = { map: 48, x: 8, y: 10 };
 
-// Gary's first battle. This game's real trainer roster data (extracted via
-// the same Marshal.load technique, from a modern Pokémon Essentials
-// GameData::Trainer table) turned out to only hold rematch-tier rosters
-// (level 40-100), not a distinct super-early roster we could confidently
-// identify as "the opening Route 1 battle" - so unlike the NPCs/dialogue
-// above, this one specific fight is NOT verified against a real trigger or
-// roster. It's a reasonable early-game placeholder (single low-level
-// Eevee, Gary's signature line), flagged honestly rather than presented as
-// extracted fact.
-const RIVAL_BATTLE = { map: 76, x: 20, y: 31, oppSpeciesId: "EEVEE", oppLevel: 5 };
+// There is NO scripted Gary battle on Route 1 in the real game - checked
+// directly against Map076.rxdata (no Gary event exists on that map at
+// all) and against Gary's own real trainer data (GameData::Trainer key
+// RIVAL1 #0: a level 50 Eevee with Reflect/Double Team/Take Down/Skull
+// Bash - a rematch-tier roster, not an opener). An earlier pass invented a
+// level-5 Route 1 rival fight as a placeholder; removed now that the real
+// data confirms it never existed - Route 1's opening is wild encounters
+// only, same as the real game.
 
 // Real Route 1 (Map076) tall-grass tiles and wild encounter table, from
 // this game's own map terrain tags (tag 2 = tall grass) and its
@@ -473,7 +483,6 @@ class IntroScene extends Phaser.Scene {
     trainerGender = null;
     hasPikachu = false;
     hasPokedex = false;
-    rivalDefeated = false;
     playerLevel = 5;
     inventory = {};
     collectedItemBalls = new Set();
@@ -796,6 +805,18 @@ class MapScene extends Phaser.Scene {
     this.talking = null;
     this.dbox = null;
 
+    // Pikachu follows the player once obtained - not from real extracted
+    // event data (this pilot has no real "following Pokémon" system to
+    // trace), but "Pikachu started to follow you!" was already the flavor
+    // text on the ball, so give it a real on-screen sprite instead of
+    // leaving that line as a lie. Trails one tile behind, same as the
+    // classic HeartGold/SoulSilver-style follower: it always walks into
+    // the tile the player just vacated, never the player's own tile.
+    this.follower = null;
+    this.followerTileX = null;
+    this.followerTileY = null;
+    if (hasPikachu) this.spawnFollower();
+
     // Real NPCs for this map (see NPCS above) - static standing sprites,
     // block movement onto their tile, and open a dialogue box on
     // interact (walk up to them, face them, press Z or Space).
@@ -804,17 +825,11 @@ class MapScene extends Phaser.Scene {
       const sprite = this.add.sprite(n.x * TILE + TILE / 2, n.y * TILE + TILE / 2, n.sprite, row * 4).setDepth(9);
       return { ...n, sprite };
     });
+    this.npcs.filter((n) => n.wander).forEach((n) => this.startNpcWander(n));
     this.starterBall = null;
     if (this.mapId === STARTER_BALL.map) {
       this.starterBall = this.add.sprite(
         STARTER_BALL.x * TILE + TILE / 2, STARTER_BALL.y * TILE + TILE / 2, "ball_special", 2
-      ).setDepth(9);
-    }
-
-    this.rivalSprite = null;
-    if (this.mapId === RIVAL_BATTLE.map && !rivalDefeated) {
-      this.rivalSprite = this.add.sprite(
-        RIVAL_BATTLE.x * TILE + TILE / 2, RIVAL_BATTLE.y * TILE + TILE / 2, "npc_gary", 0
       ).setDepth(9);
     }
 
@@ -907,19 +922,18 @@ class MapScene extends Phaser.Scene {
       if (npc.giveItemId && !inventory[npc.giveItemId]) {
         addItem(npc.giveItemId, 1);
       }
-      this.startTalk(npc.messages);
+      if (npc.leaveAfterTalk) {
+        this.startTalk(npc.messages, null, () => {
+          this.npcs = this.npcs.filter((n) => n !== npc);
+          this.walkNpcAway(npc, npc.leaveDir || "up", npc.leaveTiles || 4);
+        });
+      } else {
+        this.startTalk(npc.messages);
+      }
       return true;
     }
     if (this.starterBall && STARTER_BALL.x === tx && STARTER_BALL.y === ty) {
       this.startBallInteraction();
-      return true;
-    }
-    if (this.rivalSprite && RIVAL_BATTLE.x === tx && RIVAL_BATTLE.y === ty) {
-      if (rivalDefeated) {
-        this.startTalk(["Gary: Hmph. Get stronger before you challenge me again."]);
-      } else {
-        this.startRivalBattle();
-      }
       return true;
     }
     const sign = this.signs.find((s) => s.x === tx && s.y === ty);
@@ -943,29 +957,120 @@ class MapScene extends Phaser.Scene {
     }
     return false;
   }
+  // Plays an NPC's walk animation and tweens them off in `dir` for `tiles`
+  // tiles, then removes their sprite - matches a real RPG Maker "move
+  // route" autorun (e.g. Gary heading off toward the Lab after his intro
+  // line) instead of just vanishing them in place.
+  walkNpcAway(npc, dir, tiles) {
+    // npc.sprite is the live Phaser sprite object (create() overwrote the
+    // original texture-key string with it) - the texture key itself lives
+    // on the sprite's own .texture.key.
+    const spriteKey = npc.sprite.texture.key;
+    const animKey = this.ensureNpcAnim(spriteKey, dir);
+    npc.sprite.play(animKey);
+    const [dx, dy] = DELTA[dir];
+    this.tweens.add({
+      targets: npc.sprite,
+      x: npc.sprite.x + dx * tiles * TILE,
+      y: npc.sprite.y + dy * tiles * TILE,
+      duration: tiles * 180,
+      onComplete: () => npc.sprite.destroy(),
+    });
+  }
+  // Registers (once per texture+direction) the 4-frame walk animation for
+  // an NPC sheet, same layout as the player sheets (row*4..row*4+3).
+  ensureNpcAnim(spriteKey, dir) {
+    const animKey = spriteKey + "_" + dir;
+    if (!this.anims.exists(animKey)) {
+      const row = FACE_ROW[dir];
+      this.anims.create({
+        key: animKey,
+        frames: this.anims.generateFrameNumbers(spriteKey, { start: row * 4, end: row * 4 + 3 }),
+        frameRate: 8, repeat: -1,
+      });
+    }
+    return animKey;
+  }
+  // Real event data (move_type 1, "Random") for a couple of Pallet Town
+  // NPCs: they take one random step on their own timer instead of
+  // standing still. Matches RPG Maker's own random-movement behaviour -
+  // picks a random direction, and if that step is blocked just turns to
+  // face it without moving, rather than a proper pathfinding wander.
+  startNpcWander(npc) {
+    const spriteKey = npc.sprite.texture.key;
+    const tick = () => {
+      // Stop entirely if this NPC's sprite is gone (map changed/scene
+      // torn down - Phaser clears this.time's events on shutdown anyway,
+      // but guard in case a stray callback fires mid-teardown).
+      if (!npc.sprite || !npc.sprite.scene) return;
+      if (!this.talking) {
+        const dirs = ["up", "down", "left", "right"];
+        const dir = dirs[Math.floor(Math.random() * dirs.length)];
+        const [dx, dy] = DELTA[dir];
+        const tx = npc.x + dx, ty = npc.y + dy;
+        const blocked =
+          (tx === this.tileX && ty === this.tileY) ||
+          this.npcs.some((n) => n !== npc && n.x === tx && n.y === ty) ||
+          (this.starterBall && STARTER_BALL.x === tx && STARTER_BALL.y === ty) ||
+          this.itemBalls.some((b) => b.x === tx && b.y === ty) ||
+          this.signs.some((s) => s.x === tx && s.y === ty) ||
+          WARPS.some((w) => w.map === this.mapId && w.x === tx && w.y === ty) ||
+          !canMove(this.passages, this.mapData, npc.x, npc.y, dir);
+        if (blocked) {
+          npc.sprite.anims.stop();
+          npc.sprite.setFrame(FACE_ROW[dir] * 4);
+        } else {
+          npc.x = tx; npc.y = ty;
+          npc.sprite.play(this.ensureNpcAnim(spriteKey, dir));
+          this.tweens.add({
+            targets: npc.sprite,
+            x: tx * TILE + TILE / 2,
+            y: ty * TILE + TILE / 2,
+            duration: 140,
+            onComplete: () => {
+              npc.sprite.anims.stop();
+              npc.sprite.setFrame(FACE_ROW[dir] * 4);
+            },
+          });
+        }
+      }
+      this.time.delayedCall(1200 + Math.random() * 1200, tick);
+    };
+    this.time.delayedCall(1200 + Math.random() * 1200, tick);
+  }
+  // Spawns Pikachu one tile behind wherever the player is currently
+  // facing (so it appears "trailing" them immediately, not overlapping).
+  // Re-run on every map entry (see create() above) since MapScene fully
+  // restarts on every warp/battle-return.
+  spawnFollower() {
+    const [dx, dy] = DELTA[OPPOSITE[this.facing]];
+    this.followerTileX = this.tileX + dx;
+    this.followerTileY = this.tileY + dy;
+    this.follower = this.add.image(
+      this.followerTileX * TILE + TILE / 2, this.followerTileY * TILE + TILE / 2, "battler_pikachu_front"
+    ).setDisplaySize(26, 26).setDepth(9.5);
+  }
+  // Steps the follower into the tile the player just left, one player-move
+  // behind - called right after the player's own tile is committed.
+  moveFollower(fromX, fromY) {
+    if (!this.follower) return;
+    this.followerTileX = fromX;
+    this.followerTileY = fromY;
+    this.tweens.add({
+      targets: this.follower,
+      x: fromX * TILE + TILE / 2,
+      y: fromY * TILE + TILE / 2,
+      duration: 140,
+    });
+  }
   collectItemBall(ball) {
     addItem(ball.itemId, 1);
     collectedItemBalls.add(`${ball.map},${ball.x},${ball.y}`);
     this.itemBalls = this.itemBalls.filter((b) => b !== ball);
     this.startTalk([`\\PN found a ${ITEMS[ball.itemId].name}!`]);
   }
-  startRivalBattle() {
-    this.warping = true;
-    this.cameras.main.fadeOut(300, 0, 0, 0);
-    this.cameras.main.once("camerafadeoutcomplete", () => {
-      this.scene.start("Battle", {
-        playerSpeciesId: "PIKACHU",
-        playerLevel,
-        oppSpeciesId: RIVAL_BATTLE.oppSpeciesId,
-        oppLevel: RIVAL_BATTLE.oppLevel,
-        isTrainer: true,
-        trainerName: "Gary",
-        returnTo: { mapId: this.mapId, tileX: this.tileX, tileY: this.tileY },
-      });
-    });
-  }
-  startTalk(rawMessages, onLastLine) {
-    this.talking = { messages: rawMessages.map(cleanRgssText), index: 0, onLastLine: onLastLine || null };
+  startTalk(rawMessages, onLastLine, onClose) {
+    this.talking = { messages: rawMessages.map(cleanRgssText), index: 0, onLastLine: onLastLine || null, onClose: onClose || null };
     if (!this.dbox) this.dbox = new DialogueBox(this);
     this.dbox.say(this.talking.messages[0]);
   }
@@ -983,9 +1088,11 @@ class MapScene extends Phaser.Scene {
       fn();
       return;
     }
+    const onClose = this.talking.onClose;
     this.dbox.destroy();
     this.dbox = null;
     this.talking = null;
+    if (onClose) onClose();
   }
   // The Lab's starter Pokémon offer, from this game's own "Starter ball"
   // event: flavor line, then (once) Oak's Yes/No offer of Pikachu. Real
@@ -1019,6 +1126,7 @@ class MapScene extends Phaser.Scene {
     yesBtn.on("pointerdown", () => {
       cleanup();
       hasPikachu = true;
+      this.spawnFollower();
       this.startTalk(["Pikachu started to follow you!"]);
     });
     noBtn.on("pointerdown", () => {
@@ -1109,7 +1217,6 @@ class MapScene extends Phaser.Scene {
     const targetHasNpc =
       this.npcs.some((n) => n.x === targetX && n.y === targetY) ||
       (this.starterBall && STARTER_BALL.x === targetX && STARTER_BALL.y === targetY) ||
-      (this.rivalSprite && RIVAL_BATTLE.x === targetX && RIVAL_BATTLE.y === targetY) ||
       this.itemBalls.some((b) => b.x === targetX && b.y === targetY) ||
       this.signs.some((s) => s.x === targetX && s.y === targetY);
     if (targetHasNpc || (!targetIsApproachTile && !canMove(this.passages, this.mapData, this.tileX, this.tileY, dir))) {
@@ -1123,8 +1230,10 @@ class MapScene extends Phaser.Scene {
       return; // blocked - face the direction but don't move (matches real game feel)
     }
 
+    const prevTileX = this.tileX, prevTileY = this.tileY;
     this.tileX = targetX; this.tileY = targetY;
     this.moving = true;
+    this.moveFollower(prevTileX, prevTileY);
     this.tweens.add({
       targets: this.player,
       x: this.tileX*TILE + TILE/2,
@@ -1391,7 +1500,6 @@ class BattleScene extends Phaser.Scene {
   endBattle() {
     this.mode = "end";
     const status = this.battle.status;
-    if (status === "won" && this.battleInit.isTrainer) rivalDefeated = true;
     if (status === "won") playerLevel = Math.min(30, playerLevel + 1);
     const summary =
       status === "won" ? "You won!" :

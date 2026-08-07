@@ -27,6 +27,7 @@ const OAK_WORLD = [
 let trainerName = "";
 let trainerGender = null; // "boy" or "girl"
 let hasPikachu = false;
+let hasPokedex = false;
 let rivalDefeated = false;
 let playerLevel = 5; // Pikachu's level, bumped slightly after each win
 
@@ -44,6 +45,18 @@ function cleanRgssText(str) {
     .replace(/\\n/g, " ")
     .replace(/\s{2,}/g, " ")
     .trim();
+}
+
+// Simple linear quest tracker, from scratch (not extracted - the real
+// game tracks progress via ~500 numbered switches, not a quest list).
+// Mirrors the real opening's actual required order, which the barrier
+// events above enforce: leave the house -> get the starter -> get the
+// Pokédex -> go challenge the world.
+function getObjectiveText() {
+  if (!hasPikachu) return "Objective: Head to Professor Oak's Lab and get your first Pokémon.";
+  if (!hasPokedex) return "Objective: Pick up your Pokédex before leaving the Lab.";
+  if (!rivalDefeated) return "Objective: Head out to Route 1 and continue your adventure!";
+  return "Objective: Explore Route 1 and catch some Pokémon!";
 }
 
 // RPG Maker XP facing-direction numbers -> which row of a 4x4 character
@@ -153,6 +166,24 @@ const SIGNS = [
   // real grass encounters).
   { map: 33, x: 29, y: 36, messages: ["Pidgey"] },
   { map: 33, x: 31, y: 27, messages: ["Jigglypuff"] },
+
+  // House (Map042) - real "accomplishments" record-board signs (10 of
+  // them, all identical text in the source data - kept as one entry per
+  // real tile rather than collapsed, for a faithful full pass).
+  ...[31, 32, 33, 34, 37, 38, 39, 40, 41, 42].map((x) => ({
+    map: 42, x, y: 1, messages: ["It's a list of your accomplishments. It's empty right now."],
+  })),
+  { map: 42, x: 31, y: 21, messages: ["Your Pokémon were fully healed."] },
+  { map: 42, x: 32, y: 21, messages: ["Your Pokémon were fully healed."] },
+  { map: 42, x: 36, y: 7, messages: ["It's a place to change clothes. Too bad you don't have any extras right now."] },
+  { map: 42, x: 37, y: 7, messages: ["It's a place to change into your special clothes. Too bad you don't have any extras right now."] },
+  { map: 42, x: 41, y: 4, messages: ["It's a place to change caps for Pikachu. Too bad you don't have any extras right now."] },
+  { map: 42, x: 42, y: 4, messages: ["It's a place to change caps for Pikachu. Too bad you don't have any extras right now."] },
+
+  // Lab (Map048) - the real Pokédex pickup (event id 3). Action-button,
+  // always available on a fresh save, sets hasPokedex (real switches
+  // 246/29 - tracked here as one flag since we don't model raw switches).
+  { map: 48, x: 2, y: 7, messages: ["\\PN received a Pokédex!"], giveFlag: "pokedex" },
 ];
 
 // Item catalog. Just name + flavor text - no battle-affecting inventory
@@ -200,6 +231,7 @@ function saveGame({ mapId, tileX, tileY }) {
     trainerName,
     trainerGender,
     hasPikachu,
+    hasPokedex,
     rivalDefeated,
     playerLevel,
     inventory,
@@ -220,6 +252,7 @@ function applySave(data) {
   trainerName = data.trainerName;
   trainerGender = data.trainerGender;
   hasPikachu = !!data.hasPikachu;
+  hasPokedex = !!data.hasPokedex;
   rivalDefeated = !!data.rivalDefeated;
   playerLevel = data.playerLevel || 5;
   inventory = data.inventory || {};
@@ -430,6 +463,7 @@ class IntroScene extends Phaser.Scene {
     trainerName = "";
     trainerGender = null;
     hasPikachu = false;
+    hasPokedex = false;
     rivalDefeated = false;
     playerLevel = 5;
     inventory = {};
@@ -809,11 +843,25 @@ class MapScene extends Phaser.Scene {
       fontFamily: "monospace", fontSize: "10px", color: "#ffffff", backgroundColor: "#000000aa"
     }).setScrollFactor(0).setDepth(100);
 
+    this.objectiveText = this.add.text(10, 26, getObjectiveText(), {
+      fontFamily: "monospace", fontSize: "10px", color: "#ffff88", backgroundColor: "#000000aa"
+    }).setScrollFactor(0).setDepth(100);
+
     // Temporary debug readout - remove once door/stairs coordinates are
     // all confirmed correct.
-    this.debugText = this.add.text(10, 26, "", {
+    this.debugText = this.add.text(10, 42, "", {
       fontFamily: "monospace", fontSize: "10px", color: "#00ff00", backgroundColor: "#000000aa"
     }).setScrollFactor(0).setDepth(100);
+
+    // Real autorun cutscene (event id 4 "Controlling event", Map048,
+    // trigger type 3 = autorun): Oak greets you the moment you walk into
+    // the Lab, before you've picked up the starter ball - no button press,
+    // matches the source data exactly.
+    if (this.mapId === STARTER_BALL.map && !hasPikachu) {
+      this.startTalk([
+        "Oak: \\PN, you're late. All of the starter Pokémon have been taken. ...Well there is one left, but it's a bit of an unusual choice.",
+      ]);
+    }
   }
   handleActionKey() {
     if (this.talking) this.advanceTalk();
@@ -859,7 +907,16 @@ class MapScene extends Phaser.Scene {
       }
       const sign = this.signs.find((s) => s.x === tx && s.y === ty);
       if (sign) {
-        this.startTalk(sign.messages);
+        if (sign.giveFlag === "pokedex") {
+          if (hasPokedex) {
+            this.startTalk(["You already have a Pokédex."]);
+          } else {
+            hasPokedex = true;
+            this.startTalk(sign.messages);
+          }
+        } else {
+          this.startTalk(sign.messages);
+        }
         return;
       }
       const ball = this.itemBalls.find((b) => b.x === tx && b.y === ty);
@@ -968,6 +1025,19 @@ class MapScene extends Phaser.Scene {
       }
       return true;
     }
+    // Real barrier event (id 5 "Turn back", Map048) blocking the Lab exit
+    // until you've picked up both the starter and the Pokédex - real Oak
+    // reminder lines for each missing piece.
+    if (w.map === STARTER_BALL.map && w.toMap === 42 && !(hasPikachu && hasPokedex)) {
+      if (!this.talking) {
+        this.startTalk([
+          !hasPikachu
+            ? "Oak: Wait, don't forget your starter Pokémon!"
+            : "Oak: Come here and get your Pokédex, \\PN.",
+        ]);
+      }
+      return true;
+    }
     this.warping = true;
     this.cameras.main.fadeOut(250, 0, 0, 0);
     this.cameras.main.once("camerafadeoutcomplete", () => {
@@ -976,6 +1046,9 @@ class MapScene extends Phaser.Scene {
     return true;
   }
   update() {
+    if (this.objectiveText) {
+      this.objectiveText.setText(getObjectiveText());
+    }
     if (this.debugText) {
       const nearWarp = WARPS.find(w => w.map === this.mapId && Math.abs(w.x - this.tileX) <= 3 && Math.abs(w.y - this.tileY) <= 3);
       this.debugText.setText(
@@ -1018,7 +1091,8 @@ class MapScene extends Phaser.Scene {
       this.npcs.some((n) => n.x === targetX && n.y === targetY) ||
       (this.starterBall && STARTER_BALL.x === targetX && STARTER_BALL.y === targetY) ||
       (this.rivalSprite && RIVAL_BATTLE.x === targetX && RIVAL_BATTLE.y === targetY) ||
-      this.itemBalls.some((b) => b.x === targetX && b.y === targetY);
+      this.itemBalls.some((b) => b.x === targetX && b.y === targetY) ||
+      this.signs.some((s) => s.x === targetX && s.y === targetY);
     if (targetHasNpc || (!targetIsApproachTile && !canMove(this.passages, this.mapData, this.tileX, this.tileY, dir))) {
       if (this.debugText) {
         this.debugText.setText(this.debugText.text + "  BLOCKED trying (" + targetX + "," + targetY + ") dir=" + dir);

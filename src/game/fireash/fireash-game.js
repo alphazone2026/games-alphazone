@@ -4,7 +4,7 @@
 // project session history for how each was extracted/verified. Assets
 // live in public/fireash/assets (Vite serves public/ as-is at the root).
 import Phaser from "phaser";
-import { SPECIES, createBattle, playerMove, attemptCatch, attemptRun } from "./battle.js";
+import { SPECIES, createBattle, playerMove, attemptCatch, attemptRun, levelStats } from "./battle.js";
 
 const W = 512, H = 384;
 
@@ -100,6 +100,9 @@ const NPCS = [
       "It's going to be a wonderful journey, I can just tell. You were in such a rush I didn't have time to give you these earlier. Be sure to use them.",
       "\\PN obtained Running Shoes.",
     ],
+    // Real event data ends this exact line with the Running Shoes pickup
+    // (code 126, item gain) - only grant it once.
+    giveItemId: "RUNNING_SHOES",
   },
   {
     map: 42, x: 28, y: 25, dir: 6, sprite: "npc_oakfan2", name: "Person",
@@ -130,6 +133,98 @@ const NPCS = [
     messages: ["Please visit the Poké Mart if you ever need to stock up on items."],
   },
 ];
+
+// Real signs, mailboxes, and locked doors, extracted the same way as
+// NPCS. These have no character sprite in the real event data either -
+// they're just an invisible action-button hotspot layered over graphics
+// that are already part of the map's own tile art (a mailbox, a sign
+// post, a door), so unlike NPCS these render nothing of their own.
+const SIGNS = [
+  { map: 33, x: 12, y: 29, messages: ["\\PN's house"] },
+  { map: 33, x: 22, y: 29, messages: ["Gary's house"] },
+  { map: 33, x: 37, y: 29, messages: ["Pallet Town\\nShades of your journey await!"] },
+  { map: 33, x: 41, y: 20, messages: ["Professor Oak's Lab"] },
+  { map: 33, x: 42, y: 20, messages: ["Professor Oak's Lab"] },
+  { map: 33, x: 22, y: 37, messages: ["The door is locked."] },
+  { map: 33, x: 33, y: 37, messages: ["The door is locked."] },
+  { map: 33, x: 42, y: 37, messages: ["The door is locked."] },
+  // Real wild Pokémon standing in town (event ids 17/20) - flavor only,
+  // no battle in the source data at these exact spots (unlike Route 1's
+  // real grass encounters).
+  { map: 33, x: 29, y: 36, messages: ["Pidgey"] },
+  { map: 33, x: 31, y: 27, messages: ["Jigglypuff"] },
+];
+
+// Item catalog. Just name + flavor text - no battle-affecting inventory
+// mechanics (no using a Potion mid-fight, etc.) in this pilot.
+const ITEMS = {
+  POTION: { name: "Potion", desc: "Restores 20 HP to a Pokémon." },
+  RUNNING_SHOES: { name: "Running Shoes", desc: "Lets you run around town faster." },
+};
+let inventory = {};
+function addItem(id, qty = 1) {
+  inventory[id] = (inventory[id] || 0) + qty;
+}
+
+// Real pick-up-once item events (RPG Maker "item ball" objects). Real
+// script call for this one is `pbItemBall(:POTION)` (Map033 event id 13).
+const ITEM_BALLS = [
+  { map: 33, x: 34, y: 16, itemId: "POTION", name: "Object ball" },
+];
+let collectedItemBalls = new Set();
+
+// Save/load - one slot per trainer name, in localStorage. Not from the
+// real game (which uses its own binary save format) - a from-scratch fit
+// for this browser pilot.
+const SAVE_KEY_PREFIX = "fireash_save_";
+
+function listSaves() {
+  const saves = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(SAVE_KEY_PREFIX)) {
+      try {
+        const data = JSON.parse(localStorage.getItem(key));
+        saves.push(data);
+      } catch {
+        // corrupt/foreign entry under our prefix - skip it
+      }
+    }
+  }
+  saves.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+  return saves;
+}
+
+function saveGame({ mapId, tileX, tileY }) {
+  const data = {
+    trainerName,
+    trainerGender,
+    hasPikachu,
+    rivalDefeated,
+    playerLevel,
+    inventory,
+    collectedItemBalls: [...collectedItemBalls],
+    mapId,
+    tileX,
+    tileY,
+    savedAt: Date.now(),
+  };
+  localStorage.setItem(SAVE_KEY_PREFIX + trainerName, JSON.stringify(data));
+  return data;
+}
+
+// Applies a loaded save's state to this module's game-state variables
+// (trainerName etc. are plain module-level lets, not stored on any scene,
+// so loading just means overwriting them before starting the Map scene).
+function applySave(data) {
+  trainerName = data.trainerName;
+  trainerGender = data.trainerGender;
+  hasPikachu = !!data.hasPikachu;
+  rivalDefeated = !!data.rivalDefeated;
+  playerLevel = data.playerLevel || 5;
+  inventory = data.inventory || {};
+  collectedItemBalls = new Set(data.collectedItemBalls || []);
+}
 
 // The Lab's starter Pokémon event - real position/flow from this
 // game's own "Starter ball" event (id 2, Map048): touching it always shows
@@ -265,12 +360,50 @@ class TitleScene extends Phaser.Scene {
   constructor() { super("Title"); }
   create() {
     this.add.image(W/2, H/2, "title").setDisplaySize(W, H);
+    const hasSaves = listSaves().length > 0;
     const txt = this.add.text(W/2, H - 40, "Press SPACE to start", {
       fontFamily: "monospace", fontSize: "16px", color: "#ffffff"
     }).setOrigin(0.5);
     this.tweens.add({ targets: txt, alpha: 0, duration: 600, yoyo: true, repeat: -1 });
     this.input.keyboard.once("keydown-SPACE", () => this.scene.start("Intro"));
     this.input.once("pointerdown", () => this.scene.start("Intro"));
+    if (hasSaves) {
+      const cont = this.add.text(W/2, H - 16, "Press C to continue a saved game", {
+        fontFamily: "monospace", fontSize: "12px", color: "#ffff88"
+      }).setOrigin(0.5);
+      this.tweens.add({ targets: cont, alpha: 0, duration: 600, yoyo: true, repeat: -1 });
+      this.input.keyboard.once("keydown-C", () => this.scene.start("Continue"));
+    }
+  }
+}
+
+// Lists saved games (one per trainer name) and loads the picked one
+// straight into the map at its saved position.
+class ContinueScene extends Phaser.Scene {
+  constructor() { super("Continue"); }
+  create() {
+    this.add.rectangle(W / 2, H / 2, W, H, 0x0f172a);
+    this.add.text(W / 2, 40, "Continue", { fontFamily: "monospace", fontSize: "18px", color: "#ffffff" }).setOrigin(0.5);
+    const saves = listSaves();
+    saves.forEach((save, i) => {
+      const y = 90 + i * 40;
+      const label = `${save.trainerName}  -  Lv${save.playerLevel || 5}${save.hasPikachu ? " with Pikachu" : ""}`;
+      const btn = this.add.text(W / 2, y, label, {
+        fontFamily: "monospace", fontSize: "14px", color: "#ffff00", backgroundColor: "#00000088", padding: { x: 8, y: 4 }
+      }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      btn.on("pointerdown", () => this.loadAndStart(save));
+    });
+    const back = this.add.text(W / 2, H - 30, "Back", {
+      fontFamily: "monospace", fontSize: "13px", color: "#aaaaaa"
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    back.on("pointerdown", () => this.scene.start("Title"));
+  }
+  loadAndStart(save) {
+    applySave(save);
+    this.cameras.main.fadeOut(300, 0, 0, 0);
+    this.cameras.main.once("camerafadeoutcomplete", () => {
+      this.scene.start("Map", { mapId: save.mapId, startTile: { x: save.tileX, y: save.tileY } });
+    });
   }
 }
 
@@ -292,6 +425,16 @@ class DialogueBox {
 class IntroScene extends Phaser.Scene {
   constructor() { super("Intro"); }
   create() {
+    // Starting a fresh game from Title - reset any state left over from a
+    // previous playthrough/loaded save this session.
+    trainerName = "";
+    trainerGender = null;
+    hasPikachu = false;
+    rivalDefeated = false;
+    playerLevel = 5;
+    inventory = {};
+    collectedItemBalls = new Set();
+
     this.add.image(W/2, H/2, "introbg").setDisplaySize(W, H);
     this.oak = this.add.image(W/2, H/2 - 20, "introOak");
     this.dbox = new DialogueBox(this);
@@ -632,6 +775,9 @@ class MapScene extends Phaser.Scene {
       ).setDepth(9);
     }
 
+    this.signs = SIGNS.filter((s) => s.map === this.mapId);
+    this.itemBalls = ITEM_BALLS.filter((b) => b.map === this.mapId && !collectedItemBalls.has(`${b.map},${b.x},${b.y}`));
+
     // Real Route 1 tall-grass tiles (see ROUTE1_ENCOUNTERS above) - stepping
     // onto one has a chance per step to start a wild battle.
     this.grassTiles = null;
@@ -649,11 +795,17 @@ class MapScene extends Phaser.Scene {
     // real cause behind "interactions don't work."
     this.input.keyboard.off("keydown-Z");
     this.input.keyboard.off("keydown-SPACE");
+    this.input.keyboard.off("keydown-ENTER");
     this.input.keyboard.on("keydown-Z", () => this.handleActionKey());
     this.input.keyboard.on("keydown-SPACE", () => this.handleActionKey());
+    this.input.keyboard.on("keydown-ENTER", () => this.openMenu());
+    // Menu can close itself (Save/Close) and needs to hand control back -
+    // it does that by re-emitting this event on the game's global emitter.
+    this.game.events.off("fireash-menu-closed");
+    this.game.events.on("fireash-menu-closed", () => this.scene.resume());
 
     const label = { 33: "Pallet Town", 42: "Inside a house", 48: "Professor Oak's Lab", 76: "Route 1" }[this.mapId] || "";
-    this.add.text(10, 10, label + " - arrow keys to move, Z/Space to talk", {
+    this.add.text(10, 10, label + " - arrow keys to move, Z/Space to talk, Enter for menu", {
       fontFamily: "monospace", fontSize: "10px", color: "#ffffff", backgroundColor: "#000000aa"
     }).setScrollFactor(0).setDepth(100);
 
@@ -666,6 +818,11 @@ class MapScene extends Phaser.Scene {
   handleActionKey() {
     if (this.talking) this.advanceTalk();
     else this.tryInteract();
+  }
+  openMenu() {
+    if (this.talking || this.warping) return;
+    this.scene.launch("Menu", { mapId: this.mapId, tileX: this.tileX, tileY: this.tileY });
+    this.scene.pause();
   }
   // Real "player touch"-style interact. Checks the tile in front of the
   // player (their last-faced direction) first, then falls back to the
@@ -682,6 +839,9 @@ class MapScene extends Phaser.Scene {
       const tx = this.tileX + dx, ty = this.tileY + dy;
       const npc = this.npcs.find((n) => n.x === tx && n.y === ty);
       if (npc) {
+        if (npc.giveItemId && !inventory[npc.giveItemId]) {
+          addItem(npc.giveItemId, 1);
+        }
         this.startTalk(npc.messages);
         return;
       }
@@ -697,7 +857,23 @@ class MapScene extends Phaser.Scene {
         }
         return;
       }
+      const sign = this.signs.find((s) => s.x === tx && s.y === ty);
+      if (sign) {
+        this.startTalk(sign.messages);
+        return;
+      }
+      const ball = this.itemBalls.find((b) => b.x === tx && b.y === ty);
+      if (ball) {
+        this.collectItemBall(ball);
+        return;
+      }
     }
+  }
+  collectItemBall(ball) {
+    addItem(ball.itemId, 1);
+    collectedItemBalls.add(`${ball.map},${ball.x},${ball.y}`);
+    this.itemBalls = this.itemBalls.filter((b) => b !== ball);
+    this.startTalk([`\\PN found a ${ITEMS[ball.itemId].name}!`]);
   }
   startRivalBattle() {
     this.warping = true;
@@ -841,7 +1017,8 @@ class MapScene extends Phaser.Scene {
     const targetHasNpc =
       this.npcs.some((n) => n.x === targetX && n.y === targetY) ||
       (this.starterBall && STARTER_BALL.x === targetX && STARTER_BALL.y === targetY) ||
-      (this.rivalSprite && RIVAL_BATTLE.x === targetX && RIVAL_BATTLE.y === targetY);
+      (this.rivalSprite && RIVAL_BATTLE.x === targetX && RIVAL_BATTLE.y === targetY) ||
+      this.itemBalls.some((b) => b.x === targetX && b.y === targetY);
     if (targetHasNpc || (!targetIsApproachTile && !canMove(this.passages, this.mapData, this.tileX, this.tileY, dir))) {
       if (this.debugText) {
         this.debugText.setText(this.debugText.text + "  BLOCKED trying (" + targetX + "," + targetY + ") dir=" + dir);
@@ -885,6 +1062,79 @@ class MapScene extends Phaser.Scene {
         returnTo: { mapId: this.mapId, tileX: this.tileX, tileY: this.tileY },
       });
     });
+  }
+}
+
+// Pause menu, launched as a scene overlay on top of a paused MapScene
+// (see MapScene.openMenu). Pokémon / Bag / Save / Close - no in-battle
+// item use, no party beyond the one Pokémon, no options menu; this is a
+// from-scratch fit for the browser pilot, not extracted from the real
+// game (which has its own native save format and full menu system).
+class MenuScene extends Phaser.Scene {
+  constructor() { super("Menu"); }
+  init(data) { this.mapInfo = data; }
+  create() {
+    this.add.rectangle(W / 2, H / 2, W - 40, H - 60, 0x1c1c2c, 0.95).setStrokeStyle(2, 0xffffff);
+    this.add.text(W / 2, 44, "Menu", { fontFamily: "monospace", fontSize: "18px", color: "#ffffff" }).setOrigin(0.5);
+    this.body = this.add.text(40, 80, "", {
+      fontFamily: "monospace", fontSize: "13px", color: "#ffffff", wordWrap: { width: W - 100 }
+    });
+    this.buttons = [];
+    this.input.keyboard.off("keydown-ESC");
+    this.input.keyboard.on("keydown-ESC", () => this.close());
+    this.showRoot();
+  }
+  clearButtons() {
+    this.buttons.forEach((b) => b.destroy());
+    this.buttons = [];
+  }
+  makeButton(x, y, label, onClick) {
+    const btn = this.add.text(x, y, label, {
+      fontFamily: "monospace", fontSize: "14px", color: "#ffff00", backgroundColor: "#00000088", padding: { x: 8, y: 4 }
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    btn.on("pointerdown", onClick);
+    this.buttons.push(btn);
+    return btn;
+  }
+  showRoot() {
+    this.clearButtons();
+    this.body.setText("");
+    this.makeButton(W / 2, 130, "Pokémon", () => this.showPokemon());
+    this.makeButton(W / 2, 170, "Bag", () => this.showBag());
+    this.makeButton(W / 2, 210, "Save", () => this.doSave());
+    this.makeButton(W / 2, 250, "Close", () => this.close());
+  }
+  showPokemon() {
+    this.clearButtons();
+    if (!hasPikachu) {
+      this.body.setText("You don't have a Pokémon yet.\n\nGet one from Professor Oak's Lab.");
+    } else {
+      const stats = levelStats("PIKACHU", playerLevel);
+      this.body.setText(
+        `${stats.name}  Lv${stats.level}\nType: ${stats.type}\nHP: ${stats.maxHp}  Atk: ${stats.atk}  Def: ${stats.def}  Spd: ${stats.spd}\n\nMoves: ${stats.moves.map((m) => m.name).join(", ")}`
+      );
+    }
+    this.makeButton(W / 2, H - 40, "Back", () => this.showRoot());
+  }
+  showBag() {
+    this.clearButtons();
+    const entries = Object.entries(inventory).filter(([, qty]) => qty > 0);
+    if (entries.length === 0) {
+      this.body.setText("Bag is empty.");
+    } else {
+      this.body.setText(entries.map(([id, qty]) => `${ITEMS[id]?.name || id} x${qty}`).join("\n"));
+    }
+    this.makeButton(W / 2, H - 40, "Back", () => this.showRoot());
+  }
+  doSave() {
+    this.clearButtons();
+    saveGame(this.mapInfo);
+    this.body.setText(`Saved!\n\n${trainerName}'s game has been saved.`);
+    this.makeButton(W / 2, H - 40, "Back", () => this.showRoot());
+  }
+  close() {
+    this.scene.stop();
+    this.game.events.emit("fireash-menu-closed");
   }
 }
 
@@ -1070,7 +1320,7 @@ export function startFireAshGame(parentEl) {
     height: H,
     parent: parentEl,
     pixelArt: true,
-    scene: [BootScene, TitleScene, IntroScene, GenderSelectScene, NameEntryScene, ConfirmScene, MapScene, BattleScene]
+    scene: [BootScene, TitleScene, IntroScene, GenderSelectScene, NameEntryScene, ConfirmScene, MapScene, BattleScene, MenuScene, ContinueScene]
   };
   return loadRawImages().then(() => new Phaser.Game(config));
 }

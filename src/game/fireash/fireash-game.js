@@ -25,6 +25,95 @@ const OAK_WORLD = [
 
 let trainerName = "";
 let trainerGender = null; // "boy" or "girl"
+let hasPikachu = false;
+
+// Strips this game's own RGSS/Pokemon Essentials message control codes
+// (\PN name substitution, \b/\r window-color tags, \se[]/\wtnp[] sound/wait
+// tags, literal "\n" line-break markers) down to plain text for a normal
+// HTML-ish dialogue box.
+function cleanRgssText(str) {
+  return str
+    .replace(/\\PN/g, trainerName || "Trainer")
+    .replace(/\\se\[[^\]]*\]/gi, "")
+    .replace(/\\wtnp\[[^\]]*\]/gi, "")
+    .replace(/\\[a-zA-Z]+\[[^\]]*\]/g, "")
+    .replace(/\\[a-zA-Z]/g, "")
+    .replace(/\\n/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+// RPG Maker XP facing-direction numbers -> which row of a 4x4 character
+// sheet (down/left/right/up, matching the player_boy/player_girl frame
+// layout already used below) to show as that NPC's static "standing" pose.
+const DIR_ROW = { 2: 0, 4: 1, 6: 2, 8: 3 };
+
+// Real NPCs, positions, facing, and dialogue, extracted directly from this
+// game's own Map033 (Pallet Town) and Map042 (house interiors) event data -
+// a Ruby script stubbing out RPG::Map/RPG::Event/etc classes so
+// Marshal.load could read the .rxdata files outside the engine, then
+// walking each event's own EventCommand list (codes 101/401 are "show
+// text") to pull out the real message text. Each NPC below uses page 0 of
+// its event - the state a brand-new save falls back to when none of the
+// page's own switch/variable conditions are set - not a full simulation of
+// every quest-flag-gated later page (some of these events have 15+ pages
+// for later-game states, out of scope for this opening-area pass).
+const NPCS = [
+  {
+    map: 33, x: 41, y: 26, dir: 2, sprite: "npc_gary", name: "Gary",
+    messages: [
+      "Gary: So \\PN, you woke up late. What a loser. It's a shame, because I ended up getting the best Pokémon.",
+      "It's good to have a grandfather in the business, isn't it.\\nCatch you later, \\PN.",
+    ],
+  },
+  {
+    map: 33, x: 19, y: 26, dir: 2, sprite: "npc_vendor", name: "Vendor",
+    messages: [
+      "Psst. I've got a sweet deal for you, Orange League Champ.",
+      "For 50 per piece, these candies will give your Pokémon 10 levels each, trust me!",
+      "Talk to me again if you'd like some, hehe.",
+    ],
+  },
+  {
+    map: 33, x: 30, y: 27, dir: 2, sprite: "npc_oakfan1", name: "Person",
+    messages: ["Professor Oak focuses on Pokémon and human relationships in his research."],
+  },
+  {
+    map: 33, x: 12, y: 35, dir: 2, sprite: "npc_06", name: "Person",
+    messages: ["Feeling slow? Press the 'F' or 'F7' key.", "Want to save faster? Press the left 'Alt' key."],
+  },
+  {
+    map: 33, x: 23, y: 38, dir: 4, sprite: "npc_05", name: "Person",
+    messages: ["I locked myself out of the house again..."],
+  },
+  {
+    map: 33, x: 50, y: 28, dir: 2, sprite: "npc_02", name: "Person",
+    messages: ["You can jump over this ledge by walking up to it."],
+  },
+  {
+    map: 33, x: 10, y: 28, dir: 2, sprite: "npc_mom", name: "Mom",
+    messages: [
+      "Mom: How did it go, \\PN? Ah, it looks like you got a lovely Pikachu.",
+      "It's going to be a wonderful journey, I can just tell. You were in such a rush I didn't have time to give you these earlier. Be sure to use them.",
+      "\\PN obtained Running Shoes.",
+    ],
+  },
+  {
+    map: 42, x: 28, y: 25, dir: 6, sprite: "npc_oakfan2", name: "Person",
+    messages: ["Professor Oak is the leading expert in Pokémon."],
+  },
+  {
+    map: 42, x: 5, y: 19, dir: 6, sprite: "npc_08", name: "Person",
+    messages: ["Hello, \\PN. Gary already left for the lab 2 hours ago. Hurry up!"],
+  },
+];
+
+// The Lab's starter Pokémon event - real position/flow from this
+// game's own "Starter ball" event (id 2, Map048): touching it always shows
+// the flavor line, then (once, via the Yes/No choice) the actual
+// Pikachu-or-nothing offer. Fire Ash gives a single Pikachu, not the
+// classic 3-ball choice - that's the real event data, not a simplification.
+const STARTER_BALL = { map: 48, x: 8, y: 10 };
 
 // Tileset/autotile source images, loaded as plain <img> elements (see note
 // in BootScene.preload for why - avoids WebGL's max-texture-size limit).
@@ -61,6 +150,16 @@ class BootScene extends Phaser.Scene {
     this.load.image("introGirl", "/fireash/assets/introGirl.png");
     this.load.spritesheet("player_boy", "/fireash/assets/player_boy.png", { frameWidth: 32, frameHeight: 48 });
     this.load.spritesheet("player_girl", "/fireash/assets/player_girl.png", { frameWidth: 32, frameHeight: 48 });
+
+    // Real NPC character sheets (same 4-col x 4-row / 32x48-per-frame
+    // layout as the player sprites above), straight from this game's own
+    // Graphics/Characters folder.
+    for (const npc of NPCS) {
+      if (!this.textures.exists(npc.sprite)) {
+        this.load.spritesheet(npc.sprite, `/fireash/assets/npcs/${npc.sprite}.png`, { frameWidth: 32, frameHeight: 48 });
+      }
+    }
+    this.load.spritesheet("ball_special", "/fireash/assets/npcs/ball_special.png", { frameWidth: 32, frameHeight: 32 });
 
     // Real tileset + autotile images, straight from the game's own
     // Graphics/Tilesets and Graphics/Autotiles folders. NOT loaded via
@@ -414,8 +513,30 @@ class MapScene extends Phaser.Scene {
 
     this.moving = false;
     this.warping = false;
+    this.facing = "down";
+    this.talking = null;
+    this.dbox = null;
+
+    // Real NPCs for this map (see NPCS above) - static standing sprites,
+    // block movement onto their tile, and open a dialogue box on
+    // interact (walk up to them, face them, press Z or Space).
+    this.npcs = NPCS.filter((n) => n.map === this.mapId).map((n) => {
+      const row = DIR_ROW[n.dir] ?? 0;
+      const sprite = this.add.sprite(n.x * TILE + TILE / 2, n.y * TILE + TILE / 2, n.sprite, row * 4).setDepth(9);
+      return { ...n, sprite };
+    });
+    this.starterBall = null;
+    if (this.mapId === STARTER_BALL.map) {
+      this.starterBall = this.add.sprite(
+        STARTER_BALL.x * TILE + TILE / 2, STARTER_BALL.y * TILE + TILE / 2, "ball_special", 2
+      ).setDepth(9);
+    }
+
+    this.input.keyboard.on("keydown-Z", () => this.handleActionKey());
+    this.input.keyboard.on("keydown-SPACE", () => this.handleActionKey());
+
     const label = { 33: "Pallet Town", 42: "Inside a house", 48: "Professor Oak's Lab" }[this.mapId] || "";
-    this.add.text(10, 10, label + " - arrow keys to move", {
+    this.add.text(10, 10, label + " - arrow keys to move, Z/Space to talk", {
       fontFamily: "monospace", fontSize: "10px", color: "#ffffff", backgroundColor: "#000000aa"
     }).setScrollFactor(0).setDepth(100);
 
@@ -424,6 +545,85 @@ class MapScene extends Phaser.Scene {
     this.debugText = this.add.text(10, 26, "", {
       fontFamily: "monospace", fontSize: "10px", color: "#00ff00", backgroundColor: "#000000aa"
     }).setScrollFactor(0).setDepth(100);
+  }
+  handleActionKey() {
+    if (this.talking) this.advanceTalk();
+    else this.tryInteract();
+  }
+  // Real "player touch"-style interact: check the tile directly in front of
+  // the player (their last-faced direction) for an NPC or the starter ball.
+  tryInteract() {
+    if (this.warping || this.moving) return;
+    const [dx, dy] = DELTA[this.facing];
+    const tx = this.tileX + dx, ty = this.tileY + dy;
+    const npc = this.npcs.find((n) => n.x === tx && n.y === ty);
+    if (npc) {
+      this.startTalk(npc.messages);
+      return;
+    }
+    if (this.starterBall && STARTER_BALL.x === tx && STARTER_BALL.y === ty) {
+      this.startBallInteraction();
+    }
+  }
+  startTalk(rawMessages, onLastLine) {
+    this.talking = { messages: rawMessages.map(cleanRgssText), index: 0, onLastLine: onLastLine || null };
+    if (!this.dbox) this.dbox = new DialogueBox(this);
+    this.dbox.say(this.talking.messages[0]);
+  }
+  advanceTalk() {
+    if (!this.talking || this.talking.awaitingChoice) return;
+    this.talking.index++;
+    if (this.talking.index < this.talking.messages.length) {
+      this.dbox.say(this.talking.messages[this.talking.index]);
+      return;
+    }
+    if (this.talking.onLastLine) {
+      const fn = this.talking.onLastLine;
+      this.talking.onLastLine = null;
+      this.talking.awaitingChoice = true;
+      fn();
+      return;
+    }
+    this.dbox.destroy();
+    this.dbox = null;
+    this.talking = null;
+  }
+  // The Lab's starter Pokémon offer, from this game's own "Starter ball"
+  // event: flavor line, then (once) Oak's Yes/No offer of Pikachu. Real
+  // Fire Ash gives exactly one Pikachu, not a 3-ball choice.
+  startBallInteraction() {
+    if (this.talking) return;
+    if (hasPikachu) {
+      this.startTalk(["Pikachu: Pika pika!"]);
+      return;
+    }
+    this.startTalk(
+      [
+        "This ball contains a Pokémon caught by the Professor.",
+        "Oak: So, you want Pikachu, the Electric mouse Pokémon?",
+      ],
+      () => this.showBallChoice()
+    );
+  }
+  showBallChoice() {
+    const makeBtn = (x, label) =>
+      this.add.text(x, H - 30, label, {
+        fontFamily: "monospace", fontSize: "14px", color: "#ffff00", backgroundColor: "#000000aa", padding: { x: 6, y: 2 }
+      }).setOrigin(0.5).setDepth(101).setInteractive({ useHandCursor: true });
+
+    const yesBtn = makeBtn(W / 2 - 40, "Yes");
+    const noBtn = makeBtn(W / 2 + 40, "No");
+    const cleanup = () => { yesBtn.destroy(); noBtn.destroy(); };
+
+    yesBtn.on("pointerdown", () => {
+      cleanup();
+      hasPikachu = true;
+      this.startTalk(["Pikachu started to follow you!"]);
+    });
+    noBtn.on("pointerdown", () => {
+      cleanup();
+      this.startTalk(["Oak: Unfortunately, it is the only one left, so I suggest you take it."]);
+    });
   }
   // Only fires when standing EXACTLY on a warp's approach tile AND (if the
   // warp specifies one) pressing exactly the required direction - matches
@@ -448,6 +648,7 @@ class MapScene extends Phaser.Scene {
       );
     }
     if (this.warping) return;
+    if (this.talking) return;
     if (this.moving) return;
 
     let dir = null;
@@ -457,6 +658,7 @@ class MapScene extends Phaser.Scene {
     else if (this.cursors.down.isDown) dir = "down";
 
     if (!dir) { this.player.anims.stop(); return; }
+    this.facing = dir;
 
     this.player.anims.play(this.spriteKey + "_" + dir, true);
 
@@ -474,7 +676,12 @@ class MapScene extends Phaser.Scene {
     // just one our simplified model (no real event layer) can't always
     // read correctly from raw tile passability alone.
     const targetIsApproachTile = WARPS.some(w => w.map === this.mapId && w.x === targetX && w.y === targetY);
-    if (!targetIsApproachTile && !canMove(this.passages, this.mapData, this.tileX, this.tileY, dir)) {
+    // NPCs (and the Lab's starter ball) occupy their tile solidly, same as
+    // a real RPG Maker event with "through" off - can't walk through them.
+    const targetHasNpc =
+      this.npcs.some((n) => n.x === targetX && n.y === targetY) ||
+      (this.starterBall && STARTER_BALL.x === targetX && STARTER_BALL.y === targetY);
+    if (targetHasNpc || (!targetIsApproachTile && !canMove(this.passages, this.mapData, this.tileX, this.tileY, dir))) {
       if (this.debugText) {
         this.debugText.setText(this.debugText.text + "  BLOCKED trying (" + targetX + "," + targetY + ") dir=" + dir);
       }

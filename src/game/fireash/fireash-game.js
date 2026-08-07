@@ -4,6 +4,7 @@
 // project session history for how each was extracted/verified. Assets
 // live in public/fireash/assets (Vite serves public/ as-is at the root).
 import Phaser from "phaser";
+import { SPECIES, createBattle, playerMove, attemptCatch, attemptRun } from "./battle.js";
 
 const W = 512, H = 384;
 
@@ -26,6 +27,8 @@ const OAK_WORLD = [
 let trainerName = "";
 let trainerGender = null; // "boy" or "girl"
 let hasPikachu = false;
+let rivalDefeated = false;
+let playerLevel = 5; // Pikachu's level, bumped slightly after each win
 
 // Strips this game's own RGSS/Pokemon Essentials message control codes
 // (\PN name substitution, \b/\r window-color tags, \se[]/\wtnp[] sound/wait
@@ -106,6 +109,15 @@ const NPCS = [
     map: 42, x: 5, y: 19, dir: 6, sprite: "npc_08", name: "Person",
     messages: ["Hello, \\PN. Gary already left for the lab 2 hours ago. Hurry up!"],
   },
+  // Route 1 (Map076) - real NPCs from that map's own event data.
+  {
+    map: 76, x: 16, y: 28, dir: 2, sprite: "npc_07", name: "Person",
+    messages: ["Be careful of the grass. Wild Pokémon can jump out."],
+  },
+  {
+    map: 76, x: 11, y: 18, dir: 2, sprite: "npc_19", name: "Person",
+    messages: ["Please visit the Poké Mart if you ever need to stock up on items."],
+  },
 ];
 
 // The Lab's starter Pokémon event - real position/flow from this
@@ -114,6 +126,49 @@ const NPCS = [
 // Pikachu-or-nothing offer. Fire Ash gives a single Pikachu, not the
 // classic 3-ball choice - that's the real event data, not a simplification.
 const STARTER_BALL = { map: 48, x: 8, y: 10 };
+
+// Gary's first battle. This game's real trainer roster data (extracted via
+// the same Marshal.load technique, from a modern Pokémon Essentials
+// GameData::Trainer table) turned out to only hold rematch-tier rosters
+// (level 40-100), not a distinct super-early roster we could confidently
+// identify as "the opening Route 1 battle" - so unlike the NPCs/dialogue
+// above, this one specific fight is NOT verified against a real trigger or
+// roster. It's a reasonable early-game placeholder (single low-level
+// Eevee, Gary's signature line), flagged honestly rather than presented as
+// extracted fact.
+const RIVAL_BATTLE = { map: 76, x: 20, y: 31, oppSpeciesId: "EEVEE", oppLevel: 5 };
+
+// Real Route 1 (Map076) tall-grass tiles and wild encounter table, from
+// this game's own map terrain tags (tag 2 = tall grass) and its
+// encounters.dat "Land" list for map 76 - weights/species/level-range
+// taken directly from the real table, with the encounter step chance
+// simplified to a flat per-step percentage (real Essentials rolls it
+// against terrain-tag-scaled odds, not worth reproducing exactly here).
+// The one 1%-weight "HOOH" joke entry in the real table was dropped.
+const ROUTE1_ENCOUNTERS = [
+  { weight: 20, speciesId: "PIDGEY", minLevel: 3, maxLevel: 5 },
+  { weight: 20, speciesId: "SPEAROW", minLevel: 3, maxLevel: 5 },
+  { weight: 10, speciesId: "MANKEY", minLevel: 2, maxLevel: 5 },
+  { weight: 10, speciesId: "PIDGEY", minLevel: 2, maxLevel: 4 },
+  { weight: 10, speciesId: "POLIWAG", minLevel: 3, maxLevel: 5 },
+  { weight: 10, speciesId: "RATTATA", minLevel: 2, maxLevel: 4 },
+  { weight: 10, speciesId: "SANDSHREW", minLevel: 2, maxLevel: 5 },
+  { weight: 4, speciesId: "RATTATA", minLevel: 2, maxLevel: 5 },
+  { weight: 4, speciesId: "SPEAROW", minLevel: 2, maxLevel: 5 },
+];
+const ROUTE1_ENCOUNTER_CHANCE = 0.1; // per step taken on a grass tile
+function rollEncounter() {
+  const totalWeight = ROUTE1_ENCOUNTERS.reduce((s, e) => s + e.weight, 0);
+  let roll = Math.random() * totalWeight;
+  for (const e of ROUTE1_ENCOUNTERS) {
+    roll -= e.weight;
+    if (roll <= 0) {
+      const level = e.minLevel + Math.floor(Math.random() * (e.maxLevel - e.minLevel + 1));
+      return { speciesId: e.speciesId, level };
+    }
+  }
+  return { speciesId: ROUTE1_ENCOUNTERS[0].speciesId, level: ROUTE1_ENCOUNTERS[0].minLevel };
+}
 
 // Tileset/autotile source images, loaded as plain <img> elements (see note
 // in BootScene.preload for why - avoids WebGL's max-texture-size limit).
@@ -161,6 +216,14 @@ class BootScene extends Phaser.Scene {
     }
     this.load.spritesheet("ball_special", "/fireash/assets/npcs/ball_special.png", { frameWidth: 32, frameHeight: 32 });
 
+    // Real Pokémon front/back battler sprites, straight from this game's
+    // own Graphics/Pokemon/Front and Back folders.
+    for (const id of Object.keys(SPECIES)) {
+      const lower = id.toLowerCase();
+      this.load.image(`battler_${lower}_front`, `/fireash/assets/battlers/${lower}_front.png`);
+      this.load.image(`battler_${lower}_back`, `/fireash/assets/battlers/${lower}_back.png`);
+    }
+
     // Real tileset + autotile images, straight from the game's own
     // Graphics/Tilesets and Graphics/Autotiles folders. NOT loaded via
     // Phaser's loader - the outside tileset is 256x20032px (this hack's
@@ -175,6 +238,11 @@ class BootScene extends Phaser.Scene {
     this.load.json("map33", "/fireash/assets/mapdata/map33.json");
     this.load.json("map42", "/fireash/assets/mapdata/map42.json");
     this.load.json("map48", "/fireash/assets/mapdata/map48.json");
+    // Route 1, same extraction method.
+    this.load.json("map76", "/fireash/assets/mapdata/map76.json");
+    // Real tall-grass tile coordinates on Route 1 (terrain tag 2 in this
+    // game's own Tilesets.rxdata), as a flat [x,y] pair list.
+    this.load.json("map76_grass", "/fireash/assets/mapdata/map76_grass.json");
     // Real per-tile passability bytes, extracted directly from this game's
     // own Tilesets.rxdata (@passages), keyed by tileset id.
     this.load.json("passages", "/fireash/assets/mapdata/passages.json");
@@ -347,7 +415,8 @@ const AUTOTILE_KEYS_INSIDE = ["autotile_fountain2"];
 const MAPS = {
   33: { key: "map33", tileset: 1 },
   42: { key: "map42", tileset: 3 },
-  48: { key: "map48", tileset: 3 }
+  48: { key: "map48", tileset: 3 },
+  76: { key: "map76", tileset: 1 }
 };
 
 // Each entry: player standing EXACTLY on (x,y) on `map` - and, if `dir` is
@@ -398,7 +467,15 @@ const WARPS = [
   // confirmed; approach tiles guessed one step off the real event
   // positions (12,2) and (36,2).
   { map: 42, x: 11, y: 2,  dir: "right", toMap: 42, toX: 37, toY: 2 },
-  { map: 42, x: 37, y: 2,  dir: "left",  toMap: 42, toX: 11, toY: 2 }
+  { map: 42, x: 37, y: 2,  dir: "left",  toMap: 42, toX: 11, toY: 2 },
+  // Pallet Town <-> Route 1. This engine only supports discrete tile
+  // warps (no seamless multi-map scrolling), so unlike the real game's
+  // continuous map connection (Route 1's east edge borders Pallet's west
+  // edge, per this game's own map_connections.dat), crossing is a warp at
+  // the westmost/eastmost walkable row shared by both maps' edges (y=30
+  // on both sides, confirmed against each map's own passability data).
+  { map: 33, x: 0,  y: 30, dir: "left",  toMap: 76, toX: 33, toY: 30 },
+  { map: 76, x: 34, y: 30, dir: "right", toMap: 33, toX: 1,  toY: 30 }
 ];
 WARPS.forEach((w, i) => { w._id = i; });
 function warpMatch(mapId, x, y, dir) {
@@ -532,10 +609,25 @@ class MapScene extends Phaser.Scene {
       ).setDepth(9);
     }
 
+    this.rivalSprite = null;
+    if (this.mapId === RIVAL_BATTLE.map && !rivalDefeated) {
+      this.rivalSprite = this.add.sprite(
+        RIVAL_BATTLE.x * TILE + TILE / 2, RIVAL_BATTLE.y * TILE + TILE / 2, "npc_gary", 0
+      ).setDepth(9);
+    }
+
+    // Real Route 1 tall-grass tiles (see ROUTE1_ENCOUNTERS above) - stepping
+    // onto one has a chance per step to start a wild battle.
+    this.grassTiles = null;
+    if (this.mapId === 76) {
+      const grassList = this.cache.json.get("map76_grass");
+      this.grassTiles = new Set(grassList.map(([x, y]) => `${x},${y}`));
+    }
+
     this.input.keyboard.on("keydown-Z", () => this.handleActionKey());
     this.input.keyboard.on("keydown-SPACE", () => this.handleActionKey());
 
-    const label = { 33: "Pallet Town", 42: "Inside a house", 48: "Professor Oak's Lab" }[this.mapId] || "";
+    const label = { 33: "Pallet Town", 42: "Inside a house", 48: "Professor Oak's Lab", 76: "Route 1" }[this.mapId] || "";
     this.add.text(10, 10, label + " - arrow keys to move, Z/Space to talk", {
       fontFamily: "monospace", fontSize: "10px", color: "#ffffff", backgroundColor: "#000000aa"
     }).setScrollFactor(0).setDepth(100);
@@ -551,7 +643,8 @@ class MapScene extends Phaser.Scene {
     else this.tryInteract();
   }
   // Real "player touch"-style interact: check the tile directly in front of
-  // the player (their last-faced direction) for an NPC or the starter ball.
+  // the player (their last-faced direction) for an NPC, the starter ball,
+  // or the rival.
   tryInteract() {
     if (this.warping || this.moving) return;
     const [dx, dy] = DELTA[this.facing];
@@ -563,7 +656,30 @@ class MapScene extends Phaser.Scene {
     }
     if (this.starterBall && STARTER_BALL.x === tx && STARTER_BALL.y === ty) {
       this.startBallInteraction();
+      return;
     }
+    if (this.rivalSprite && RIVAL_BATTLE.x === tx && RIVAL_BATTLE.y === ty) {
+      if (rivalDefeated) {
+        this.startTalk(["Gary: Hmph. Get stronger before you challenge me again."]);
+      } else {
+        this.startRivalBattle();
+      }
+    }
+  }
+  startRivalBattle() {
+    this.warping = true;
+    this.cameras.main.fadeOut(300, 0, 0, 0);
+    this.cameras.main.once("camerafadeoutcomplete", () => {
+      this.scene.start("Battle", {
+        playerSpeciesId: "PIKACHU",
+        playerLevel,
+        oppSpeciesId: RIVAL_BATTLE.oppSpeciesId,
+        oppLevel: RIVAL_BATTLE.oppLevel,
+        isTrainer: true,
+        trainerName: "Gary",
+        returnTo: { mapId: this.mapId, tileX: this.tileX, tileY: this.tileY },
+      });
+    });
   }
   startTalk(rawMessages, onLastLine) {
     this.talking = { messages: rawMessages.map(cleanRgssText), index: 0, onLastLine: onLastLine || null };
@@ -680,7 +796,8 @@ class MapScene extends Phaser.Scene {
     // a real RPG Maker event with "through" off - can't walk through them.
     const targetHasNpc =
       this.npcs.some((n) => n.x === targetX && n.y === targetY) ||
-      (this.starterBall && STARTER_BALL.x === targetX && STARTER_BALL.y === targetY);
+      (this.starterBall && STARTER_BALL.x === targetX && STARTER_BALL.y === targetY) ||
+      (this.rivalSprite && RIVAL_BATTLE.x === targetX && RIVAL_BATTLE.y === targetY);
     if (targetHasNpc || (!targetIsApproachTile && !canMove(this.passages, this.mapData, this.tileX, this.tileY, dir))) {
       if (this.debugText) {
         this.debugText.setText(this.debugText.text + "  BLOCKED trying (" + targetX + "," + targetY + ") dir=" + dir);
@@ -698,12 +815,207 @@ class MapScene extends Phaser.Scene {
       onComplete: () => {
         this.moving = false;
         this.nameLabel.setPosition(this.player.x, this.player.y - 30);
+        this.maybeTriggerEncounter();
       }
     });
     this.nameLabel.setPosition(this.player.x, this.player.y - 30);
   }
+  // Real Route 1 tall-grass tiles - each step taken while standing on one
+  // has a flat chance (see ROUTE1_ENCOUNTER_CHANCE) to start a wild battle,
+  // using the real per-species weights/level-ranges from this game's own
+  // encounters.dat "Land" table for Map076.
+  maybeTriggerEncounter() {
+    if (!this.grassTiles || this.talking) return;
+    if (!this.grassTiles.has(`${this.tileX},${this.tileY}`)) return;
+    if (Math.random() > ROUTE1_ENCOUNTER_CHANCE) return;
+    const { speciesId, level } = rollEncounter();
+    this.warping = true;
+    this.cameras.main.fadeOut(300, 0, 0, 0);
+    this.cameras.main.once("camerafadeoutcomplete", () => {
+      this.scene.start("Battle", {
+        playerSpeciesId: "PIKACHU",
+        playerLevel,
+        oppSpeciesId: speciesId,
+        oppLevel: level,
+        isTrainer: false,
+        returnTo: { mapId: this.mapId, tileX: this.tileX, tileY: this.tileY },
+      });
+    });
+  }
 }
 
+function hpBarColor(frac) {
+  if (frac > 0.5) return 0x4ade80;
+  if (frac > 0.2) return 0xfacc15;
+  return 0xef4444;
+}
+
+class HpBar {
+  constructor(scene, x, y, width) {
+    this.scene = scene;
+    this.x = x; this.y = y; this.width = width;
+    this.bg = scene.add.rectangle(x, y, width, 8, 0x1e293b).setOrigin(0, 0.5);
+    this.fill = scene.add.rectangle(x, y, width, 8, 0x4ade80).setOrigin(0, 0.5);
+  }
+  update(hp, maxHp) {
+    const frac = Math.max(0, hp / maxHp);
+    this.fill.width = this.width * frac;
+    this.fill.fillColor = hpBarColor(frac);
+  }
+  destroy() { this.bg.destroy(); this.fill.destroy(); }
+}
+
+// Simplified single-Pokémon battle scene - see battle.js for the engine.
+// Turn resolution/messages are revealed one line at a time (Z/Space/click
+// to advance), matching the overworld DialogueBox pacing.
+class BattleScene extends Phaser.Scene {
+  constructor() { super("Battle"); }
+  init(data) { this.battleInit = data; }
+  create() {
+    const d = this.battleInit;
+    this.returnTo = d.returnTo;
+
+    this.add.rectangle(W / 2, H * 0.35, W, H * 0.7, 0x87ceeb);
+    this.add.rectangle(W / 2, H * 0.78, W, H * 0.44, 0x4a7c3f);
+
+    this.battle = createBattle({
+      playerSpeciesId: d.playerSpeciesId,
+      playerLevel: d.playerLevel,
+      oppSpeciesId: d.oppSpeciesId,
+      oppLevel: d.oppLevel,
+      isTrainer: d.isTrainer,
+      trainerName: d.trainerName,
+    });
+
+    const oppLower = d.oppSpeciesId.toLowerCase();
+    const playerLower = d.playerSpeciesId.toLowerCase();
+    this.add.image(W * 0.72, H * 0.32, `battler_${oppLower}_front`).setScale(1.4);
+    this.add.image(W * 0.22, H * 0.62, `battler_${playerLower}_back`).setScale(1.8);
+
+    this.add.rectangle(W * 0.26, 40, 220, 54, 0xfdf6e3).setStrokeStyle(2, 0x1e293b);
+    this.oppNameText = this.add.text(W * 0.26 - 100, 24, "", { fontFamily: "monospace", fontSize: "13px", color: "#1e293b" });
+    this.oppHpBar = new HpBar(this, W * 0.26 - 100, 48, 180);
+
+    this.add.rectangle(W * 0.76, H - 90, 220, 54, 0xfdf6e3).setStrokeStyle(2, 0x1e293b);
+    this.playerNameText = this.add.text(W * 0.76 - 100, H - 106, "", { fontFamily: "monospace", fontSize: "13px", color: "#1e293b" });
+    this.playerHpBar = new HpBar(this, W * 0.76 - 100, H - 82, 180);
+    this.playerHpNumText = this.add.text(W * 0.76 - 100, H - 74, "", { fontFamily: "monospace", fontSize: "11px", color: "#1e293b" });
+
+    this.msgBox = this.add.rectangle(W / 2, H - 30, W - 20, 56, 0x1c1c2c, 0.92).setStrokeStyle(2, 0xffffff);
+    this.msgText = this.add.text(20, H - 50, "", { fontFamily: "monospace", fontSize: "13px", color: "#ffffff", wordWrap: { width: W - 50 } });
+    this.prompt = this.add.text(W - 30, H - 12, "▼", { fontFamily: "monospace", fontSize: "14px", color: "#ffffff" });
+    this.tweens.add({ targets: this.prompt, y: H - 8, duration: 400, yoyo: true, repeat: -1 });
+
+    this.menuButtons = [];
+    this.pendingLines = [];
+    this.mode = "menu";
+
+    this.input.keyboard.on("keydown-Z", () => this.handleKey());
+    this.input.keyboard.on("keydown-SPACE", () => this.handleKey());
+
+    this.refreshStats();
+    this.showMainMenu();
+  }
+  refreshStats() {
+    const { player, opponent } = this.battle;
+    this.oppNameText.setText(`${opponent.name}  Lv${opponent.level}`);
+    this.oppHpBar.update(opponent.hp, opponent.maxHp);
+    this.playerNameText.setText(`${player.name}  Lv${player.level}`);
+    this.playerHpBar.update(player.hp, player.maxHp);
+    this.playerHpNumText.setText(`${player.hp}/${player.maxHp}`);
+  }
+  clearButtons() {
+    this.menuButtons.forEach((b) => b.destroy());
+    this.menuButtons = [];
+  }
+  makeButton(x, y, label, onClick) {
+    const btn = this.add.text(x, y, label, {
+      fontFamily: "monospace", fontSize: "13px", color: "#ffff00", backgroundColor: "#00000088", padding: { x: 8, y: 4 }
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    btn.on("pointerdown", onClick);
+    this.menuButtons.push(btn);
+    return btn;
+  }
+  showMainMenu() {
+    this.mode = "menu";
+    this.clearButtons();
+    this.msgText.setText(`What will ${this.battle.player.name} do?`);
+    if (this.battle.isTrainer) {
+      this.makeButton(W / 2, H - 30, "FIGHT", () => this.showMoveMenu());
+    } else {
+      this.makeButton(W / 2 - 90, H - 30, "FIGHT", () => this.showMoveMenu());
+      this.makeButton(W / 2, H - 30, "CATCH", () => this.doCatch());
+      this.makeButton(W / 2 + 90, H - 30, "RUN", () => this.doRun());
+    }
+  }
+  showMoveMenu() {
+    this.mode = "moves";
+    this.clearButtons();
+    this.msgText.setText("Choose a move:");
+    const moves = this.battle.player.moves;
+    moves.forEach((m, i) => {
+      const x = W / 2 + (i - (moves.length - 1) / 2) * 110;
+      this.makeButton(x, H - 30, m.name, () => this.doMove(i));
+    });
+  }
+  doMove(i) {
+    const { battle, added } = playerMove(this.battle, i);
+    this.battle = battle;
+    this.revealLines(added);
+  }
+  doCatch() {
+    const { battle, added } = attemptCatch(this.battle);
+    this.battle = battle;
+    this.revealLines(added);
+  }
+  doRun() {
+    const { battle, added } = attemptRun(this.battle);
+    this.battle = battle;
+    this.revealLines(added);
+  }
+  revealLines(lines) {
+    this.clearButtons();
+    this.pendingLines = lines.slice();
+    this.mode = "message";
+    this.nextLine();
+  }
+  nextLine() {
+    if (this.pendingLines.length === 0) {
+      this.refreshStats();
+      if (this.battle.status !== "active") {
+        this.endBattle();
+      } else {
+        this.showMainMenu();
+      }
+      return;
+    }
+    this.msgText.setText(this.pendingLines.shift());
+    this.refreshStats();
+  }
+  handleKey() {
+    if (this.mode === "message") this.nextLine();
+  }
+  endBattle() {
+    this.mode = "end";
+    const status = this.battle.status;
+    if (status === "won" && this.battleInit.isTrainer) rivalDefeated = true;
+    if (status === "won") playerLevel = Math.min(30, playerLevel + 1);
+    const summary =
+      status === "won" ? "You won!" :
+      status === "lost" ? `${this.battle.player.name} has no energy left to battle!` :
+      status === "caught" ? `${this.battle.opponent.name} was added to your party!` :
+      "You got away.";
+    this.msgText.setText(summary + "  (press Z/Space to continue)");
+    this.input.keyboard.once("keydown-Z", () => this.returnToMap());
+    this.input.keyboard.once("keydown-SPACE", () => this.returnToMap());
+  }
+  returnToMap() {
+    this.cameras.main.fadeOut(300, 0, 0, 0);
+    this.cameras.main.once("camerafadeoutcomplete", () => {
+      this.scene.start("Map", { mapId: this.returnTo.mapId, startTile: { x: this.returnTo.tileX, y: this.returnTo.tileY } });
+    });
+  }
+}
 
 export function startFireAshGame(parentEl) {
   const config = {
@@ -712,7 +1024,7 @@ export function startFireAshGame(parentEl) {
     height: H,
     parent: parentEl,
     pixelArt: true,
-    scene: [BootScene, TitleScene, IntroScene, GenderSelectScene, NameEntryScene, ConfirmScene, MapScene]
+    scene: [BootScene, TitleScene, IntroScene, GenderSelectScene, NameEntryScene, ConfirmScene, MapScene, BattleScene]
   };
   return loadRawImages().then(() => new Phaser.Game(config));
 }

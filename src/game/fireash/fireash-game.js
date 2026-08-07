@@ -109,6 +109,17 @@ const NPCS = [
     map: 42, x: 5, y: 19, dir: 6, sprite: "npc_08", name: "Person",
     messages: ["Hello, \\PN. Gary already left for the lab 2 hours ago. Hurry up!"],
   },
+  // Real Mom (event id 9, ground floor near the front door). Her own event
+  // data has 2 pages: page 0 (no switch set) is blank/invisible, page 1
+  // (switch 38) is her actual greeting - and switch 38 is unconditionally
+  // turned on by this game's own "Beginning" event the moment you appear
+  // in your bedroom (see RIVAL_BATTLE-adjacent note below), so in practice
+  // she's always in this state. Using page 1's sprite/facing/text as her
+  // one permanent appearance rather than modeling the switch.
+  {
+    map: 42, x: 7, y: 4, dir: 4, sprite: "npc_mom", name: "Mom",
+    messages: ["Mom: \\PN, you're late! Hurry over to Professor Oak to get your first Pokémon."],
+  },
   // Route 1 (Map076) - real NPCs from that map's own event data.
   {
     map: 76, x: 16, y: 28, dir: 2, sprite: "npc_07", name: "Person",
@@ -463,9 +474,14 @@ const WARPS = [
   { map: 42, x: 36, y: 19, dir: "right", toMap: 48, toX: 14, toY: 4 },
   // Lab's return stairs - own tile is walkable, so this one already worked.
   { map: 48, x: 14, y: 3,  dir: "left", toMap: 42, toX: 36, toY: 19 },
-  // Player's house internal 2nd floor connector - NOT independently
-  // confirmed; approach tiles guessed one step off the real event
-  // positions (12,2) and (36,2).
+  // Player's house internal upstairs (bedroom, near spawn) <-> downstairs
+  // (ground floor, near the front door and Mom) connector. Confirmed
+  // against the real events: "Stairs up" (id 6, at the impassable tile
+  // (12,2), approached from walkable (11,2)) transfers to (37,2); "Stairs
+  // down" (id 8, at impassable (36,2), approached from walkable (37,2))
+  // transfers to (11,2). Both are real "player touch" events (trigger
+  // type 1) - bump into them, no button press needed, same as the Lab
+  // stairs below.
   { map: 42, x: 11, y: 2,  dir: "right", toMap: 42, toX: 37, toY: 2 },
   { map: 42, x: 37, y: 2,  dir: "left",  toMap: 42, toX: 11, toY: 2 },
   // Pallet Town <-> Route 1. This engine only supports discrete tile
@@ -624,6 +640,15 @@ class MapScene extends Phaser.Scene {
       this.grassTiles = new Set(grassList.map(([x, y]) => `${x},${y}`));
     }
 
+    // MapScene restarts itself (scene.start("Map", ...)) on every warp,
+    // which re-runs create() - without clearing old listeners first, each
+    // warp stacked another Z/Space handler, so after a couple of warps one
+    // key press fired handleActionKey() multiple times in a row (the 2nd+
+    // call would see this.talking already set from the 1st and instantly
+    // advance/close a dialogue box before it could be read). This is the
+    // real cause behind "interactions don't work."
+    this.input.keyboard.off("keydown-Z");
+    this.input.keyboard.off("keydown-SPACE");
     this.input.keyboard.on("keydown-Z", () => this.handleActionKey());
     this.input.keyboard.on("keydown-SPACE", () => this.handleActionKey());
 
@@ -910,6 +935,8 @@ class BattleScene extends Phaser.Scene {
     this.pendingLines = [];
     this.mode = "menu";
 
+    this.input.keyboard.off("keydown-Z");
+    this.input.keyboard.off("keydown-SPACE");
     this.input.keyboard.on("keydown-Z", () => this.handleKey());
     this.input.keyboard.on("keydown-SPACE", () => this.handleKey());
 

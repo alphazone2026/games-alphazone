@@ -444,11 +444,20 @@ class ContinueScene extends Phaser.Scene {
 class DialogueBox {
   constructor(scene) {
     this.scene = scene;
-    this.box = scene.add.rectangle(W/2, H - 60, W - 20, 90, 0x1c1c2c, 0.92).setStrokeStyle(2, 0xffffff);
+    // setScrollFactor(0) pins these to the screen instead of the world -
+    // essential in any scene whose camera scrolls (MapScene follows the
+    // player around a much larger map). Without it, this UI renders at a
+    // fixed WORLD position that the camera happily scrolls right past,
+    // making the dialogue box completely invisible (though still fully
+    // functional - this.talking gets set, movement pauses, etc.) the
+    // moment the player has walked away from the map's origin corner.
+    // Scenes with a static camera (Intro, Confirm, ...) never surfaced
+    // this, since world coords equal screen coords there by coincidence.
+    this.box = scene.add.rectangle(W/2, H - 60, W - 20, 90, 0x1c1c2c, 0.92).setStrokeStyle(2, 0xffffff).setScrollFactor(0).setDepth(200);
     this.text = scene.add.text(20, H - 100, "", {
       fontFamily: "monospace", fontSize: "14px", color: "#ffffff", wordWrap: { width: W - 50 }
-    });
-    this.prompt = scene.add.text(W - 30, H - 20, "▼", { fontFamily: "monospace", fontSize: "14px", color: "#ffffff" });
+    }).setScrollFactor(0).setDepth(201);
+    this.prompt = scene.add.text(W - 30, H - 20, "▼", { fontFamily: "monospace", fontSize: "14px", color: "#ffffff" }).setScrollFactor(0).setDepth(201);
     this.scene.tweens.add({ targets: this.prompt, y: H - 16, duration: 400, yoyo: true, repeat: -1 });
   }
   say(str) { this.text.setText(str); }
@@ -996,10 +1005,12 @@ class MapScene extends Phaser.Scene {
     );
   }
   showBallChoice() {
+    // Same fixed-to-screen fix as DialogueBox above - these are UI
+    // buttons, not world objects, and MapScene's camera scrolls.
     const makeBtn = (x, label) =>
       this.add.text(x, H - 30, label, {
         fontFamily: "monospace", fontSize: "14px", color: "#ffff00", backgroundColor: "#000000aa", padding: { x: 6, y: 2 }
-      }).setOrigin(0.5).setDepth(101).setInteractive({ useHandCursor: true });
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(201).setInteractive({ useHandCursor: true });
 
     const yesBtn = makeBtn(W / 2 - 40, "Yes");
     const noBtn = makeBtn(W / 2 + 40, "No");

@@ -6,20 +6,23 @@ import GameBoard from "../components/GameBoard.jsx";
 import Flip7Board from "../components/Flip7Board.jsx";
 import BattleshipBoard from "../components/BattleshipBoard.jsx";
 import CatanBoard from "../components/CatanBoard.jsx";
+import TicketToRideBoard from "../components/TicketToRideBoard.jsx";
 
-const VALID_GAMES = ["uno", "flip7", "battleship", "catan"];
+const VALID_GAMES = ["uno", "flip7", "battleship", "catan", "tickettoride"];
 
 const GAME_LABELS = {
   uno: { classic: "Uno", teams: "Uno Teams" },
   flip7: { default: "Flip 7" },
   battleship: { default: "Battleship" },
   catan: { default: "Catan" },
+  tickettoride: { default: "Ticket to Ride NSW" },
 };
 
 const BOARDS = {
   flip7: Flip7Board,
   battleship: BattleshipBoard,
   catan: CatanBoard,
+  tickettoride: TicketToRideBoard,
 };
 
 export default function Room() {

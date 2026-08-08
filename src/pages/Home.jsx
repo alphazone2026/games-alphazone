@@ -81,6 +81,13 @@ export default function Home() {
               Catan
               <div className="text-xs font-normal text-amber-200">3-4 players, full rules</div>
             </button>
+            <button
+              className="rounded-lg bg-teal-700 hover:bg-teal-600 py-3 font-semibold transition col-span-2"
+              onClick={() => go(makeCode(), "tickettoride")}
+            >
+              Ticket to Ride NSW
+              <div className="text-xs font-normal text-teal-200">2-5 players, claim the state's railways</div>
+            </button>
           </div>
         </div>
 

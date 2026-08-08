@@ -91,6 +91,9 @@ export default function Lobby({ room, gameId, variant }) {
         {gameId === "catan" && takenCount < 3 && (
           <p className="text-emerald-50/60 text-sm">Catan needs 3-4 players (real players or AI).</p>
         )}
+        {gameId === "tickettoride" && takenCount < 2 && (
+          <p className="text-emerald-50/60 text-sm">Ticket to Ride NSW needs at least 2 players (real players or AI).</p>
+        )}
         {canStart && !isHost && (
           <p className="text-emerald-50/60 text-sm">Waiting for the room host to start the game.</p>
         )}

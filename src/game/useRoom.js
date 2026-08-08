@@ -20,6 +20,8 @@ import * as battleship from "./battleship.js";
 import { chooseBattleshipAction, chooseBattleshipPlacement } from "./battleshipai.js";
 import * as catan from "./catan/catan.js";
 import { chooseCatanAction, chooseCatanDiscard, chooseCatanTradeResponse } from "./catan/catanai.js";
+import * as ttr from "./ttr/ttr.js";
+import { chooseTtrAction, chooseAIDestinations } from "./ttr/ttrai.js";
 
 const AI_NAMES = ["Robo Red", "Ana Bot", "Circuit Sam", "Byte Betty", "Volt Vinny", "Chip Chan", "Data Dana", "Pixel Pete"];
 
@@ -93,6 +95,15 @@ const ENGINES = {
     chooseAI: chooseCatanAction,
     canStart: (taken) => taken.length >= 3 && taken.length <= 4,
     maxSeats: 4,
+  },
+  tickettoride: {
+    createGame: (players) => ttr.createGame({ players }),
+    applyAction: ttr.applyAction,
+    legalMoves: ttr.legalMoves,
+    chooseAI: chooseTtrAction,
+    chooseAIDestinations,
+    canStart: (taken) => taken.length >= 2,
+    maxSeats: 5,
   },
 };
 
@@ -405,12 +416,34 @@ export function useRoom(roomCode, playerName, { gameId = "uno", variant } = {}) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isHost, game, writeGame]);
 
+  // Ticket to Ride: AI seats resolve their own pending destination-ticket
+  // choice as soon as it exists — this isn't turn-gated (everyone picks
+  // their starting tickets independently, and later "draw tickets" choices
+  // only block that player's own next action), so it needs its own watcher
+  // rather than piggybacking on the AI-turn effect below.
+  useEffect(() => {
+    if (!isHost || !engine.chooseAIDestinations || !game) return;
+    const aiPending = game.players.filter((p) => p.isAI && game.pendingDestinationChoice?.[p.id]);
+    if (aiPending.length === 0) return;
+    const timers = aiPending.map((ai) =>
+      setTimeout(() => {
+        const current = gameRefValue.current;
+        if (!current?.pendingDestinationChoice?.[ai.id]) return;
+        const action = engine.chooseAIDestinations(current, ai.id);
+        if (!action) return;
+        writeGame(applyActionSafe(engine, current, ai.id, action));
+      }, 500 + Math.random() * 800)
+    );
+    return () => timers.forEach(clearTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHost, game, writeGame]);
+
   // Host drives AI turns.
   useEffect(() => {
     if (!isHost || !game || game.status !== "playing") return;
     if (gameId === "flip7" && game.roundOver) return;
     const current = game.players[game.currentPlayerIndex];
-    if (!current?.isAI) return;
+    if (!current?.isAI || game.pendingDestinationChoice?.[current.id]) return;
     const timer = setTimeout(() => {
       const action = engine.chooseAI(game, current.id);
       if (!action) return; // e.g. Catan AI waiting on another player's setup step

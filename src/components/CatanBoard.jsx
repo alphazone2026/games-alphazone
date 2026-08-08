@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { BOARD } from "../game/catan/geometry.js";
 import { RESOURCES, COST, playerVictoryPoints, bestRateFor } from "../game/catan/catan.js";
+import { useAppearAnimation } from "../hooks/useAppearAnimation.js";
 
 // Light/dark pair per resource, used to give each hex a lit, beveled look
 // via a radial gradient instead of a flat fill.
@@ -44,6 +45,11 @@ function edgeTouchesMe(game, edge, playerId) {
 }
 
 function Board({ game, mode, inSetup, onVertexClick, onEdgeClick, playerId }) {
+  const newRoads = useAppearAnimation(Object.keys(game.roads));
+  const newBuildings = useAppearAnimation(
+    Object.entries(game.buildings).map(([vid, b]) => `${vid}:${b.type}`)
+  );
+
   const xs = BOARD.tiles.map((t) => t.x);
   const ys = BOARD.tiles.map((t) => t.y);
   const minX = Math.min(...xs) - 140,
@@ -128,6 +134,7 @@ function Board({ game, mode, inSetup, onVertexClick, onEdgeClick, playerId }) {
             strokeWidth={owner ? 8 : clickable ? 10 : 3}
             strokeLinecap="round"
             opacity={owner ? 1 : clickable ? 0.6 : 0.25}
+            className={newRoads.has(String(e.id)) ? "animate-pop-in" : ""}
             style={{ cursor: clickable ? "pointer" : "default" }}
             onClick={clickable ? () => onEdgeClick(e.id) : undefined}
           />
@@ -156,7 +163,16 @@ function Board({ game, mode, inSetup, onVertexClick, onEdgeClick, playerId }) {
               />
             )}
             {b && owner && b.type === "settlement" && (
-              <rect x={v.x - 9} y={v.y - 9} width="18" height="18" fill={owner.color} stroke="#0f172a" strokeWidth="1.5" />
+              <rect
+                x={v.x - 9}
+                y={v.y - 9}
+                width="18"
+                height="18"
+                fill={owner.color}
+                stroke="#0f172a"
+                strokeWidth="1.5"
+                className={newBuildings.has(`${v.id}:settlement`) ? "animate-pop-in" : ""}
+              />
             )}
             {b && owner && b.type === "city" && (
               <polygon
@@ -164,6 +180,7 @@ function Board({ game, mode, inSetup, onVertexClick, onEdgeClick, playerId }) {
                 fill={owner.color}
                 stroke="#0f172a"
                 strokeWidth="1.5"
+                className={newBuildings.has(`${v.id}:city`) ? "animate-pop-in" : ""}
               />
             )}
           </g>

@@ -1,11 +1,16 @@
 import { describeCard, handScore, uniqueNumberValues, TARGET_SCORE } from "../game/flip7.js";
+import { useAppearAnimation } from "../hooks/useAppearAnimation.js";
 
-function MiniCard({ card }) {
+function MiniCard({ card, justDealt }) {
   const isNumber = card.kind === "number";
   const isAction = card.kind === "action";
   const accent = isNumber ? "border-t-slate-500" : isAction ? "border-t-purple-600" : "border-t-amber-500";
   return (
-    <div className={`card-face ${accent} border-t-4 w-9 h-12 rounded-md flex items-center justify-center text-[10px] font-bold`}>
+    <div
+      className={`card-face ${accent} border-t-4 w-9 h-12 rounded-md flex items-center justify-center text-[10px] font-bold ${
+        justDealt ? "animate-deal-in" : ""
+      }`}
+    >
       {describeCard(card)}
     </div>
   );
@@ -24,6 +29,7 @@ function seatPosition(index, total) {
 }
 
 function SeatBadge({ player, hand, score, roundScore, busted, stayed, isTurn, isMe, style }) {
+  const justDealt = useAppearAnimation(hand.map((c) => c.id));
   return (
     <div className="absolute flex flex-col items-center gap-1.5" style={{ ...style, transform: "translate(-50%, -50%)" }}>
       <div
@@ -48,7 +54,7 @@ function SeatBadge({ player, hand, score, roundScore, busted, stayed, isTurn, is
       <div className="flex flex-wrap gap-1 justify-center max-w-[9rem]">
         {hand.length === 0 && <div className="text-[10px] text-amber-100/40">No cards</div>}
         {hand.map((c) => (
-          <MiniCard key={c.id} card={c} />
+          <MiniCard key={c.id} card={c} justDealt={justDealt.has(c.id)} />
         ))}
       </div>
     </div>

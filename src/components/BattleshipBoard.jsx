@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { GRID_SIZE, FLEET } from "../game/battleship.js";
+import { useAppearAnimation } from "../hooks/useAppearAnimation.js";
 
 const COLS = Array.from({ length: GRID_SIZE }, (_, i) => String.fromCharCode(65 + i));
 
@@ -29,6 +30,14 @@ function GridHeader() {
 }
 
 function Grid({ board, revealShips, onCellClick, disabled }) {
+  const resolvedCells = [];
+  board.grid.forEach((row, y) =>
+    row.forEach((cell, x) => {
+      if (cell === "hit" || cell === "miss") resolvedCells.push(`${x},${y}`);
+    })
+  );
+  const newlyResolved = useAppearAnimation(resolvedCells);
+
   return (
     <div className="wood-frame rounded-lg p-2.5 inline-block">
       <GridHeader />
@@ -48,6 +57,7 @@ function Grid({ board, revealShips, onCellClick, disabled }) {
                 className={`w-7 h-7 border border-black/30 flex items-center justify-center text-xs
                   ${isHit ? "bg-red-600" : isMiss ? "bg-slate-500" : isShip ? "bg-slate-400" : "bg-gradient-to-br from-sky-700 to-sky-950"}
                   ${clickable ? "hover:brightness-125 cursor-pointer" : ""}
+                  ${newlyResolved.has(`${x},${y}`) ? "animate-impact" : ""}
                 `}
               >
                 {isHit ? "✹" : isMiss ? "•" : ""}

@@ -169,6 +169,11 @@ export const DESTINATIONS = [
 
 export const ROUTE_POINTS = { 1: 1, 2: 2, 3: 4, 4: 7, 5: 10, 6: 15 };
 
+// Tight crop around the outline (plus room for station labels and the
+// title cartouche/compass corner decorations) so the map reads zoomed-in
+// rather than floating in a lot of empty viewBox.
+export const MAP_VIEWBOX = "40 0 840 705";
+
 export function stationName(id) {
   return STATIONS.find((s) => s.id === id)?.name || id;
 }

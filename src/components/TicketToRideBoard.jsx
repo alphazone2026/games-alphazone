@@ -1,36 +1,89 @@
 import { useState } from "react";
-import { STATIONS, ROUTES, DESTINATIONS, NSW_OUTLINE } from "../game/ttr/geometry.js";
+import { STATIONS, ROUTES, DESTINATIONS, NSW_OUTLINE, MAP_VIEWBOX } from "../game/ttr/geometry.js";
 import { affordableColors } from "../game/ttr/ttr.js";
 import { useAppearAnimation } from "../hooks/useAppearAnimation.js";
 
 const STATION_BY_ID = Object.fromEntries(STATIONS.map((s) => [s.id, s]));
 const DEST_BY_ID = Object.fromEntries(DESTINATIONS.map((d) => [d.id, d]));
 
-const TRAIN_COLOR_HEX = {
-  red: "#dc2626",
-  orange: "#ea580c",
-  yellow: "#ca8a04",
-  green: "#16a34a",
-  blue: "#2563eb",
-  purple: "#7c3aed",
-  black: "#27272a",
-  white: "#e2e8f0",
-  gray: "#94a3b8",
-  locomotive: "#f59e0b",
+// Light/dark pair per train color, used for the beveled route-segment and
+// card gradients — mirrors the treatment CatanBoard uses for its hexes.
+const TRAIN_GRADIENT = {
+  red: ["#ef4444", "#7f1d1d"],
+  orange: ["#fb923c", "#7c2d12"],
+  yellow: ["#facc15", "#78350f"],
+  green: ["#4ade80", "#14532d"],
+  blue: ["#60a5fa", "#1e3a8a"],
+  purple: ["#c084fc", "#4c1d95"],
+  black: ["#52525b", "#0a0a0a"],
+  white: ["#ffffff", "#94a3b8"],
+  gray: ["#cbd5e1", "#475569"],
 };
-
-function ColorSwatch({ color, count, size = "md", showCount = true }) {
-  const dims = size === "sm" ? "w-7 h-7 text-[10px]" : "w-10 h-10 text-xs";
+function TrainCard({ color, size = "md", onClick, disabled }) {
+  const dims = size === "sm" ? "w-9 h-[52px]" : "w-14 h-20";
+  const isLoco = color === "locomotive";
+  const Tag = onClick ? "button" : "div";
+  const interactiveProps = onClick ? { onClick, disabled } : {};
   return (
-    <div
-      className={`${dims} rounded-md flex items-center justify-center font-bold border-2 shadow`}
+    <Tag
+      {...interactiveProps}
+      className={`${dims} rounded-md border-2 shadow-lg relative flex items-center justify-center overflow-hidden transition-transform ${
+        onClick && !disabled ? "hover:-translate-y-1 cursor-pointer" : ""
+      } ${disabled ? "opacity-40" : ""}`}
       style={{
-        background: TRAIN_COLOR_HEX[color],
-        borderColor: "rgba(0,0,0,0.35)",
-        color: color === "white" || color === "yellow" ? "#1f2937" : "#fff",
+        borderColor: "rgba(0,0,0,0.4)",
+        background: isLoco
+          ? "linear-gradient(135deg,#f59e0b,#facc15 35%,#fff 50%,#f59e0b 65%,#b45309)"
+          : `linear-gradient(160deg, ${TRAIN_GRADIENT[color][0]}, ${TRAIN_GRADIENT[color][1]})`,
       }}
     >
-      {color === "locomotive" ? "★" : showCount ? count : ""}
+      <span
+        className="text-lg drop-shadow"
+        style={{ filter: "drop-shadow(0 1px 1px rgba(0,0,0,0.5))", color: color === "white" ? "#1f2937" : "#fff" }}
+      >
+        {isLoco ? "★" : "🚂"}
+      </span>
+    </Tag>
+  );
+}
+
+function TrainCardStack({ color, count }) {
+  return (
+    <div className="relative">
+      <TrainCard color={color} size="sm" />
+      <span className="absolute -bottom-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-slate-900 border border-white/40 text-white text-[10px] font-bold flex items-center justify-center">
+        {count}
+      </span>
+    </div>
+  );
+}
+
+function DestinationTicketCard({ dest, complete }) {
+  return (
+    <div
+      className="relative rounded-lg px-3 py-2 text-xs"
+      style={{
+        background: "repeating-linear-gradient(135deg, #fdfaf3, #fdfaf3 8px, #f3ecd8 8px, #f3ecd8 16px)",
+        border: "1px dashed #8a7248",
+        color: "#3a2c14",
+      }}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-semibold">
+          🚄 {STATION_BY_ID[dest.a].name} → {STATION_BY_ID[dest.b].name}
+        </span>
+        <span
+          className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+          style={{ background: "#8a5a1f" }}
+        >
+          {dest.points}
+        </span>
+      </div>
+      {complete !== undefined && (
+        <div className={`text-[10px] mt-0.5 font-semibold ${complete ? "text-emerald-700" : "text-red-700"}`}>
+          {complete ? "Complete" : "Incomplete"}
+        </div>
+      )}
     </div>
   );
 }
@@ -39,23 +92,31 @@ function routeSegments(route) {
   const a = STATION_BY_ID[route.a];
   const b = STATION_BY_ID[route.b];
   const segLenFrac = 1 / route.length;
-  const gap = Math.min(0.18 * segLenFrac, 0.03);
+  const gap = Math.min(0.16 * segLenFrac, 0.025);
   const segments = [];
   for (let i = 0; i < route.length; i++) {
     const t0 = i * segLenFrac + gap / 2;
     const t1 = (i + 1) * segLenFrac - gap / 2;
+    const x1 = a.x + (b.x - a.x) * t0;
+    const y1 = a.y + (b.y - a.y) * t0;
+    const x2 = a.x + (b.x - a.x) * t1;
+    const y2 = a.y + (b.y - a.y) * t1;
     segments.push({
-      x1: a.x + (b.x - a.x) * t0,
-      y1: a.y + (b.y - a.y) * t0,
-      x2: a.x + (b.x - a.x) * t1,
-      y2: a.y + (b.y - a.y) * t1,
+      x1,
+      y1,
+      x2,
+      y2,
+      cx: (x1 + x2) / 2,
+      cy: (y1 + y2) / 2,
+      len: Math.hypot(x2 - x1, y2 - y1),
+      angle: (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI,
     });
   }
   return segments;
 }
 
-function RouteLine({ route, owner, ownerColor, clickable, onClick, justClaimed }) {
-  const color = owner ? ownerColor : TRAIN_COLOR_HEX[route.color];
+function RouteTrack({ route, owner, ownerColor, clickable, onClick, justClaimed }) {
+  const fillId = `train-grad-${route.color}`;
   return (
     <g className={justClaimed ? "animate-pop-in" : ""}>
       <line
@@ -64,21 +125,23 @@ function RouteLine({ route, owner, ownerColor, clickable, onClick, justClaimed }
         x2={STATION_BY_ID[route.b].x}
         y2={STATION_BY_ID[route.b].y}
         stroke="transparent"
-        strokeWidth={16}
+        strokeWidth={18}
         style={{ cursor: clickable ? "pointer" : "default" }}
         onClick={clickable ? onClick : undefined}
       />
       {routeSegments(route).map((s, i) => (
-        <line
+        <rect
           key={i}
-          x1={s.x1}
-          y1={s.y1}
-          x2={s.x2}
-          y2={s.y2}
-          stroke={color}
-          strokeWidth={owner ? 9 : 7}
-          strokeLinecap="round"
-          opacity={owner ? 1 : clickable ? 0.85 : 0.4}
+          x={s.cx - s.len / 2}
+          y={s.cy - (owner ? 6.5 : 5)}
+          width={s.len}
+          height={owner ? 13 : 10}
+          rx={3}
+          transform={`rotate(${s.angle} ${s.cx} ${s.cy})`}
+          fill={owner ? ownerColor : `url(#${fillId})`}
+          stroke="rgba(0,0,0,0.45)"
+          strokeWidth={1}
+          opacity={owner ? 1 : clickable ? 0.92 : 0.42}
           pointerEvents="none"
         />
       ))}
@@ -86,12 +149,48 @@ function RouteLine({ route, owner, ownerColor, clickable, onClick, justClaimed }
   );
 }
 
-function Map({ game, playerId, isMyTurn, onClaim }) {
+function StationMarker({ station }) {
+  const labelWidth = station.name.length * 6.4 + 12;
+  return (
+    <g>
+      <rect
+        x={station.x - labelWidth / 2}
+        y={station.y - 27}
+        width={labelWidth}
+        height={15}
+        rx={7}
+        fill="rgba(253,247,231,0.88)"
+        stroke="#8a6d3f"
+        strokeWidth="0.75"
+      />
+      <text x={station.x} y={station.y - 16} textAnchor="middle" fontSize="10.5" fontWeight="700" fill="#3a2c14">
+        {station.name}
+      </text>
+      <circle cx={station.x} cy={station.y} r="7" fill="url(#station-face)" stroke="#3a2c14" strokeWidth="1.5" />
+      <circle cx={station.x} cy={station.y} r="2.4" fill="#3a2c14" />
+    </g>
+  );
+}
+
+function CompassRose({ x, y }) {
+  return (
+    <g transform={`translate(${x},${y})`} opacity="0.85">
+      <circle r="30" fill="rgba(253,247,231,0.7)" stroke="#8a6d3f" strokeWidth="1" />
+      <path d="M0,-26 L6,0 L0,26 L-6,0 Z" fill="#8a6d3f" />
+      <path d="M-26,0 L0,6 L26,0 L0,-6 Z" fill="#c9a86a" />
+      <text x="0" y="-34" textAnchor="middle" fontSize="11" fontWeight="700" fill="#3a2c14">
+        N
+      </text>
+    </g>
+  );
+}
+
+function MapCanvas({ game, playerId, isMyTurn, onClaim }) {
   const outlinePoints = NSW_OUTLINE.map(([x, y]) => `${x},${y}`).join(" ");
   const hand = game.hands[playerId] || [];
   const claimedIds = Object.keys(game.claimedRoutes);
   const justClaimed = useAppearAnimation(claimedIds);
-  const [colorChoice, setColorChoice] = useState(null); // { route, options }
+  const [colorChoice, setColorChoice] = useState(null);
 
   function handleRouteClick(route) {
     const owner = game.claimedRoutes[route.id];
@@ -107,22 +206,58 @@ function Map({ game, playerId, isMyTurn, onClaim }) {
 
   return (
     <div className="wood-frame rounded-2xl p-3 relative">
-      <svg viewBox="0 30 900 650" className="w-full block">
+      <svg viewBox={MAP_VIEWBOX} className="w-full block">
         <defs>
-          <radialGradient id="nsw-land" cx="45%" cy="35%" r="80%">
-            <stop offset="0%" stopColor="#e9d9ae" />
-            <stop offset="100%" stopColor="#c9b184" />
+          <radialGradient id="ocean" cx="50%" cy="50%" r="75%">
+            <stop offset="0%" stopColor="#2a6f8f" />
+            <stop offset="100%" stopColor="#12384a" />
           </radialGradient>
+          <radialGradient id="nsw-land" cx="42%" cy="30%" r="85%">
+            <stop offset="0%" stopColor="#ecdcae" />
+            <stop offset="100%" stopColor="#c3a876" />
+          </radialGradient>
+          <radialGradient id="station-face" cx="35%" cy="30%" r="75%">
+            <stop offset="0%" stopColor="#fff8e6" />
+            <stop offset="100%" stopColor="#d8c48f" />
+          </radialGradient>
+          {Object.entries(TRAIN_GRADIENT).map(([color, [light, dark]]) => (
+            <linearGradient key={color} id={`train-grad-${color}`} x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor={light} />
+              <stop offset="100%" stopColor={dark} />
+            </linearGradient>
+          ))}
+          <filter id="grain">
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" result="noise" />
+            <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0.2  0 0 0 0 0.15  0 0 0 0 0.05  0 0 0 0.06 0" />
+          </filter>
+          <filter id="land-shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#000" floodOpacity="0.45" />
+          </filter>
+          <clipPath id="land-clip">
+            <polygon points={outlinePoints} />
+          </clipPath>
         </defs>
-        <polygon points={outlinePoints} fill="url(#nsw-land)" stroke="#5c4326" strokeWidth="4" />
-        <polygon points={outlinePoints} fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
+
+        <rect x="0" y="0" width="920" height="705" fill="url(#ocean)" />
+        {Array.from({ length: 7 }).map((_, i) => (
+          <line key={`h${i}`} x1="0" y1={i * 105} x2="920" y2={i * 105} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+        ))}
+        {Array.from({ length: 9 }).map((_, i) => (
+          <line key={`v${i}`} x1={i * 115} y1="0" x2={i * 115} y2="705" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+        ))}
+
+        <g filter="url(#land-shadow)">
+          <polygon points={outlinePoints} fill="url(#nsw-land)" stroke="#5c4326" strokeWidth="4" />
+        </g>
+        <polygon points={outlinePoints} fill="#8a6d3f" opacity="0.5" clipPath="url(#land-clip)" filter="url(#grain)" />
+        <polygon points={outlinePoints} fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
 
         {ROUTES.map((route) => {
           const owner = game.claimedRoutes[route.id];
           const ownerPlayer = owner && game.players.find((p) => p.id === owner);
           const clickable = !owner && isMyTurn && affordableColors(hand, route).length > 0;
           return (
-            <RouteLine
+            <RouteTrack
               key={route.id}
               route={route}
               owner={owner}
@@ -135,21 +270,20 @@ function Map({ game, playerId, isMyTurn, onClaim }) {
         })}
 
         {STATIONS.map((s) => (
-          <g key={s.id}>
-            <circle cx={s.x} cy={s.y} r="6" fill="#3f2e18" stroke="#f5e9c8" strokeWidth="1.5" />
-            <text
-              x={s.x}
-              y={s.y - 10}
-              textAnchor="middle"
-              fontSize="12"
-              fontWeight="600"
-              fill="#2b1d0e"
-              style={{ paintOrder: "stroke", stroke: "#f5e9c8", strokeWidth: 3 }}
-            >
-              {s.name}
-            </text>
-          </g>
+          <StationMarker key={s.id} station={s} />
         ))}
+
+        <g transform="translate(120,60)">
+          <rect x="-95" y="-32" width="190" height="52" rx="8" fill="rgba(253,247,231,0.92)" stroke="#5c4326" strokeWidth="1.5" />
+          <text x="0" y="-10" textAnchor="middle" fontSize="15" fontWeight="800" fill="#3a2c14" letterSpacing="1">
+            NEW SOUTH WALES
+          </text>
+          <text x="0" y="8" textAnchor="middle" fontSize="10" fill="#6b5730" letterSpacing="2">
+            TICKET TO RIDE
+          </text>
+        </g>
+
+        <CompassRose x={860} y={60} />
       </svg>
 
       {colorChoice && (
@@ -166,8 +300,10 @@ function Map({ game, playerId, isMyTurn, onClaim }) {
                     onClaim(colorChoice.route.id, c);
                     setColorChoice(null);
                   }}
+                  className="flex flex-col items-center gap-1"
                 >
-                  <ColorSwatch color={c} count={colorChoice.route.length} />
+                  <TrainCard color={c} size="sm" />
+                  <span className="text-[10px] text-slate-600 capitalize">{c}</span>
                 </button>
               ))}
             </div>
@@ -203,17 +339,14 @@ function DestinationChoiceModal({ pending, onConfirm }) {
           {offered.map((d) => (
             <label
               key={d.id}
-              className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 cursor-pointer text-sm ${
+              className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 cursor-pointer text-left ${
                 selected.includes(d.id) ? "border-indigo-500 bg-indigo-50" : "border-slate-300"
               }`}
             >
-              <span>
-                {STATION_BY_ID[d.a].name} → {STATION_BY_ID[d.b].name}
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="font-bold">{d.points}pts</span>
-                <input type="checkbox" checked={selected.includes(d.id)} onChange={() => toggle(d.id)} />
-              </span>
+              <input type="checkbox" checked={selected.includes(d.id)} onChange={() => toggle(d.id)} />
+              <div className="flex-1">
+                <DestinationTicketCard dest={d} />
+              </div>
             </label>
           ))}
         </div>
@@ -251,7 +384,7 @@ export default function TicketToRideBoard({ room }) {
   }
 
   return (
-    <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
+    <div className="w-full max-w-[1400px] grid grid-cols-1 lg:grid-cols-[1fr_290px] gap-6">
       <div>
         <div className="flex flex-wrap gap-2 justify-center mb-3">
           {game.players.map((p) => (
@@ -260,7 +393,12 @@ export default function TicketToRideBoard({ room }) {
               className="wood-panel px-3 py-1.5 rounded-full text-xs text-amber-50 flex items-center gap-1.5"
               style={{ boxShadow: current?.id === p.id ? `0 0 0 2px ${p.color}, 0 4px 12px rgba(0,0,0,0.45)` : undefined }}
             >
-              <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: p.color }} />
+              <span
+                className="w-4 h-4 rounded-full inline-flex items-center justify-center text-[9px]"
+                style={{ background: p.color }}
+              >
+                🚂
+              </span>
               {p.isAI && "🤖 "}
               {p.name} · {game.trainsLeft[p.id]} trains · {(game.destinationHands[p.id] || []).length} tickets
             </div>
@@ -275,7 +413,7 @@ export default function TicketToRideBoard({ room }) {
             : `Waiting for ${current?.name}…`}
         </div>
 
-        <Map game={game} playerId={playerId} isMyTurn={isMyTurn && !myPending} onClaim={claim} />
+        <MapCanvas game={game} playerId={playerId} isMyTurn={isMyTurn && !myPending} onClaim={claim} />
 
         <div className="mt-4 felt-panel rounded-lg p-3 max-h-32 overflow-y-auto text-xs text-emerald-50/70 space-y-1">
           {game.log.slice(-10).map((line, i) => (
@@ -290,23 +428,21 @@ export default function TicketToRideBoard({ room }) {
             <div className="text-xs text-emerald-50/60 mb-2">Face-up train cards</div>
             <div className="flex flex-wrap gap-1.5 justify-center mb-3">
               {game.faceUp.map((c, i) => (
-                <button
+                <TrainCard
                   key={c.id}
+                  color={c.color}
+                  size="sm"
                   disabled={!isMyTurn || !!myPending}
                   onClick={() => sendAction({ type: "drawTrainCard", source: "faceup", index: i })}
-                  className="disabled:opacity-40"
-                >
-                  <ColorSwatch color={c.color} count={0} showCount={false} />
-                </button>
+                />
               ))}
               <button
                 disabled={!isMyTurn || !!myPending}
                 onClick={() => sendAction({ type: "drawTrainCard", source: "deck" })}
-                className="w-10 h-10 rounded-md wood-panel text-amber-50 text-[9px] font-bold flex items-center justify-center disabled:opacity-40"
+                className="w-9 h-[52px] rounded-md wood-panel text-amber-50 text-[9px] font-bold flex flex-col items-center justify-center disabled:opacity-40 leading-tight"
               >
-                {game.deck.length}
-                <br />
-                left
+                <span className="text-base">🎴</span>
+                {game.deck.length} left
               </button>
             </div>
             <button
@@ -320,9 +456,9 @@ export default function TicketToRideBoard({ room }) {
 
           <div className="felt-panel rounded-xl p-3">
             <div className="text-xs text-emerald-50/60 mb-2">Your train cards</div>
-            <div className="flex flex-wrap gap-1.5 justify-center">
+            <div className="flex flex-wrap gap-2 justify-center">
               {Object.entries(handCounts).map(([color, count]) => (
-                <ColorSwatch key={color} color={color} count={count} size="sm" />
+                <TrainCardStack key={color} color={color} count={count} />
               ))}
               {Object.keys(handCounts).length === 0 && <div className="text-xs text-emerald-50/40">No cards</div>}
             </div>
@@ -332,12 +468,7 @@ export default function TicketToRideBoard({ room }) {
             <div className="text-xs text-emerald-50/60 mb-2">Your destination tickets</div>
             <div className="space-y-1.5">
               {myDestinations.map((d) => (
-                <div key={d.id} className="text-xs text-amber-50/90 flex items-center justify-between">
-                  <span>
-                    {STATION_BY_ID[d.a].name} → {STATION_BY_ID[d.b].name}
-                  </span>
-                  <span className="font-bold">{d.points}</span>
-                </div>
+                <DestinationTicketCard key={d.id} dest={d} />
               ))}
               {myDestinations.length === 0 && <div className="text-xs text-emerald-50/40">None yet</div>}
             </div>

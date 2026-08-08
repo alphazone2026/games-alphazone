@@ -15,9 +15,13 @@ export default function Home() {
       return;
     }
     sessionStorage.setItem("uno_player_name", name.trim());
-    const params = new URLSearchParams({ game: gameId });
+    // gameId/variant are just a best guess for a brand-new room's URL — the
+    // room itself is the source of truth once it has a host (see useRoomMeta).
+    const params = new URLSearchParams();
+    if (gameId) params.set("game", gameId);
     if (variant) params.set("variant", variant);
-    navigate(`/room/${roomCode.toUpperCase()}?${params.toString()}`);
+    const qs = params.toString();
+    navigate(`/room/${roomCode.toUpperCase()}${qs ? `?${qs}` : ""}`);
   }
 
   return (
@@ -93,7 +97,7 @@ export default function Home() {
             <button
               className="rounded-lg bg-slate-700 hover:bg-slate-600 px-4 font-semibold transition disabled:opacity-40"
               disabled={joinCode.trim().length < 4}
-              onClick={() => go(joinCode.trim(), "uno", "classic")}
+              onClick={() => go(joinCode.trim())}
             >
               Join
             </button>

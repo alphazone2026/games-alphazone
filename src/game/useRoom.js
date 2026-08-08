@@ -96,6 +96,22 @@ const ENGINES = {
   },
 };
 
+// Room's actual game/variant, authoritative in Firebase once the host has
+// written it — lets a joining client render the right board even if its
+// own URL's ?game= query param is missing, stale, or wrong (e.g. someone
+// joining by typed code instead of a shared link).
+export function useRoomMeta(roomCode) {
+  const [meta, setMeta] = useState(undefined);
+  useEffect(() => {
+    if (!roomCode) return;
+    setMeta(undefined);
+    const metaRef = ref(db, `rooms/${roomCode}/meta`);
+    const unsub = onValue(metaRef, (snap) => setMeta(snap.val()));
+    return () => unsub();
+  }, [roomCode]);
+  return meta;
+}
+
 function getPlayerId() {
   let id = sessionStorage.getItem("uno_player_id");
   if (!id) {
@@ -288,9 +304,15 @@ export function useRoom(roomCode, playerName, { gameId = "uno", variant } = {}) 
       setIsHost(won);
       if (won) {
         onDisconnect(hostPathRef).remove();
+        // Pin down the room's real game/variant the first time someone hosts
+        // it, so later joiners can trust Firebase over their own URL params.
+        runTransaction(ref(db, `rooms/${roomCode}/meta`), (current) =>
+          current === null ? { gameId, variant: variant || null } : current
+        );
       }
     });
-  }, [hostPathRef, playerId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hostPathRef, playerId, roomCode, gameId, variant]);
 
   useEffect(() => {
     if (!roomCode) return;

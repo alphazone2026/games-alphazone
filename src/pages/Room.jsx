@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
-import { useRoom } from "../game/useRoom.js";
+import { useRoom, useRoomMeta } from "../game/useRoom.js";
 import Lobby from "../components/Lobby.jsx";
 import GameBoard from "../components/GameBoard.jsx";
 import Flip7Board from "../components/Flip7Board.jsx";
@@ -27,17 +27,26 @@ export default function Room() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const requestedGame = params.get("game");
-  const gameId = VALID_GAMES.includes(requestedGame) ? requestedGame : "uno";
-  const variant = gameId === "uno" ? (params.get("variant") === "teams" ? "teams" : "classic") : undefined;
+  const urlGameId = VALID_GAMES.includes(requestedGame) ? requestedGame : "uno";
+  const urlVariant = urlGameId === "uno" ? (params.get("variant") === "teams" ? "teams" : "classic") : undefined;
+
+  // The room's real game/variant, once Firebase confirms it, wins over the
+  // URL's ?game= — protects joiners from a stale/missing/wrong query param
+  // (e.g. joining by typed code, which can't know the game in advance).
+  const meta = useRoomMeta(roomCode);
+  const metaLoaded = meta !== undefined;
+  const gameId = meta?.gameId && VALID_GAMES.includes(meta.gameId) ? meta.gameId : urlGameId;
+  const variant = gameId === "uno" ? (meta?.variant || urlVariant) : undefined;
+
   const name = sessionStorage.getItem("uno_player_name");
 
-  const room = useRoom(roomCode, name, { gameId, variant });
+  const room = useRoom(metaLoaded ? roomCode : null, name, { gameId, variant });
 
   useEffect(() => {
     if (!name) navigate("/");
   }, [name, navigate]);
 
-  if (!name) return null;
+  if (!name || !metaLoaded) return null;
 
   const label = gameId === "uno" ? GAME_LABELS.uno[variant] : GAME_LABELS[gameId].default;
   const Board = BOARDS[gameId] || GameBoard;

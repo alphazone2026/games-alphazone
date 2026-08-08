@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { describeCard, COLORS } from "../game/uno.js";
 
 const COLOR_CLASSES = {
@@ -110,9 +110,14 @@ function PlayerBadge({ player, cardCount, isCurrent, isMe, team, positionClass }
   );
 }
 
+const PLAY_ANIMATION_MS = 420;
+
 export default function GameBoard({ room }) {
   const { game, playerId, myLegalMoves, sendAction } = room;
   const [pendingWildCardId, setPendingWildCardId] = useState(null);
+  const [pendingWildRect, setPendingWildRect] = useState(null);
+  const [flyingCard, setFlyingCard] = useState(null);
+  const pileRef = useRef(null);
 
   if (!game) return null;
 
@@ -132,17 +137,52 @@ export default function GameBoard({ room }) {
   const seatedPlayers = game.players.map((_, i) => game.players[(meIndex + i) % game.players.length]);
   const positions = SEAT_POSITIONS[game.players.length] || SEAT_POSITIONS[4];
 
-  function playCard(card) {
-    if (card.color === "wild") {
-      setPendingWildCardId(card.id);
+  // Flies a clone of the clicked card from its hand position to the discard
+  // pile, then applies the actual action once the animation lands — so the
+  // turn only visibly advances after the card appears to hit the table.
+  function animateAndSend(card, startRect, chosenColor) {
+    if (!startRect || !pileRef.current) {
+      sendAction({ type: "play", cardId: card.id, ...(chosenColor ? { chosenColor } : {}) });
       return;
     }
-    sendAction({ type: "play", cardId: card.id });
+    const pileRect = pileRef.current.getBoundingClientRect();
+    setFlyingCard({
+      card,
+      chosenColor,
+      left: startRect.left,
+      top: startRect.top,
+      width: startRect.width,
+      height: startRect.height,
+      x: 0,
+      y: 0,
+    });
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setFlyingCard((f) =>
+          f ? { ...f, x: pileRect.left - startRect.left, y: pileRect.top - startRect.top } : f
+        );
+      });
+    });
+    setTimeout(() => {
+      sendAction({ type: "play", cardId: card.id, ...(chosenColor ? { chosenColor } : {}) });
+      setFlyingCard(null);
+    }, PLAY_ANIMATION_MS);
+  }
+
+  function playCard(card, event) {
+    if (card.color === "wild") {
+      setPendingWildCardId(card.id);
+      setPendingWildRect(event.currentTarget.getBoundingClientRect());
+      return;
+    }
+    animateAndSend(card, event.currentTarget.getBoundingClientRect());
   }
 
   function chooseWildColor(color) {
-    sendAction({ type: "play", cardId: pendingWildCardId, chosenColor: color });
+    const card = myHand.find((c) => c.id === pendingWildCardId);
+    animateAndSend(card, pendingWildRect, color);
     setPendingWildCardId(null);
+    setPendingWildRect(null);
   }
 
   return (
@@ -181,7 +221,7 @@ export default function GameBoard({ room }) {
               <Card card={{ color: "wild", type: "back" }} disabled onClick={() => {}} />
               <div className="text-[10px] text-emerald-50/70 mt-1">{game.deck.length} left</div>
             </div>
-            <div className="text-center relative">
+            <div className="text-center relative" ref={pileRef}>
               <Card card={top} disabled onClick={() => {}} />
               {game.activeColor && (
                 <span
@@ -234,15 +274,17 @@ export default function GameBoard({ room }) {
         <div className="mt-4">
           <div className="text-xs text-emerald-50/50 mb-2 text-center">Your hand</div>
           <div className="flex flex-wrap gap-2 justify-center">
-            {myHand.map((card) => (
-              <Card
-                key={card.id}
-                card={card}
-                onClick={() => playCard(card)}
-                disabled={!isMyTurn || !legalIds.has(card.id)}
-                dim={!isMyTurn || !legalIds.has(card.id)}
-              />
-            ))}
+            {myHand
+              .filter((card) => card.id !== flyingCard?.card.id)
+              .map((card) => (
+                <Card
+                  key={card.id}
+                  card={card}
+                  onClick={(e) => playCard(card, e)}
+                  disabled={!isMyTurn || !legalIds.has(card.id) || !!flyingCard}
+                  dim={isMyTurn && !legalIds.has(card.id)}
+                />
+              ))}
           </div>
         </div>
       )}
@@ -263,6 +305,26 @@ export default function GameBoard({ room }) {
           <div key={i}>{line}</div>
         ))}
       </div>
+
+      {flyingCard && (
+        <div
+          className="fixed z-[60] pointer-events-none transition-transform ease-in"
+          style={{
+            left: flyingCard.left,
+            top: flyingCard.top,
+            width: flyingCard.width,
+            height: flyingCard.height,
+            transitionDuration: `${PLAY_ANIMATION_MS}ms`,
+            transform: `translate(${flyingCard.x}px, ${flyingCard.y}px) rotate(${flyingCard.x || flyingCard.y ? 10 : 0}deg)`,
+          }}
+        >
+          <Card
+            card={flyingCard.chosenColor ? { ...flyingCard.card, color: flyingCard.chosenColor } : flyingCard.card}
+            disabled
+            onClick={() => {}}
+          />
+        </div>
+      )}
 
       {pendingWildCardId && (
         <div className="fixed inset-0 bg-black/25 backdrop-blur-[1px] flex items-center justify-center z-50">

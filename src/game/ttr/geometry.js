@@ -28,29 +28,31 @@ export const NSW_OUTLINE = [
 
 export const STATIONS = [
   // Airport/East Hills corridor — the spine through Sydney's south-west.
-  { id: "campbelltown", name: "Campbelltown", x: 650, y: 470 },
-  { id: "glenfield", name: "Glenfield", x: 680, y: 460 },
-  { id: "east-hills", name: "East Hills", x: 710, y: 450 },
-  { id: "airport", name: "Airport", x: 745, y: 440 },
+  // Spaced roughly 2x wider than the rest of the map's scale since this
+  // corridor (and Sydney metro generally) is the centerpiece of the game.
+  { id: "campbelltown", name: "Campbelltown", x: 530, y: 515 },
+  { id: "glenfield", name: "Glenfield", x: 590, y: 495 },
+  { id: "east-hills", name: "East Hills", x: 650, y: 475 },
+  { id: "airport", name: "Airport", x: 720, y: 455 },
   { id: "sydney", name: "Sydney", x: 770, y: 425 },
 
   // Greater Sydney
-  { id: "parramatta", name: "Parramatta", x: 700, y: 410 },
-  { id: "liverpool", name: "Liverpool", x: 670, y: 440 },
-  { id: "penrith", name: "Penrith", x: 640, y: 390 },
-  { id: "hornsby", name: "Hornsby", x: 760, y: 370 },
-  { id: "sutherland", name: "Sutherland", x: 740, y: 470 },
+  { id: "parramatta", name: "Parramatta", x: 630, y: 395 },
+  { id: "liverpool", name: "Liverpool", x: 570, y: 455 },
+  { id: "penrith", name: "Penrith", x: 510, y: 355 },
+  { id: "hornsby", name: "Hornsby", x: 750, y: 310 },
+  { id: "sutherland", name: "Sutherland", x: 715, y: 520 },
 
   // North Coast
-  { id: "gosford", name: "Gosford", x: 780, y: 340 },
-  { id: "newcastle", name: "Newcastle", x: 810, y: 300 },
-  { id: "port-macquarie", name: "Port Macquarie", x: 785, y: 260 },
-  { id: "coffs-harbour", name: "Coffs Harbour", x: 755, y: 200 },
-  { id: "tweed-heads", name: "Tweed Heads", x: 700, y: 140 },
+  { id: "gosford", name: "Gosford", x: 770, y: 295 },
+  { id: "newcastle", name: "Newcastle", x: 795, y: 315 },
+  { id: "port-macquarie", name: "Port Macquarie", x: 760, y: 270 },
+  { id: "coffs-harbour", name: "Coffs Harbour", x: 730, y: 210 },
+  { id: "tweed-heads", name: "Tweed Heads", x: 670, y: 150 },
 
   // South Coast
-  { id: "wollongong", name: "Wollongong", x: 735, y: 480 },
-  { id: "nowra", name: "Nowra", x: 710, y: 520 },
+  { id: "wollongong", name: "Wollongong", x: 700, y: 545 },
+  { id: "nowra", name: "Nowra", x: 670, y: 585 },
   { id: "batemans-bay", name: "Batemans Bay", x: 680, y: 570 },
   { id: "bega", name: "Bega", x: 650, y: 610 },
 
@@ -61,7 +63,7 @@ export const STATIONS = [
   { id: "albury", name: "Albury", x: 420, y: 610 },
 
   // Central West
-  { id: "katoomba", name: "Katoomba", x: 610, y: 420 },
+  { id: "katoomba", name: "Katoomba", x: 460, y: 420 },
   { id: "lithgow", name: "Lithgow", x: 580, y: 400 },
   { id: "bathurst", name: "Bathurst", x: 540, y: 400 },
   { id: "orange", name: "Orange", x: 490, y: 390 },

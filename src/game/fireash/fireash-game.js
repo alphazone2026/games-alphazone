@@ -159,6 +159,69 @@ const NPCS = [
     map: 76, x: 11, y: 18, dir: 2, sprite: "npc_19", name: "Person",
     messages: ["Please visit the Poké Mart if you ever need to stock up on items."],
   },
+  // Viridian City (Map043) - real NPCs from that map's own event data,
+  // extracted the same way as the two maps above (Marshal-loaded outside
+  // the engine, page 0's EventCommand list read for codes 101/401). Each
+  // "\b"/"\r"-prefixed line in the raw data starts a new message window;
+  // continuation lines (no prefix) were joined into that same window here
+  // rather than kept as separate button-presses, matching how the window
+  // itself would actually word-wrap them in the real game.
+  {
+    map: 43, x: 21, y: 9, dir: 2, sprite: "npc_04", name: "Person", wander: true,
+    messages: ["Viridian Forest is up ahead, be careful!"],
+  },
+  // Real event data: Agatha (Elite Four), standing at the closed Gym's
+  // door. Only her page 0 line is used here - later pages (6 total in the
+  // source) gate on quest switches this pilot doesn't model.
+  {
+    map: 43, x: 13, y: 19, dir: 8, sprite: "npc_agatha", name: "Agatha",
+    messages: ["This gym has been closed for a long time now..."],
+  },
+  {
+    map: 43, x: 34, y: 8, dir: 2, sprite: "npc_02", name: "Person",
+    messages: [
+      "Is that a Pikachu? Let me look at it.",
+      "Hmmm... Yep. It is afraid of high places. Pikachu may cling to you when scared. Take it easy and take it to a safe place. It will back off.",
+    ],
+  },
+  {
+    map: 43, x: 21, y: 3, dir: 4, sprite: "npc_01", name: "Cop",
+    messages: ["Team Rocket is a group of criminals who steal Pokémon."],
+  },
+  {
+    map: 43, x: 41, y: 35, dir: 2, sprite: "npc_05", name: "Person",
+    messages: [
+      "So you want to know about Pokémon that used to evolve by trade? Let me break it down for you.",
+      "Kadabra, Machoke, Graveler, and Haunter evolve at level 35.",
+      "Come back again if you want to know more.",
+    ],
+  },
+  {
+    map: 43, x: 31, y: 25, dir: 2, sprite: "npc_trainer037", name: "Person", wander: true,
+    messages: [
+      "You want to know about the two kinds of caterpillar Pokémon?",
+      "Caterpie has no poison, but Weedle does.",
+      "Watch that your Pokémon aren't stabbed by Weedle's Poison Sting.",
+      "Oh, okay then.",
+    ],
+  },
+  {
+    map: 43, x: 19, y: 27, dir: 2, sprite: "npc_05", name: "Person", wander: true,
+    messages: [
+      "Those Poké Balls at your waist! You have Pokémon, don't you?",
+      "It's great that you can carry and use Pokémon anytime, anywhere.",
+    ],
+  },
+  {
+    map: 43, x: 19, y: 41, dir: 6, sprite: "npc_trainer011", name: "Person",
+    messages: ["Welcome to Viridian City. Be sure to head to the Pokémon Center to heal your Pokémon."],
+  },
+  // Real "Move Tutor" event - flavor dialogue only (offering to teach
+  // Snore), no actual move-teaching mechanic in this pilot.
+  {
+    map: 43, x: 8, y: 30, dir: 6, sprite: "npc_trainer007", name: "Move Tutor",
+    messages: ["zzz.", "Want to learn Snore?", "zzz."],
+  },
 ];
 
 // Real signs, mailboxes, and locked doors, extracted the same way as
@@ -198,6 +261,14 @@ const SIGNS = [
   // always available on a fresh save, sets hasPokedex (real switches
   // 246/29 - tracked here as one flag since we don't model raw switches).
   { map: 48, x: 2, y: 7, messages: ["\\PN received a Pokédex!"], giveFlag: "pokedex" },
+
+  // Viridian City (Map043) - real signs, same extraction method as above.
+  { map: 43, x: 44, y: 18, messages: ["Viridian City Blimp Service"] },
+  { map: 43, x: 9, y: 18, messages: ["Viridian Gym"] },
+  { map: 43, x: 29, y: 25, messages: ["Viridian City\\nThe Eternally Green Paradise"] },
+  // Real wild Pokémon standing in town (event id, "Pokemon" class, move_type
+  // Random) - flavor only, same as Pallet's Pidgey/Jigglypuff above.
+  { map: 43, x: 27, y: 37, messages: ["Cubone"] },
 ];
 
 // Item catalog. Just name + flavor text - no battle-affecting inventory
@@ -389,6 +460,8 @@ class BootScene extends Phaser.Scene {
     this.load.json("map48", "/fireash/assets/mapdata/map48.json");
     // Route 1, same extraction method.
     this.load.json("map76", "/fireash/assets/mapdata/map76.json");
+    // Viridian City, same extraction method.
+    this.load.json("map43", "/fireash/assets/mapdata/map43.json");
     // Real tall-grass tile coordinates on Route 1 (terrain tag 2 in this
     // game's own Tilesets.rxdata), as a flat [x,y] pair list.
     this.load.json("map76_grass", "/fireash/assets/mapdata/map76_grass.json");
@@ -622,7 +695,8 @@ const MAPS = {
   33: { key: "map33", tileset: 1 },
   42: { key: "map42", tileset: 3 },
   48: { key: "map48", tileset: 3 },
-  76: { key: "map76", tileset: 1 }
+  76: { key: "map76", tileset: 1 },
+  43: { key: "map43", tileset: 1 }
 };
 
 // Each entry: player standing EXACTLY on (x,y) on `map` - and, if `dir` is
@@ -686,7 +760,14 @@ const WARPS = [
   // the westmost/eastmost walkable row shared by both maps' edges (y=30
   // on both sides, confirmed against each map's own passability data).
   { map: 33, x: 0,  y: 30, dir: "left",  toMap: 76, toX: 33, toY: 30 },
-  { map: 76, x: 34, y: 30, dir: "right", toMap: 33, toX: 1,  toY: 30 }
+  { map: 76, x: 34, y: 30, dir: "right", toMap: 33, toX: 1,  toY: 30 },
+  // Route 1 <-> Viridian City, same discrete-warp treatment. This game's
+  // own map_connections.dat records Map043's south edge (offset 3)
+  // bordering Map076's north edge (offset 0) - checked both maps' own
+  // passability at that shared edge (Route 1 y=0, Viridian y=49) for a
+  // column walkable on both sides at that +3 offset: x=16 <-> x=19.
+  { map: 76, x: 16, y: 0,  dir: "up",   toMap: 43, toX: 19, toY: 48 },
+  { map: 43, x: 19, y: 49, dir: "down", toMap: 76, toX: 16, toY: 1  }
 ];
 WARPS.forEach((w, i) => { w._id = i; });
 function warpMatch(mapId, x, y, dir) {
@@ -862,7 +943,7 @@ class MapScene extends Phaser.Scene {
     this.game.events.off("fireash-menu-closed");
     this.game.events.on("fireash-menu-closed", () => this.scene.resume());
 
-    const label = { 33: "Pallet Town", 42: "Inside a house", 48: "Professor Oak's Lab", 76: "Route 1" }[this.mapId] || "";
+    const label = { 33: "Pallet Town", 42: "Inside a house", 48: "Professor Oak's Lab", 76: "Route 1", 43: "Viridian City" }[this.mapId] || "";
     this.add.text(10, 10, label + " - arrow keys to move, Z/Space to talk, Enter for menu", {
       fontFamily: "monospace", fontSize: "10px", color: "#ffffff", backgroundColor: "#000000aa"
     }).setScrollFactor(0).setDepth(100);

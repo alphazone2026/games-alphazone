@@ -42,20 +42,40 @@ jobs:
           cat > /tmp/relay.php << 'PHPEOF'
           <?php
           if (($_POST['key'] ?? '') !== 'games-deploy-2026') { http_response_code(403); exit; }
+
+          function relay_sanitized_dir($target) {
+            // Arbitrary relative subpath (e.g. "fireash/assets/mapdata") for
+            // games with their own static asset trees outside dist/assets -
+            // sanitised to stay under __DIR__, no traversal.
+            $rel = trim(str_replace('\\', '/', $target), '/');
+            $rel = preg_replace('#\.\.+#', '', $rel);
+            return __DIR__ . '/' . $rel . '/';
+          }
+
+          if (($_POST['op'] ?? '') === 'rmdir') {
+            $dir = rtrim(relay_sanitized_dir($_POST['target'] ?? ''), '/');
+            if ($dir === rtrim(__DIR__, '/') || $dir === '') { http_response_code(400); echo 'refused'; exit; }
+            function relay_rrmdir($d) {
+              if (!is_dir($d)) return;
+              foreach (scandir($d) as $item) {
+                if ($item === '.' || $item === '..') continue;
+                $p = $d . '/' . $item;
+                is_dir($p) ? relay_rrmdir($p) : unlink($p);
+              }
+              rmdir($d);
+            }
+            relay_rrmdir($dir);
+            echo 'ok:removed';
+            exit;
+          }
+
           $name   = basename($_POST['name'] ?? '');
           $target = $_POST['target'] ?? 'assets';
           $mode   = $_POST['mode']   ?? 'w';
           if (!$name) { http_response_code(400); exit; }
           if ($target === 'assets') { $dir = __DIR__ . '/assets/'; }
           elseif ($target === 'root') { $dir = __DIR__ . '/'; }
-          else {
-            // Arbitrary relative subpath (e.g. "fireash/assets/mapdata") for
-            // games with their own static asset trees outside dist/assets -
-            // sanitised to stay under __DIR__, no traversal.
-            $rel = trim(str_replace('\\', '/', $target), '/');
-            $rel = preg_replace('#\.\.+#', '', $rel);
-            $dir = __DIR__ . '/' . $rel . '/';
-          }
+          else { $dir = relay_sanitized_dir($target); }
           if (!is_dir($dir)) mkdir($dir, 0755, true);
           file_put_contents($dir . $name, base64_decode($_POST['data']), $mode === 'a' ? FILE_APPEND : 0);
           echo 'ok:' . filesize($dir . $name);
@@ -109,11 +129,16 @@ jobs:
             exit 1
           fi
 
-      # Remove retired games — safe to leave this step in permanently, it's
-      # a no-op once they're gone
+      # Remove retired games via the relay (the cPanel UAPI Fileman::fileop
+      # call below has been failing silently for a while - "could not find
+      # the function fileop" - so it's kept only as a harmless fallback;
+      # the relay's own rmdir op actually works, proven against fireash/).
+      # Safe to leave in permanently, it's a no-op once a folder is gone.
       - name: Remove retired games
         continue-on-error: true
         run: |
+          curl -sf "https://games.alphazone.com.au/_relay.php" \
+            -d "key=games-deploy-2026&op=rmdir&target=fireash"
           curl -sf "${{ secrets.GAMES_CPANEL_URL }}/execute/Fileman/fileop" \
             -u "${{ secrets.GAMES_CPANEL_USER }}:${{ secrets.GAMES_CPANEL_PASS }}" \
             --data-urlencode "op=unlink" \
@@ -122,10 +147,6 @@ jobs:
             -u "${{ secrets.GAMES_CPANEL_USER }}:${{ secrets.GAMES_CPANEL_PASS }}" \
             --data-urlencode "op=unlink" \
             --data-urlencode "sourcefiles=/home/hre8m7ym/games.alphazone.com.au/digimon-adventure" || true
-          curl -sf "${{ secrets.GAMES_CPANEL_URL }}/execute/Fileman/fileop" \
-            -u "${{ secrets.GAMES_CPANEL_USER }}:${{ secrets.GAMES_CPANEL_PASS }}" \
-            --data-urlencode "op=unlink" \
-            --data-urlencode "sourcefiles=/home/hre8m7ym/games.alphazone.com.au/fireash" || true
 
       # Neutralise relay
       - name: Neutralise relay

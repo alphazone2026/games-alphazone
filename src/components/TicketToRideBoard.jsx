@@ -174,13 +174,35 @@ function StationMarker({ station }) {
 
 function CompassRose({ x, y }) {
   return (
-    <g transform={`translate(${x},${y})`} opacity="0.85">
-      <circle r="30" fill="rgba(253,247,231,0.7)" stroke="#8a6d3f" strokeWidth="1" />
-      <path d="M0,-26 L6,0 L0,26 L-6,0 Z" fill="#8a6d3f" />
-      <path d="M-26,0 L0,6 L26,0 L0,-6 Z" fill="#c9a86a" />
-      <text x="0" y="-34" textAnchor="middle" fontSize="11" fontWeight="700" fill="#3a2c14">
+    <g transform={`translate(${x},${y})`} opacity="0.92">
+      <circle r="34" fill="rgba(253,247,231,0.75)" stroke="#5c4326" strokeWidth="1.5" />
+      <circle r="27" fill="none" stroke="#8a6d3f" strokeWidth="0.75" />
+      <path d="M0,-30 L7,0 L0,30 L-7,0 Z" fill="#5c4326" />
+      <path d="M-30,0 L0,7 L30,0 L0,-7 Z" fill="#c9a86a" stroke="#5c4326" strokeWidth="0.5" />
+      <path d="M0,-16 L3.5,0 L0,16 L-3.5,0 Z" fill="#f3ecd8" />
+      <path d="M-16,0 L0,3.5 L16,0 L0,-3.5 Z" fill="#e2d3a8" />
+      <text x="0" y="-38" textAnchor="middle" fontSize="12" fontWeight="800" fill="#3a2c14">
         N
       </text>
+      <text x="0" y="46" textAnchor="middle" fontSize="9" fontWeight="700" fill="#5c4326">
+        S
+      </text>
+      <text x="-42" y="4" textAnchor="middle" fontSize="9" fontWeight="700" fill="#5c4326">
+        W
+      </text>
+      <text x="42" y="4" textAnchor="middle" fontSize="9" fontWeight="700" fill="#5c4326">
+        E
+      </text>
+    </g>
+  );
+}
+
+// A soft, blurred triangle cluster to hint at ranges (Blue Mountains near
+// the corridor, Snowy Mountains down south) without drawing real terrain.
+function MountainHint({ x, y, scale = 1 }) {
+  return (
+    <g transform={`translate(${x},${y}) scale(${scale})`} opacity="0.35" filter="url(#soft-blur)">
+      <path d="M-24,10 L-10,-14 L0,-2 L14,-20 L30,10 Z" fill="#5c4326" />
     </g>
   );
 }
@@ -233,23 +255,33 @@ function MapCanvas({ game, playerId, isMyTurn, onClaim }) {
           <filter id="land-shadow" x="-20%" y="-20%" width="140%" height="140%">
             <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#000" floodOpacity="0.45" />
           </filter>
+          <filter id="soft-blur" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3" />
+          </filter>
           <clipPath id="land-clip">
             <polygon points={outlinePoints} />
           </clipPath>
+          <pattern id="waves" width="70" height="34" patternUnits="userSpaceOnUse">
+            <path
+              d="M0,10 Q17.5,0 35,10 T70,10 M0,24 Q17.5,14 35,24 T70,24"
+              fill="none"
+              stroke="rgba(255,255,255,0.12)"
+              strokeWidth="1.5"
+            />
+          </pattern>
         </defs>
 
         <rect x="0" y="0" width="920" height="705" fill="url(#ocean)" />
-        {Array.from({ length: 7 }).map((_, i) => (
-          <line key={`h${i}`} x1="0" y1={i * 105} x2="920" y2={i * 105} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
-        ))}
-        {Array.from({ length: 9 }).map((_, i) => (
-          <line key={`v${i}`} x1={i * 115} y1="0" x2={i * 115} y2="705" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
-        ))}
+        <rect x="0" y="0" width="920" height="705" fill="url(#waves)" />
 
         <g filter="url(#land-shadow)">
           <polygon points={outlinePoints} fill="url(#nsw-land)" stroke="#5c4326" strokeWidth="4" />
         </g>
         <polygon points={outlinePoints} fill="#8a6d3f" opacity="0.5" clipPath="url(#land-clip)" filter="url(#grain)" />
+        <g clipPath="url(#land-clip)">
+          <MountainHint x={580} y={410} scale={1.3} />
+          <MountainHint x={630} y={560} scale={1} />
+        </g>
         <polygon points={outlinePoints} fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
 
         {ROUTES.map((route) => {
@@ -273,17 +305,21 @@ function MapCanvas({ game, playerId, isMyTurn, onClaim }) {
           <StationMarker key={s.id} station={s} />
         ))}
 
-        <g transform="translate(120,60)">
-          <rect x="-95" y="-32" width="190" height="52" rx="8" fill="rgba(253,247,231,0.92)" stroke="#5c4326" strokeWidth="1.5" />
-          <text x="0" y="-10" textAnchor="middle" fontSize="15" fontWeight="800" fill="#3a2c14" letterSpacing="1">
-            NEW SOUTH WALES
+        <g transform="translate(130,60)" style={{ filter: "drop-shadow(0 3px 4px rgba(0,0,0,0.35))" }}>
+          <rect x="-105" y="-34" width="210" height="56" rx="8" fill="rgba(253,247,231,0.94)" stroke="#5c4326" strokeWidth="1.5" />
+          <rect x="-99" y="-28" width="198" height="44" rx="5" fill="none" stroke="#c9a86a" strokeWidth="1" />
+          <text x="0" y="-9" textAnchor="middle" fontSize="16" fontWeight="800" fill="#3a2c14" letterSpacing="1.5">
+            🚂 NEW SOUTH WALES
           </text>
-          <text x="0" y="8" textAnchor="middle" fontSize="10" fill="#6b5730" letterSpacing="2">
+          <text x="0" y="10" textAnchor="middle" fontSize="10" fill="#6b5730" letterSpacing="3">
             TICKET TO RIDE
           </text>
         </g>
 
-        <CompassRose x={860} y={60} />
+        <CompassRose x={844} y={65} />
+
+        <rect x="46" y="6" width="828" height="693" fill="none" stroke="#3a2c14" strokeWidth="3" rx="10" />
+        <rect x="54" y="14" width="812" height="677" fill="none" stroke="#c9a86a" strokeWidth="1.5" rx="7" />
       </svg>
 
       {colorChoice && (

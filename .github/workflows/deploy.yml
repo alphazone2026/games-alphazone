@@ -94,29 +94,6 @@ jobs:
             fi
           done
 
-      # Upload Fire Ash's static assets (images/tilesets/map data) - these
-      # come from Vite's public/ dir (copied verbatim to dist/fireash/...,
-      # not hashed/bundled like dist/assets/), so they need their own loop
-      # preserving the fireash/assets/... subdirectory structure.
-      - name: Upload Fire Ash assets
-        run: |
-          find dist/fireash -type f | while read -r f; do
-            REL=${f#dist/}
-            NAME=$(basename "$f")
-            SUBDIR=$(dirname "$REL")
-            LOCAL_SIZE=$(wc -c < "$f")
-            base64 -w 0 "$f" > /tmp/enc.txt
-            RESP=$(curl -sf "https://games.alphazone.com.au/_relay.php" \
-              -d "key=games-deploy-2026&name=${NAME}&target=${SUBDIR}&mode=w" \
-              --data-urlencode "data@/tmp/enc.txt")
-            echo "$REL: $RESP (local: $LOCAL_SIZE bytes)"
-            REMOTE_SIZE=$(echo "$RESP" | sed -n 's/^ok:\([0-9]*\)$/\1/p')
-            if [ "$REMOTE_SIZE" != "$LOCAL_SIZE" ]; then
-              echo "::error::$REL upload size mismatch (local $LOCAL_SIZE, remote $REMOTE_SIZE)"
-              exit 1
-            fi
-          done
-
       # Upload index.html
       - name: Upload index.html
         run: |
@@ -132,8 +109,8 @@ jobs:
             exit 1
           fi
 
-      # Remove the old ash-journey / digimon-adventure games — safe to leave
-      # this step in permanently, it's a no-op once they're gone
+      # Remove retired games — safe to leave this step in permanently, it's
+      # a no-op once they're gone
       - name: Remove retired games
         continue-on-error: true
         run: |
@@ -145,6 +122,10 @@ jobs:
             -u "${{ secrets.GAMES_CPANEL_USER }}:${{ secrets.GAMES_CPANEL_PASS }}" \
             --data-urlencode "op=unlink" \
             --data-urlencode "sourcefiles=/home/hre8m7ym/games.alphazone.com.au/digimon-adventure" || true
+          curl -sf "${{ secrets.GAMES_CPANEL_URL }}/execute/Fileman/fileop" \
+            -u "${{ secrets.GAMES_CPANEL_USER }}:${{ secrets.GAMES_CPANEL_PASS }}" \
+            --data-urlencode "op=unlink" \
+            --data-urlencode "sourcefiles=/home/hre8m7ym/games.alphazone.com.au/fireash" || true
 
       # Neutralise relay
       - name: Neutralise relay

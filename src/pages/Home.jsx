@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { customAlphabet } from "nanoid";
 
 const makeCode = customAlphabet("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 5);
@@ -113,16 +113,6 @@ export default function Home() {
             The room's game and mode are set by whoever created it — you'll join whatever they picked.
           </p>
         </div>
-      </div>
-
-      <div className="w-full max-w-md mt-6">
-        <Link
-          to="/fireash"
-          className="block text-center rounded-lg bg-red-700 hover:bg-red-600 py-3 font-semibold transition"
-        >
-          Fire Ash
-          <div className="text-xs font-normal text-red-200">Single-player pilot - not a room game yet</div>
-        </Link>
       </div>
 
       <p className="text-emerald-50/30 text-xs mt-10">More games coming soon.</p>

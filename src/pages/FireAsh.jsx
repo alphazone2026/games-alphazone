@@ -32,7 +32,7 @@ export default function FireAsh() {
       <div ref={containerRef} className="rounded-lg overflow-hidden shadow-xl" />
       <p className="text-slate-500 text-xs mt-4 max-w-md text-center">
         Early single-player pilot only - no multiplayer, no save, and only
-        Pallet Town, Route 1, and Viridian City are built out so far.
+        Pallet Town through Route 2 and Viridian Forest are built out so far.
       </p>
     </div>
   );

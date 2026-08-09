@@ -222,6 +222,51 @@ const NPCS = [
     map: 43, x: 8, y: 30, dir: 6, sprite: "npc_trainer007", name: "Move Tutor",
     messages: ["zzz.", "Want to learn Snore?", "zzz."],
   },
+  // Route 2 (Map080) - real NPC data, same extraction method.
+  {
+    map: 80, x: 23, y: 29, dir: 4, sprite: "npc_05", name: "Person",
+    messages: [
+      "You may not know this but most Pokémon have found ways to evolve outside of trading. Take Kadabra for example. It now evolves at level 35.",
+      "If you don't know how they evolve try talking to my friends.",
+      "They are in Viridian City, Cherrygrove City, Oldale Town, Twinleaf Town, Accumula Town, Santalune City, Iki Town, and Hammerlocke.",
+    ],
+  },
+  // Viridian Forest (Map081) - real NPC data, same extraction method.
+  // The four "Trainer" events below are real (trigger 2, "event touch" -
+  // walking into them starts a battle in the source game) but this pilot
+  // has no trainer-battle system yet (only wild encounters, see
+  // battle.js) - shown here as flavor dialogue on the usual walk-up-and-Z
+  // interact instead, same honest simplification as the Move Tutor above.
+  {
+    map: 81, x: 13, y: 19, dir: 4, sprite: "npc_bugcatcher", name: "Bug Catcher Samurai",
+    messages: ["Halt, Trainer from Pallet! We must battle."],
+  },
+  {
+    map: 81, x: 17, y: 17, dir: 6, sprite: "npc_trainer010", name: "Person",
+    messages: ["What do you call a daredevil Weedle who does stunts on a motorcycle?"],
+  },
+  {
+    map: 81, x: 61, y: 33, dir: 4, sprite: "npc_trainer010", name: "Person",
+    messages: ["Be quiet. You're scarying the bugs away!"],
+  },
+  {
+    map: 81, x: 50, y: 11, dir: 2, sprite: "npc_trainer010", name: "Person",
+    messages: ["I may just be a bug catcher, but don't go easy on me."],
+  },
+  {
+    map: 81, x: 57, y: 42, dir: 4, sprite: "npc_05", name: "Person", wander: true,
+    messages: [
+      "I was throwing Poké Balls to catch Pokémon, and I ran out.",
+      "That's why you can never have too many Poké Balls.",
+    ],
+  },
+  {
+    map: 81, x: 36, y: 40, dir: 2, sprite: "npc_03", name: "Person",
+    messages: [
+      "I came here with some friends to catch us some Bug Pokémon!",
+      "They're all itching to get into some Pokémon battles!",
+    ],
+  },
 ];
 
 // Real signs, mailboxes, and locked doors, extracted the same way as
@@ -269,6 +314,20 @@ const SIGNS = [
   // Real wild Pokémon standing in town (event id, "Pokemon" class, move_type
   // Random) - flavor only, same as Pallet's Pidgey/Jigglypuff above.
   { map: 43, x: 27, y: 37, messages: ["Cubone"] },
+
+  // Route 2 (Map080)
+  { map: 80, x: 5, y: 34, messages: ["Route 2"] },
+
+  // Viridian Forest (Map081) - real gift-Pokémon events (Caterpie,
+  // Pidgeotto). The source data offers to add these to your party with
+  // no battle needed, but this pilot has no multi-Pokémon party system
+  // yet (only the one starter) - shown as flavor with the real offer
+  // text rather than a working catch, same as Pallet's wild-Pokémon
+  // flavor signs. Their own overworld sprites are also a different image
+  // layout (256x256) than the human NPC walk-sheets this engine renders,
+  // so - like those signs - they show no sprite of their own.
+  { map: 81, x: 14, y: 40, messages: ["Caterpie", "Would you like to take Caterpie with you?"] },
+  { map: 81, x: 45, y: 15, messages: ["Pidgeotto", "Would you like to take Pidgeotto with you?"] },
 ];
 
 // Item catalog. Just name + flavor text - no battle-affecting inventory
@@ -462,6 +521,9 @@ class BootScene extends Phaser.Scene {
     this.load.json("map76", "/fireash/assets/mapdata/map76.json");
     // Viridian City, same extraction method.
     this.load.json("map43", "/fireash/assets/mapdata/map43.json");
+    // Route 2 and Viridian Forest, same extraction method.
+    this.load.json("map80", "/fireash/assets/mapdata/map80.json");
+    this.load.json("map81", "/fireash/assets/mapdata/map81.json");
     // Real tall-grass tile coordinates on Route 1 (terrain tag 2 in this
     // game's own Tilesets.rxdata), as a flat [x,y] pair list.
     this.load.json("map76_grass", "/fireash/assets/mapdata/map76_grass.json");
@@ -696,7 +758,9 @@ const MAPS = {
   42: { key: "map42", tileset: 3 },
   48: { key: "map48", tileset: 3 },
   76: { key: "map76", tileset: 1 },
-  43: { key: "map43", tileset: 1 }
+  43: { key: "map43", tileset: 1 },
+  80: { key: "map80", tileset: 1 },
+  81: { key: "map81", tileset: 1 }
 };
 
 // Each entry: player standing EXACTLY on (x,y) on `map` - and, if `dir` is
@@ -767,7 +831,23 @@ const WARPS = [
   // passability at that shared edge (Route 1 y=0, Viridian y=49) for a
   // column walkable on both sides at that +3 offset: x=16 <-> x=19.
   { map: 76, x: 16, y: 0,  dir: "up",   toMap: 43, toX: 19, toY: 48 },
-  { map: 43, x: 19, y: 49, dir: "down", toMap: 76, toX: 16, toY: 1  }
+  { map: 43, x: 19, y: 49, dir: "down", toMap: 76, toX: 16, toY: 1  },
+  // Viridian City <-> Route 2, same discrete-warp treatment: map_connections.dat
+  // records Viridian's north edge (offset 0) bordering Route 2's south edge
+  // (offset 1) - checked passability at that shared edge (Viridian y=0,
+  // Route 2 y=39) for a column walkable on both sides at the +1 offset:
+  // x=18 <-> x=19.
+  { map: 43, x: 18, y: 0,  dir: "up",   toMap: 80, toX: 19, toY: 38 },
+  { map: 80, x: 19, y: 39, dir: "down", toMap: 43, toX: 18, toY: 1  },
+  // Route 2 <-> Viridian Forest, two real gate pairs (not edge-crossing -
+  // these are genuine "Entrance" player-touch events in the source data,
+  // so their target coordinates are the real extracted values, not a
+  // best-effort edge match). No `dir` restriction: each side uses a tile
+  // the other warp doesn't also occupy, so there's no ping-pong risk.
+  { map: 80, x: 19, y: 11, toMap: 81, toX: 10, toY: 8  },
+  { map: 81, x: 9,  y: 7,  toMap: 80, toX: 19, toY: 10 },
+  { map: 80, x: 19, y: 22, toMap: 81, toX: 36, toY: 46 },
+  { map: 81, x: 35, y: 47, toMap: 80, toX: 19, toY: 23 }
 ];
 WARPS.forEach((w, i) => { w._id = i; });
 function warpMatch(mapId, x, y, dir) {
@@ -943,7 +1023,7 @@ class MapScene extends Phaser.Scene {
     this.game.events.off("fireash-menu-closed");
     this.game.events.on("fireash-menu-closed", () => this.scene.resume());
 
-    const label = { 33: "Pallet Town", 42: "Inside a house", 48: "Professor Oak's Lab", 76: "Route 1", 43: "Viridian City" }[this.mapId] || "";
+    const label = { 33: "Pallet Town", 42: "Inside a house", 48: "Professor Oak's Lab", 76: "Route 1", 43: "Viridian City", 80: "Route 2", 81: "Viridian Forest" }[this.mapId] || "";
     this.add.text(10, 10, label + " - arrow keys to move, Z/Space to talk, Enter for menu", {
       fontFamily: "monospace", fontSize: "10px", color: "#ffffff", backgroundColor: "#000000aa"
     }).setScrollFactor(0).setDepth(100);

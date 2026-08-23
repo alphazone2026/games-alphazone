@@ -130,53 +130,45 @@ jobs:
           fi
 
       # ---------------------------------------------------------------- #
-      # Green Hollow — a separate Vite app in its own repo, served from
-      # /greenhollow/ rather than being a route in this one. It is built here
-      # rather than committed as a dist so build artefacts stay out of git.
-      # LIFESIM_BASE is what stops its bundle asking for /assets/index-*.js and
-      # getting THIS app's bundle instead.
+      # Green Hollow — a separate Vite app (alphazone2026/lifesim), served
+      # from /greenhollow/ rather than being a route in this one.
+      #
+      # Its build is VENDORED into public/greenhollow/, which Vite copies
+      # verbatim into dist/. Building it here instead would be tidier, but
+      # that repo is private and this workflow's GITHUB_TOKEN only covers
+      # this one — so a checkout fails with "repository not found". To move
+      # to a CI build later: add a PAT with read access to lifesim as a
+      # secret, and restore an actions/checkout step using it.
+      #
+      # To refresh the vendored copy:
+      #   cd lifesim && LIFESIM_BASE=/greenhollow/ npm run build
+      #   rm -rf ../games-alphazone/public/greenhollow
+      #   cp -r dist ../games-alphazone/public/greenhollow
       # ---------------------------------------------------------------- #
-      - name: Check out Green Hollow
-        uses: actions/checkout@v4
-        with:
-          repository: alphazone2026/lifesim
-          ref: gameplay-slice
-          path: greenhollow-src
-
-      - name: Build Green Hollow
-        working-directory: greenhollow-src
-        env:
-          LIFESIM_BASE: /greenhollow/
-        run: |
-          npm ci
-          npm run build
-          echo "built:"
-          ls -la dist dist/assets
-
       - name: Upload Green Hollow
-        working-directory: greenhollow-src
         run: |
+          if [ ! -f dist/greenhollow/index.html ]; then
+            echo "::error::dist/greenhollow/index.html missing — is public/greenhollow/ committed?"
+            exit 1
+          fi
           upload() {
-            local FILE="$1" NAME="$2" TARGET="$3"
-            local LOCAL_SIZE
+            FILE="$1"; NAME="$2"; TARGET="$3"
             LOCAL_SIZE=$(wc -c < "$FILE")
             base64 -w 0 "$FILE" > /tmp/gh_enc.txt
-            local RESP
             RESP=$(curl -sf "https://games.alphazone.com.au/_relay.php" \
               -d "key=games-deploy-2026&name=${NAME}&target=${TARGET}&mode=w" \
               --data-urlencode "data@/tmp/gh_enc.txt")
             echo "  ${TARGET}/${NAME}: $RESP (local: $LOCAL_SIZE bytes)"
-            local REMOTE_SIZE
             REMOTE_SIZE=$(echo "$RESP" | sed -n 's/^ok:\([0-9]*\)$/\1/p')
             if [ "$REMOTE_SIZE" != "$LOCAL_SIZE" ]; then
               echo "::error::${NAME} upload size mismatch (local $LOCAL_SIZE, remote $REMOTE_SIZE)"
               exit 1
             fi
           }
-          for f in dist/assets/*; do
+          for f in dist/greenhollow/assets/*; do
             upload "$f" "$(basename "$f")" "greenhollow/assets"
           done
-          upload dist/index.html index.html greenhollow
+          upload dist/greenhollow/index.html index.html greenhollow
 
       # Remove retired games via the relay (the cPanel UAPI Fileman::fileop
       # call below has been failing silently for a while - "could not find

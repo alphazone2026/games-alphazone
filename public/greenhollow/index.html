@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Green Hollow — a life in school</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="module" crossorigin src="/greenhollow/assets/index-DhvI6r8G.js"></script>
+  <link rel="stylesheet" crossorigin href="/greenhollow/assets/index-DkxGD_-H.css">
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+<div id="ui"></div>
+
+<div id="creator">
+  <div class="creator-inner">
+    <header>
+      <h1>Green Hollow</h1>
+      <p class="tagline">Year 7 starts on Monday. It is a long way to the end of Year 12.</p>
+    </header>
+
+    <div class="creator-grid">
+      <section>
+        <h2>Who are you</h2>
+        <div class="field-row">
+          <label>First name<input id="first-name" maxlength="14"></label>
+          <label>Surname<input id="last-name" maxlength="16"></label>
+          <button class="btn small" id="random-name">Random</button>
+        </div>
+        <label class="block">Pronouns</label>
+        <div class="chips" id="pronoun-options"></div>
+
+        <label class="block">Appearance</label>
+        <div class="swatch-row"><span class="muted small">Skin</span><div class="swatches" id="skin-options"></div></div>
+        <div class="swatch-row"><span class="muted small">Hair</span><div class="swatches" id="hair-options"></div></div>
+        <div class="chips" id="hairstyle-options"></div>
+      </section>
+
+      <section>
+        <h2>Where you come from</h2>
+        <p class="muted small">This sets your starting attributes. None of it is permanent.</p>
+        <div class="bg-grid" id="background-options"></div>
+      </section>
+
+      <section>
+        <h2>What you are into <span class="muted small" id="interest-count">0/3</span></h2>
+        <p class="muted small">Shared interests make friendships form faster.</p>
+        <div class="chips wrap" id="interest-options"></div>
+
+        <label class="block">Town seed <span class="muted small">(same seed, same town)</span></label>
+        <input id="seed" placeholder="leave blank for random">
+      </section>
+    </div>
+
+    <footer>
+      <button class="btn primary large" id="begin">Start Year 7</button>
+      <button class="btn large hidden" id="continue"></button>
+    </footer>
+  </div>
+</div>
+
+<div id="loading" class="hidden overlay">
+  <div>
+    <h2>Building the town…</h2>
+    <p class="muted">Laying roads, filling houses, hiring teachers.</p>
+  </div>
+</div>
+
+<div id="start-overlay" class="hidden overlay clickable">
+  <div>
+    <h2>Click to play</h2>
+    <div class="controls">
+      <div><kbd>WASD</kbd> move</div><div><kbd>Shift</kbd> run</div>
+      <div><kbd>E</kbd> interact</div><div><kbd>V</kbd> change camera</div>
+      <div><kbd>Q</kbd> phone</div><div><kbd>T</kbd> wait</div>
+      <div><kbd>J</kbd> journal</div><div><kbd>I</kbd> bag</div>
+      <div><kbd>M</kbd> map</div><div><kbd>Esc</kbd> pause</div>
+    </div>
+    <p class="muted">Get to your classes. Sleep in your bed to save.</p>
+  </div>
+</div>
+
+</body>
+</html>

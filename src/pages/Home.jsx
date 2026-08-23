@@ -91,6 +91,29 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Green Hollow is a 3D game with its own build, served from
+            /greenhollow/ rather than a room in this app — so these are plain
+            links out, not `go()` calls that would make a room code. */}
+        <div className="border-t border-white/10 pt-5">
+          <div className="text-sm text-amber-100/60 mb-2">Single player</div>
+          <div className="grid grid-cols-2 gap-3">
+            <a
+              href="/greenhollow/"
+              className="block rounded-lg bg-lime-700 hover:bg-lime-600 py-3 px-3 font-semibold transition text-center"
+            >
+              Green Hollow
+              <div className="text-xs font-normal text-lime-200">A life in a country town, Year 7 to 12</div>
+            </a>
+            <a
+              href="/greenhollow/?slice=barn"
+              className="block rounded-lg bg-orange-700 hover:bg-orange-600 py-3 px-3 font-semibold transition text-center"
+            >
+              Burger Barn
+              <div className="text-xs font-normal text-orange-200">Work a shift &middot; gameplay slice</div>
+            </a>
+          </div>
+        </div>
+
         <div className="border-t border-white/10 pt-5">
           <div className="text-sm text-amber-100/60 mb-2">Join a room with a code</div>
           <div className="flex gap-2">

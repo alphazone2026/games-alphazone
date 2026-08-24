@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <title>Green Hollow — a life in school</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script type="module" crossorigin src="/greenhollow/assets/index-B3ZArlsE.js"></script>
+  <script type="module" crossorigin src="/greenhollow/assets/index-DJX8E9LC.js"></script>
   <link rel="stylesheet" crossorigin href="/greenhollow/assets/index-DkxGD_-H.css">
 </head>
 <body>
@@ -67,7 +67,26 @@
 </div>
 
 <div id="start-overlay" class="hidden overlay clickable">
-  <div>
+  <!-- The slice is its own game: a shift at Burger Barn, with none of the
+       school around it. Showing "get to your classes, sleep in your bed to
+       save" to someone about to work a shift is just wrong, so main.js swaps
+       this block for #slice-intro when ?slice= is set. -->
+  <div id="slice-intro" class="hidden">
+    <h2>Burger Barn</h2>
+    <p class="muted">A shift, start to finish. Twenty minutes.</p>
+    <div class="controls">
+      <div><kbd>WASD</kbd> move</div><div><kbd>Shift</kbd> run</div>
+      <div><kbd>E</kbd> use / pick up / serve</div><div><kbd>V</kbd> change camera</div>
+      <div><kbd>Esc</kbd> pause</div><div><kbd>M</kbd> map</div>
+    </div>
+    <p class="muted">Clock on with Kev, then take orders at the counter and build
+    them by hand from the kitchen line. Carry eat-in meals to the table number on
+    the ticket; takeaway goes to the collection point. Wipe tables and mop the
+    floor when it is quiet. When a delivery comes in, take the scooter.</p>
+    <p class="muted small">Nothing you get wrong costs you money — you just do not
+    earn it.</p>
+  </div>
+  <div id="full-intro">
     <h2>Click to play</h2>
     <div class="controls">
       <div><kbd>WASD</kbd> move</div><div><kbd>Shift</kbd> run</div>

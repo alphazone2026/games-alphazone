@@ -45,9 +45,9 @@ jobs:
       # hand via File Manager. Rotate by editing the file + the secret.
       - name: Check relay
         run: |
-          RESP=$(curl -sf "https://games.alphazone.com.au/_relay.php")
+          RESP=$(curl -sf "https://games.alphazone.com.au/_deploy-relay.php")
           if [ "$RESP" != "relay-ok" ]; then
-            echo "::error::permanent relay not answering (got: $RESP) — re-place _relay.php via File Manager"
+            echo "::error::permanent relay not answering (got: $RESP) — re-place _deploy-relay.php via File Manager"
             exit 1
           fi
 
@@ -61,7 +61,7 @@ jobs:
             NAME=$(basename "$f")
             LOCAL_SIZE=$(wc -c < "$f")
             base64 -w 0 "$f" > /tmp/enc.txt
-            RESP=$(curl -sf "https://games.alphazone.com.au/_relay.php" \
+            RESP=$(curl -sf "https://games.alphazone.com.au/_deploy-relay.php" \
               -d "key=${{ secrets.GAMES_RELAY_KEY }}&name=${NAME}&target=assets&mode=w" \
               --data-urlencode "data@/tmp/enc.txt")
             echo "$NAME: $RESP (local: $LOCAL_SIZE bytes)"
@@ -77,7 +77,7 @@ jobs:
         run: |
           LOCAL_SIZE=$(wc -c < dist/index.html)
           base64 -w 0 dist/index.html > /tmp/htmlb64.txt
-          RESP=$(curl -sf "https://games.alphazone.com.au/_relay.php" \
+          RESP=$(curl -sf "https://games.alphazone.com.au/_deploy-relay.php" \
             -d "key=${{ secrets.GAMES_RELAY_KEY }}&name=index.html&target=root&mode=w" \
             --data-urlencode "data@/tmp/htmlb64.txt")
           echo "index.html: $RESP (local: $LOCAL_SIZE bytes)"
@@ -113,7 +113,7 @@ jobs:
             FILE="$1"; NAME="$2"; TARGET="$3"
             LOCAL_SIZE=$(wc -c < "$FILE")
             base64 -w 0 "$FILE" > /tmp/gh_enc.txt
-            RESP=$(curl -sf "https://games.alphazone.com.au/_relay.php" \
+            RESP=$(curl -sf "https://games.alphazone.com.au/_deploy-relay.php" \
               -d "key=${{ secrets.GAMES_RELAY_KEY }}&name=${NAME}&target=${TARGET}&mode=w" \
               --data-urlencode "data@/tmp/gh_enc.txt")
             echo "  ${TARGET}/${NAME}: $RESP (local: $LOCAL_SIZE bytes)"
@@ -147,7 +147,7 @@ jobs:
             FILE="$1"; NAME="$2"; TARGET="$3"
             LOCAL_SIZE=$(wc -c < "$FILE")
             base64 -w 0 "$FILE" > /tmp/bb_enc.txt
-            RESP=$(curl -sf "https://games.alphazone.com.au/_relay.php" \
+            RESP=$(curl -sf "https://games.alphazone.com.au/_deploy-relay.php" \
               -d "key=${{ secrets.GAMES_RELAY_KEY }}&name=${NAME}&target=${TARGET}&mode=w" \
               --data-urlencode "data@/tmp/bb_enc.txt")
             echo "  ${TARGET}/${NAME}: $RESP (local: $LOCAL_SIZE bytes)"
@@ -171,7 +171,7 @@ jobs:
       - name: Remove retired games
         continue-on-error: true
         run: |
-          curl -sf "https://games.alphazone.com.au/_relay.php" \
+          curl -sf "https://games.alphazone.com.au/_deploy-relay.php" \
             -d "key=${{ secrets.GAMES_RELAY_KEY }}&op=rmdir&target=fireash"
 
       - name: Done

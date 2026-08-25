@@ -91,9 +91,12 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Green Hollow is a 3D game with its own build, served from
-            /greenhollow/ rather than a room in this app — so these are plain
-            links out, not `go()` calls that would make a room code. */}
+        {/* Green Hollow and Burger Barn are 3D games with their own builds,
+            served from /greenhollow/ and /burgerbarn/ rather than rooms in
+            this app — so these are plain links out, not `go()` calls that
+            would make a room code. Burger Barn used to be a slice inside
+            Green Hollow (?slice=barn); it is its own game now
+            (alphazone2026/burgerbarn). */}
         <div className="border-t border-white/10 pt-5">
           <div className="text-sm text-amber-100/60 mb-2">Single player</div>
           <div className="grid grid-cols-2 gap-3">
@@ -105,11 +108,11 @@ export default function Home() {
               <div className="text-xs font-normal text-lime-200">A life in a country town, Year 7 to 12</div>
             </a>
             <a
-              href="/greenhollow/?slice=barn"
+              href="/burgerbarn/"
               className="block rounded-lg bg-orange-700 hover:bg-orange-600 py-3 px-3 font-semibold transition text-center"
             >
               Burger Barn
-              <div className="text-xs font-normal text-orange-200">Work a shift &middot; gameplay slice</div>
+              <div className="text-xs font-normal text-orange-200">Lock into the pod &middot; build the orders</div>
             </a>
           </div>
         </div>

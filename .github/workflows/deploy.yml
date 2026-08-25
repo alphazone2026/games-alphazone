@@ -170,6 +170,40 @@ jobs:
           done
           upload dist/greenhollow/index.html index.html greenhollow
 
+      # ---------------------------------------------------------------- #
+      # Burger Barn — same vendoring arrangement as Green Hollow, from the
+      # private alphazone2026/burgerbarn repo, served at /burgerbarn/.
+      # To refresh the vendored copy (BUILD FROM POWERSHELL, not Git Bash —
+      # MSYS2 rewrites the base path):
+      #   cd burgerbarn; $env:BARN_BASE = '/burgerbarn/'; npm run build
+      #   rm -rf ../games-alphazone/public/burgerbarn
+      #   cp -r dist ../games-alphazone/public/burgerbarn
+      # ---------------------------------------------------------------- #
+      - name: Upload Burger Barn
+        run: |
+          if [ ! -f dist/burgerbarn/index.html ]; then
+            echo "::error::dist/burgerbarn/index.html missing — is public/burgerbarn/ committed?"
+            exit 1
+          fi
+          upload() {
+            FILE="$1"; NAME="$2"; TARGET="$3"
+            LOCAL_SIZE=$(wc -c < "$FILE")
+            base64 -w 0 "$FILE" > /tmp/bb_enc.txt
+            RESP=$(curl -sf "https://games.alphazone.com.au/_relay.php" \
+              -d "key=games-deploy-2026&name=${NAME}&target=${TARGET}&mode=w" \
+              --data-urlencode "data@/tmp/bb_enc.txt")
+            echo "  ${TARGET}/${NAME}: $RESP (local: $LOCAL_SIZE bytes)"
+            REMOTE_SIZE=$(echo "$RESP" | sed -n 's/^ok:\([0-9]*\)$/\1/p')
+            if [ "$REMOTE_SIZE" != "$LOCAL_SIZE" ]; then
+              echo "::error::${NAME} upload size mismatch (local $LOCAL_SIZE, remote $REMOTE_SIZE)"
+              exit 1
+            fi
+          }
+          for f in dist/burgerbarn/assets/*; do
+            upload "$f" "$(basename "$f")" "burgerbarn/assets"
+          done
+          upload dist/burgerbarn/index.html index.html burgerbarn
+
       # Remove retired games via the relay (the cPanel UAPI Fileman::fileop
       # call below has been failing silently for a while - "could not find
       # the function fileop" - so it's kept only as a harmless fallback;

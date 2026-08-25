@@ -36,62 +36,20 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-      # Upload relay script via cPanel (base64-encoded to avoid quoting issues)
-      - name: Upload relay
+      # The relay is PERMANENT now (2026-08-26). It used to be uploaded via
+      # the cPanel API before every run and neutralised after — then the host
+      # put an anti-bot wall in front of the cPanel API origin and both calls
+      # started failing (challenge page, then 401s) while the site domain
+      # stayed clean. The relay lives at the docroot permanently, keyed by the
+      # GAMES_RELAY_KEY secret (48 hex chars, not the old literal), placed by
+      # hand via File Manager. Rotate by editing the file + the secret.
+      - name: Check relay
         run: |
-          cat > /tmp/relay.php << 'PHPEOF'
-          <?php
-          if (($_POST['key'] ?? '') !== 'games-deploy-2026') { http_response_code(403); exit; }
-
-          function relay_sanitized_dir($target) {
-            // Arbitrary relative subpath (e.g. "fireash/assets/mapdata") for
-            // games with their own static asset trees outside dist/assets -
-            // sanitised to stay under __DIR__, no traversal.
-            $rel = trim(str_replace('\\', '/', $target), '/');
-            $rel = preg_replace('#\.\.+#', '', $rel);
-            return __DIR__ . '/' . $rel . '/';
-          }
-
-          if (($_POST['op'] ?? '') === 'rmdir') {
-            $dir = rtrim(relay_sanitized_dir($_POST['target'] ?? ''), '/');
-            if ($dir === rtrim(__DIR__, '/') || $dir === '') { http_response_code(400); echo 'refused'; exit; }
-            function relay_rrmdir($d) {
-              if (!is_dir($d)) return;
-              foreach (scandir($d) as $item) {
-                if ($item === '.' || $item === '..') continue;
-                $p = $d . '/' . $item;
-                is_dir($p) ? relay_rrmdir($p) : unlink($p);
-              }
-              rmdir($d);
-            }
-            relay_rrmdir($dir);
-            echo 'ok:removed';
-            exit;
-          }
-
-          $name   = basename($_POST['name'] ?? '');
-          $target = $_POST['target'] ?? 'assets';
-          $mode   = $_POST['mode']   ?? 'w';
-          if (!$name) { http_response_code(400); exit; }
-          if ($target === 'assets') { $dir = __DIR__ . '/assets/'; }
-          elseif ($target === 'root') { $dir = __DIR__ . '/'; }
-          else { $dir = relay_sanitized_dir($target); }
-          if (!is_dir($dir)) mkdir($dir, 0755, true);
-          file_put_contents($dir . $name, base64_decode($_POST['data']), $mode === 'a' ? FILE_APPEND : 0);
-          echo 'ok:' . filesize($dir . $name);
-          PHPEOF
-          B64=$(base64 -w 0 /tmp/relay.php)
-          HTTP_CODE=$(curl -s -o /tmp/resp.txt -w "%{http_code}" "${{ secrets.GAMES_CPANEL_URL }}/execute/Fileman/save_file_content" \
-            -u "${{ secrets.GAMES_CPANEL_USER }}:${{ secrets.GAMES_CPANEL_PASS }}" \
-            --data-urlencode "dir=/home/hre8m7ym/games.alphazone.com.au" \
-            --data-urlencode "file=_relay.php" \
-            --data-urlencode "content@/tmp/relay.php" 2>/tmp/curl_err.txt)
-          echo "HTTP status: $HTTP_CODE"
-          echo "Response body:"
-          cat /tmp/resp.txt
-          echo "Curl stderr:"
-          cat /tmp/curl_err.txt
-          grep -q '"status":1' /tmp/resp.txt || { echo "::error::relay upload failed"; exit 1; }
+          RESP=$(curl -sf "https://games.alphazone.com.au/_relay.php")
+          if [ "$RESP" != "relay-ok" ]; then
+            echo "::error::permanent relay not answering (got: $RESP) — re-place _relay.php via File Manager"
+            exit 1
+          fi
 
       # Upload every file under dist/assets/ (JS/CSS bundles) in one POST each
       # — chunked appends previously corrupted a bundle when two deploy runs
@@ -104,7 +62,7 @@ jobs:
             LOCAL_SIZE=$(wc -c < "$f")
             base64 -w 0 "$f" > /tmp/enc.txt
             RESP=$(curl -sf "https://games.alphazone.com.au/_relay.php" \
-              -d "key=games-deploy-2026&name=${NAME}&target=assets&mode=w" \
+              -d "key=${{ secrets.GAMES_RELAY_KEY }}&name=${NAME}&target=assets&mode=w" \
               --data-urlencode "data@/tmp/enc.txt")
             echo "$NAME: $RESP (local: $LOCAL_SIZE bytes)"
             REMOTE_SIZE=$(echo "$RESP" | sed -n 's/^ok:\([0-9]*\)$/\1/p')
@@ -120,7 +78,7 @@ jobs:
           LOCAL_SIZE=$(wc -c < dist/index.html)
           base64 -w 0 dist/index.html > /tmp/htmlb64.txt
           RESP=$(curl -sf "https://games.alphazone.com.au/_relay.php" \
-            -d "key=games-deploy-2026&name=index.html&target=root&mode=w" \
+            -d "key=${{ secrets.GAMES_RELAY_KEY }}&name=index.html&target=root&mode=w" \
             --data-urlencode "data@/tmp/htmlb64.txt")
           echo "index.html: $RESP (local: $LOCAL_SIZE bytes)"
           REMOTE_SIZE=$(echo "$RESP" | sed -n 's/^ok:\([0-9]*\)$/\1/p')
@@ -156,7 +114,7 @@ jobs:
             LOCAL_SIZE=$(wc -c < "$FILE")
             base64 -w 0 "$FILE" > /tmp/gh_enc.txt
             RESP=$(curl -sf "https://games.alphazone.com.au/_relay.php" \
-              -d "key=games-deploy-2026&name=${NAME}&target=${TARGET}&mode=w" \
+              -d "key=${{ secrets.GAMES_RELAY_KEY }}&name=${NAME}&target=${TARGET}&mode=w" \
               --data-urlencode "data@/tmp/gh_enc.txt")
             echo "  ${TARGET}/${NAME}: $RESP (local: $LOCAL_SIZE bytes)"
             REMOTE_SIZE=$(echo "$RESP" | sed -n 's/^ok:\([0-9]*\)$/\1/p')
@@ -190,7 +148,7 @@ jobs:
             LOCAL_SIZE=$(wc -c < "$FILE")
             base64 -w 0 "$FILE" > /tmp/bb_enc.txt
             RESP=$(curl -sf "https://games.alphazone.com.au/_relay.php" \
-              -d "key=games-deploy-2026&name=${NAME}&target=${TARGET}&mode=w" \
+              -d "key=${{ secrets.GAMES_RELAY_KEY }}&name=${NAME}&target=${TARGET}&mode=w" \
               --data-urlencode "data@/tmp/bb_enc.txt")
             echo "  ${TARGET}/${NAME}: $RESP (local: $LOCAL_SIZE bytes)"
             REMOTE_SIZE=$(echo "$RESP" | sed -n 's/^ok:\([0-9]*\)$/\1/p')
@@ -204,29 +162,17 @@ jobs:
           done
           upload dist/burgerbarn/index.html index.html burgerbarn
 
-      # Remove retired games via the relay (the cPanel UAPI Fileman::fileop
-      # call below has been failing silently for a while - "could not find
-      # the function fileop" - so it's kept only as a harmless fallback;
-      # the relay's own rmdir op actually works, proven against fireash/).
-      # Safe to leave in permanently, it's a no-op once a folder is gone.
+      # Remove retired games via the relay's rmdir (proven against fireash/).
+      # Safe to leave in permanently, it's a no-op once a folder is gone. The
+      # cPanel UAPI fileop fallbacks that used to sit here were deleted with
+      # the move to the permanent relay: they had been failing silently for
+      # months ("could not find the function fileop") and the cPanel API is
+      # now behind the host's anti-bot wall anyway.
       - name: Remove retired games
         continue-on-error: true
         run: |
           curl -sf "https://games.alphazone.com.au/_relay.php" \
-            -d "key=games-deploy-2026&op=rmdir&target=fireash"
-          curl -sf "${{ secrets.GAMES_CPANEL_URL }}/execute/Fileman/fileop" \
-            -u "${{ secrets.GAMES_CPANEL_USER }}:${{ secrets.GAMES_CPANEL_PASS }}" \
-            --data-urlencode "op=unlink" \
-            --data-urlencode "sourcefiles=/home/hre8m7ym/games.alphazone.com.au/ash-journey" || true
-          curl -sf "${{ secrets.GAMES_CPANEL_URL }}/execute/Fileman/fileop" \
-            -u "${{ secrets.GAMES_CPANEL_USER }}:${{ secrets.GAMES_CPANEL_PASS }}" \
-            --data-urlencode "op=unlink" \
-            --data-urlencode "sourcefiles=/home/hre8m7ym/games.alphazone.com.au/digimon-adventure" || true
+            -d "key=${{ secrets.GAMES_RELAY_KEY }}&op=rmdir&target=fireash"
 
-      # Neutralise relay
-      - name: Neutralise relay
-        run: |
-          curl -sf "${{ secrets.GAMES_CPANEL_URL }}/execute/Fileman/save_file_content" \
-            -u "${{ secrets.GAMES_CPANEL_USER }}:${{ secrets.GAMES_CPANEL_PASS }}" \
-            -d "dir=%2Fhome%2Fhre8m7ym%2Fgames.alphazone.com.au&file=_relay.php&content=%3C%3Fphp+%2F%2F+disabled"
-          echo "Done — deployed to games.alphazone.com.au"
+      - name: Done
+        run: echo "Done — deployed to games.alphazone.com.au"

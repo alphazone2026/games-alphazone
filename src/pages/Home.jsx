@@ -91,28 +91,30 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Green Hollow and Burger Barn are 3D games with their own builds,
-            served from /greenhollow/ and /burgerbarn/ rather than rooms in
-            this app — so these are plain links out, not `go()` calls that
-            would make a room code. Burger Barn used to be a slice inside
-            Green Hollow (?slice=barn); it is its own game now
-            (alphazone2026/burgerbarn). */}
+        {/* GREEN HOLLOW is a 3D game with its own build, served from
+            /burgerbarn/ rather than as a room in this app — so it is a plain
+            link out, not a `go()` call that would make a room code.
+
+            THE NAME AND THE PATH DIFFER ON PURPOSE (Ben, 2026-09-06: "remove
+            the Green Hollow game... and rename Burger Barn game to Green
+            Hollow"). The game that used to be called Burger Barn IS Green
+            Hollow now — it long ago outgrew the shop and became the town
+            around it. It still BUILDS and DEPLOYS to /burgerbarn/
+            (alphazone2026/burgerbarn, vendored into public/burgerbarn by the
+            deploy recipe), so the path is left alone: renaming it would
+            break every link anyone has and buy nothing a visitor can see.
+            The ORIGINAL Green Hollow — the Year 7 to 12 school game — is
+            unlinked from here. Its build is still in public/greenhollow and
+            still reachable by typing the URL; nothing was deleted. */}
         <div className="border-t border-white/10 pt-5">
-          <div className="text-sm text-amber-100/60 mb-2">Single player</div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="text-sm text-amber-100/60 mb-2">Online</div>
+          <div className="grid grid-cols-1 gap-3">
             <a
-              href="/greenhollow/"
+              href="/burgerbarn/"
               className="block rounded-lg bg-lime-700 hover:bg-lime-600 py-3 px-3 font-semibold transition text-center"
             >
               Green Hollow
-              <div className="text-xs font-normal text-lime-200">A life in a country town, Year 7 to 12</div>
-            </a>
-            <a
-              href="/burgerbarn/"
-              className="block rounded-lg bg-orange-700 hover:bg-orange-600 py-3 px-3 font-semibold transition text-center"
-            >
-              Burger Barn
-              <div className="text-xs font-normal text-orange-200">Lock into the pod &middot; build the orders</div>
+              <div className="text-xs font-normal text-lime-200">A life in a country town</div>
             </a>
           </div>
         </div>

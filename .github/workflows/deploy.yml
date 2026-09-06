@@ -88,52 +88,15 @@ jobs:
           fi
 
       # ---------------------------------------------------------------- #
-      # Green Hollow — a separate Vite app (alphazone2026/lifesim), served
-      # from /greenhollow/ rather than being a route in this one.
-      #
-      # Its build is VENDORED into public/greenhollow/, which Vite copies
-      # verbatim into dist/. Building it here instead would be tidier, but
-      # that repo is private and this workflow's GITHUB_TOKEN only covers
-      # this one — so a checkout fails with "repository not found". To move
-      # to a CI build later: add a PAT with read access to lifesim as a
-      # secret, and restore an actions/checkout step using it.
-      #
-      # To refresh the vendored copy:
-      #   cd lifesim && LIFESIM_BASE=/greenhollow/ npm run build
-      #   rm -rf ../games-alphazone/public/greenhollow
-      #   cp -r dist ../games-alphazone/public/greenhollow
-      # ---------------------------------------------------------------- #
-      - name: Upload Green Hollow
-        run: |
-          if [ ! -f dist/greenhollow/index.html ]; then
-            echo "::error::dist/greenhollow/index.html missing — is public/greenhollow/ committed?"
-            exit 1
-          fi
-          upload() {
-            FILE="$1"; NAME="$2"; TARGET="$3"
-            LOCAL_SIZE=$(wc -c < "$FILE")
-            base64 -w 0 "$FILE" > /tmp/gh_enc.txt
-            RESP=$(curl -sf "https://games.alphazone.com.au/_deploy-relay.php" \
-              -d "key=${{ secrets.GAMES_RELAY_KEY }}&name=${NAME}&target=${TARGET}&mode=w" \
-              --data-urlencode "data@/tmp/gh_enc.txt")
-            echo "  ${TARGET}/${NAME}: $RESP (local: $LOCAL_SIZE bytes)"
-            REMOTE_SIZE=$(echo "$RESP" | sed -n 's/^ok:\([0-9]*\)$/\1/p')
-            if [ "$REMOTE_SIZE" != "$LOCAL_SIZE" ]; then
-              echo "::error::${NAME} upload size mismatch (local $LOCAL_SIZE, remote $REMOTE_SIZE)"
-              exit 1
-            fi
-          }
-          for f in dist/greenhollow/assets/*; do
-            upload "$f" "$(basename "$f")" "greenhollow/assets"
-          done
-          upload dist/greenhollow/index.html index.html greenhollow
-
-      # ---------------------------------------------------------------- #
-      # Burger Barn — same vendoring arrangement as Green Hollow, from the
-      # private alphazone2026/burgerbarn repo, served at /burgerbarn/.
-      # To refresh the vendored copy (BUILD FROM POWERSHELL, not Git Bash —
-      # MSYS2 rewrites the base path):
-      #   cd burgerbarn; $env:BARN_BASE = '/burgerbarn/'; npm run build
+      # THE GAME, vendored from the private alphazone2026/burgerbarn repo and
+      # served at /burgerbarn/. It is called GREEN HOLLOW on the home page
+      # now (2026-09-06) and the folder deliberately did not follow the name:
+      # Ben, "Burgerbarn can stay same folder name, just change text". The
+      # original Green Hollow's own upload step used to sit ABOVE this one and
+      # left with its build in the same commit.
+      # To refresh the vendored copy (macOS — the PowerShell note this comment
+      # used to carry was for the old PC; MSYS2 is not in the way here):
+      #   cd burgerbarn && BARN_BASE=/burgerbarn/ node node_modules/vite/bin/vite.js build
       #   rm -rf ../games-alphazone/public/burgerbarn
       #   cp -r dist ../games-alphazone/public/burgerbarn
       # ---------------------------------------------------------------- #
@@ -163,7 +126,18 @@ jobs:
           upload dist/burgerbarn/index.html index.html burgerbarn
 
       # Remove retired games via the relay's rmdir (proven against fireash/).
-      # Safe to leave in permanently, it's a no-op once a folder is gone. The
+      # Safe to leave in permanently, it's a no-op once a folder is gone.
+      #
+      # greenhollow/ joined the list on 2026-09-06 (Ben: "yeah delete the
+      # greenhollow files too"). THE NAME MOVED, THE GAME DID NOT: the game
+      # now CALLED Green Hollow on the home page is the one that shipped as
+      # Burger Barn, and it still lives at /burgerbarn/ — Ben kept the folder
+      # ("Burgerbarn can stay same folder name, just change text"). What this
+      # removes is the ORIGINAL Green Hollow, the Year 7 to 12 school game
+      # from alphazone2026/lifesim, whose vendored build left this repo in the
+      # same commit. The rmdir is what takes it off the SERVER: the relay only
+      # ever UPLOADS, so deleting public/greenhollow alone would have left the
+      # old files answering at /greenhollow/ forever. The
       # cPanel UAPI fileop fallbacks that used to sit here were deleted with
       # the move to the permanent relay: they had been failing silently for
       # months ("could not find the function fileop") and the cPanel API is
@@ -171,8 +145,10 @@ jobs:
       - name: Remove retired games
         continue-on-error: true
         run: |
-          curl -sf "https://games.alphazone.com.au/_deploy-relay.php" \
-            -d "key=${{ secrets.GAMES_RELAY_KEY }}&op=rmdir&target=fireash"
+          for DIR in fireash greenhollow; do
+            echo "rmdir $DIR: $(curl -sf "https://games.alphazone.com.au/_deploy-relay.php" \
+              -d "key=${{ secrets.GAMES_RELAY_KEY }}&op=rmdir&target=$DIR")"
+          done
 
       - name: Done
         run: echo "Done — deployed to games.alphazone.com.au"

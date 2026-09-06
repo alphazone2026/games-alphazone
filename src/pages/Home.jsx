@@ -103,9 +103,13 @@ export default function Home() {
             (alphazone2026/burgerbarn, vendored into public/burgerbarn by the
             deploy recipe), so the path is left alone: renaming it would
             break every link anyone has and buy nothing a visitor can see.
-            The ORIGINAL Green Hollow — the Year 7 to 12 school game — is
-            unlinked from here. Its build is still in public/greenhollow and
-            still reachable by typing the URL; nothing was deleted. */}
+            The ORIGINAL Green Hollow — the Year 7 to 12 school game from
+            alphazone2026/lifesim — is GONE (Ben, 2026-09-06: "yeah delete the
+            greenhollow files too"): its vendored build left this repo, its
+            upload step left the deploy workflow, and the workflow's "Remove
+            retired games" step rmdirs greenhollow/ off the server, because
+            the relay only ever uploads and deleting the files here alone
+            would have left the old ones answering forever. */}
         <div className="border-t border-white/10 pt-5">
           <div className="text-sm text-amber-100/60 mb-2">Online</div>
           <div className="grid grid-cols-1 gap-3">

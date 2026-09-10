@@ -124,6 +124,14 @@ jobs:
             upload "$f" "$(basename "$f")" "burgerbarn/assets"
           done
           upload dist/burgerbarn/index.html index.html burgerbarn
+          # THE CACHE HEADERS (2026-09-10). Ben played two deploys behind after
+          # a hard refresh, because the host sends no Cache-Control on
+          # index.html and browsers then cache it HEURISTICALLY — a stale map
+          # to stale bundle hashes. The .htaccess marks html no-cache and the
+          # content-hashed assets immutable. It is uploaded BY NAME like every
+          # other file: this step never walked the folder, which is exactly why
+          # a new file in public/ has to be listed here as well.
+          upload dist/burgerbarn/.htaccess .htaccess burgerbarn
 
       # Remove retired games via the relay's rmdir (proven against fireash/).
       # Safe to leave in permanently, it's a no-op once a folder is gone.

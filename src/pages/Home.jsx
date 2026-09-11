@@ -155,17 +155,19 @@ export default function Home() {
                 path says what the PLACE is — this game will always be about a
                 gate room, and it may not always carry that name.)
 
-                It is an EARLY BUILD and a ROOM rather than a game: rounds 1 and
-                2 of twelve built the ring, the hall it stands in, and the walk
-                up the ramp to it. The gate does not dial yet — that is round 3,
-                and the pool you can step through is round 4. Listed anyway,
+                It is an EARLY BUILD and a ROOM rather than a game: rounds 1
+                to 3 of twelve built the ring, the hall it stands in, the walk up
+                the ramp, and the dial — nine chevrons locking on a scheduled
+                grid, the kawoosh, and every sound in it synthesised from code
+                with no samples anywhere. You cannot step THROUGH it yet; the
+                pool is a picture until round 4 makes it a portal. Listed anyway,
                 alongside the other two. */}
             <a
               href="/gateroom/"
               className="block rounded-lg bg-sky-800 hover:bg-sky-700 py-3 px-3 font-semibold transition text-center"
             >
               Stargate
-              <div className="text-xs font-normal text-sky-200">Walk the ramp to the ring</div>
+              <div className="text-xs font-normal text-sky-200">Walk the ramp, dial the gate</div>
             </a>
           </div>
         </div>

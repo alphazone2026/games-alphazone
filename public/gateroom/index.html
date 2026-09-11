@@ -1,10 +1,24 @@
-<script type="module" crossorigin src="/gateroom/assets/index-DjW1dsFJ.js"></script>
+<script type="module" crossorigin src="/gateroom/assets/index-BT160eF5.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Stargate — Marrowfield</title>
 <style>
   html, body { margin: 0; height: 100%; background: #0b0c0d; overflow: hidden; }
   #view { display: block; width: 100vw; height: 100vh; touch-action: none; }
+
+  /* THE CROSSHAIR IS THE AIM. `Walker._updateTarget` computes what you are
+     pointing at from the committed camera, so the dot has to be dead centre and
+     it has to be the ONLY thing claiming to be centre — an offset of a few
+     pixels is a prompt that lights when the thing is not under the mark, which
+     reads as the game being fiddly rather than as the dot being wrong. */
+  #cross {
+    position: fixed; left: 50%; top: 50%; width: 5px; height: 5px;
+    margin: -2.5px 0 0 -2.5px; border-radius: 50%;
+    background: rgba(226,234,240,.78);
+    box-shadow: 0 0 0 1px rgba(0,0,0,.55);
+    pointer-events: none;
+  }
+
   /* The hint fades on the first drag. A dark room with no instruction reads as
      a broken page rather than as a dark room. */
   #hint {
@@ -18,4 +32,5 @@
   #hint.gone { opacity: 0; }
 </style>
 <canvas id="view"></canvas>
-<div id="hint">Drag to look around</div>
+<div id="cross"></div>
+<div id="hint">Drag to look &middot; W A S D to walk</div>

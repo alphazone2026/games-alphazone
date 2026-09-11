@@ -1,4 +1,4 @@
-<script type="module" crossorigin src="/gateroom/assets/index-BYRcLDpb.js"></script>
+<script type="module" crossorigin src="/gateroom/assets/index-Px8n2GOK.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Stargate — Marrowfield</title>
@@ -30,6 +30,21 @@
     transition: opacity .5s ease; text-align: center;
   }
   #hint.gone { opacity: 0; }
+
+  /* THE OBJECTIVE LOG. Top left, out of the crosshair's way, and quiet enough
+     that it never competes with the room for attention. */
+  #log {
+    position: fixed; left: 22px; top: 20px; max-width: 340px;
+    font: 400 13px/1.5 ui-sans-serif, system-ui, -apple-system, sans-serif;
+    color: #cfd6db; pointer-events: none; text-shadow: 0 1px 3px rgba(0,0,0,.8);
+  }
+  #log .t { font-weight: 600; letter-spacing: .10em; text-transform: uppercase; color: #e8eef2; margin-bottom: 6px; }
+  #log .b { color: #9aa4ab; margin-bottom: 2px; }
+  #log .o { margin-top: 10px; }
+  #log .o div { padding-left: 14px; position: relative; margin-bottom: 3px; }
+  #log .o div::before { content: '—'; position: absolute; left: 0; color: #7d868d; }
+  #log .o div.done { color: #7d868d; text-decoration: line-through; }
+  #log .p { margin-top: 10px; color: #7d868d; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
 </style>
 <canvas id="view"></canvas>
 <div id="cross"></div>

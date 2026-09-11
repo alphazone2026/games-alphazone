@@ -155,20 +155,20 @@ export default function Home() {
                 path says what the PLACE is — this game will always be about a
                 gate room, and it may not always carry that name.)
 
-                It is an EARLY BUILD and a ROOM rather than a game: rounds 1
-                to 4 of twelve built the ring, the hall it stands in, the walk up
-                the ramp, the dial — nine chevrons locking on a scheduled grid,
-                the kawoosh, every sound synthesised from code with no samples
-                anywhere — and THE POOL YOU CAN WALK THROUGH. It is a real
-                render-to-texture portal onto a second world with its own sky,
-                its own light and its own ground under your feet; the episode
-                that gives you a reason to go is round 5. */}
+                An EARLY BUILD, and rounds 1 to 5 of twelve: the ring, the hall
+                it stands in, the walk up the ramp, the dial — nine chevrons on a
+                scheduled grid, the kawoosh, every sound synthesised from code
+                with no samples anywhere — the pool you can walk through, and now
+                the episode on the other side of it. Cold Ash is a fifteen-key
+                record that brings its own world with it, and everything on that
+                world was proved reachable before a frame of it was drawn. The
+                team who walk it with you are round 7. */}
             <a
               href="/gateroom/"
               className="block rounded-lg bg-sky-800 hover:bg-sky-700 py-3 px-3 font-semibold transition text-center"
             >
               Stargate
-              <div className="text-xs font-normal text-sky-200">Dial the gate and walk through it</div>
+              <div className="text-xs font-normal text-sky-200">Dial out to the Ashen Shelf</div>
             </a>
           </div>
         </div>

@@ -156,18 +156,19 @@ export default function Home() {
                 gate room, and it may not always carry that name.)
 
                 It is an EARLY BUILD and a ROOM rather than a game: rounds 1
-                to 3 of twelve built the ring, the hall it stands in, the walk up
-                the ramp, and the dial — nine chevrons locking on a scheduled
-                grid, the kawoosh, and every sound in it synthesised from code
-                with no samples anywhere. You cannot step THROUGH it yet; the
-                pool is a picture until round 4 makes it a portal. Listed anyway,
-                alongside the other two. */}
+                to 4 of twelve built the ring, the hall it stands in, the walk up
+                the ramp, the dial — nine chevrons locking on a scheduled grid,
+                the kawoosh, every sound synthesised from code with no samples
+                anywhere — and THE POOL YOU CAN WALK THROUGH. It is a real
+                render-to-texture portal onto a second world with its own sky,
+                its own light and its own ground under your feet; the episode
+                that gives you a reason to go is round 5. */}
             <a
               href="/gateroom/"
               className="block rounded-lg bg-sky-800 hover:bg-sky-700 py-3 px-3 font-semibold transition text-center"
             >
               Stargate
-              <div className="text-xs font-normal text-sky-200">Walk the ramp, dial the gate</div>
+              <div className="text-xs font-normal text-sky-200">Dial the gate and walk through it</div>
             </a>
           </div>
         </div>

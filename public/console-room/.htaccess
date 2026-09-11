@@ -1,0 +1,22 @@
+# Same reason as public/burgerbarn/.htaccess, and it is worth restating rather
+# than cross-referencing, because a file that only says "see the other one" is
+# the file nobody reads.
+#
+# The host sends NO Cache-Control on index.html, so browsers fall back to
+# HEURISTIC caching — roughly a tenth of the file's age since last-modified —
+# and quietly keep serving a stale document that points at stale bundle hashes.
+# A hard refresh does not always beat it. Ben lost an afternoon to this on
+# Green Hollow on 2026-09-10, reporting a bug that was already fixed while
+# every check against the live site passed.
+#
+# index.html is the ONE file that must always be revalidated: it is the map to
+# every hashed bundle. The bundles are content-addressed (index-<hash>.js), so
+# a name never means two different files and they can be cached forever.
+<IfModule mod_headers.c>
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache, must-revalidate, max-age=0"
+  </FilesMatch>
+  <FilesMatch "\.(js|css|png|jpg|svg|woff2?)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>

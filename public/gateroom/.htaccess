@@ -1,0 +1,20 @@
+# WHY THIS FILE EXISTS (2026-09-10). Ben played a shift on a build that was two
+# deploys old, hard-refreshed, and still had it — then spent an afternoon
+# reporting a bug that had already been fixed, while every check I ran against
+# the live site passed. The host sends NO Cache-Control on index.html, so
+# browsers fall back to HEURISTIC caching (roughly a tenth of the file's age
+# since last-modified) and quietly keep serving a stale document that points at
+# stale bundle hashes. A hard refresh does not always beat it.
+#
+# index.html is the ONE file that must always be revalidated: it is the map to
+# every hashed bundle. The bundles themselves are content-addressed
+# (index-<hash>.js), so a name never means two different files and they can be
+# cached forever.
+<IfModule mod_headers.c>
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache, must-revalidate, max-age=0"
+  </FilesMatch>
+  <FilesMatch "\.(js|css|png|jpg|svg|woff2?)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>

@@ -143,6 +143,29 @@ export default function Home() {
               Doctor Who
               <div className="text-xs font-normal text-indigo-200">Step inside the ship</div>
             </a>
+
+            {/* THE THIRD 3D GAME. Its own build, vendored into public/gateroom,
+                a plain link out like the other two.
+
+                THE PATH IS NEUTRAL AND THE NAME IS NOT, for the third time and
+                the same reason: a live path is the one thing you cannot change
+                cheaply. The display name is THIS LINE and nothing else, so it
+                can change without a rebuild, a re-vendor and a dead URL. (Ben,
+                2026-09-11: call it Stargate. The marks belong to MGM, so the
+                path says what the PLACE is — this game will always be about a
+                gate room, and it may not always carry that name.)
+
+                It is an EARLY BUILD and, right now, a ROOM rather than a game:
+                round 1 of twelve built the ring and the hall it stands in, and
+                you can look around but not yet walk — round 2 ships the walking.
+                Listed anyway, alongside the other two. */}
+            <a
+              href="/gateroom/"
+              className="block rounded-lg bg-sky-800 hover:bg-sky-700 py-3 px-3 font-semibold transition text-center"
+            >
+              Stargate
+              <div className="text-xs font-normal text-sky-200">Drag to look around the gate room</div>
+            </a>
           </div>
         </div>
 

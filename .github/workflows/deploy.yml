@@ -182,6 +182,60 @@ jobs:
           upload dist/console-room/index.html index.html console-room
           upload dist/console-room/.htaccess .htaccess console-room
 
+      # ---------------------------------------------------------------- #
+      # THE THIRD 3D GAME, served at /gateroom/. Built from
+      # ClaudeSessions/longstep and vendored into public/gateroom, exactly as
+      # the other two are — the games site never builds these, it carries them.
+      #
+      # THE FOLDER AND THE NAME DIFFER ON PURPOSE, a third time. It is called
+      # STARGATE on the home page (Ben, 2026-09-11) and the marks belong to MGM,
+      # so the PATH says what the place is rather than what the show is called:
+      # this game will always be about a gate room, and it may not always carry
+      # that name. A live URL is the one thing you cannot change cheaply.
+      #
+      # To refresh the vendored copy (macOS):
+      #   cd longstep && LS_BASE=/gateroom/ node node_modules/vite/bin/vite.js build
+      #   rm -rf ../games-alphazone/public/gateroom
+      #   cp -r dist ../games-alphazone/public/gateroom
+      #
+      # UNLIKE THE CONSOLE ROOM, THE .htaccess NEEDS NO HAND STEP. It is tracked
+      # at longstep/public/.htaccess, so Vite copies it into dist and `cp -r`
+      # carries it across — Green Hollow's arrangement, and the reason that one
+      # has never been the file that bit. It is still uploaded BY NAME below,
+      # because this step lists its files and walks no folder: a NEW file under
+      # public/gateroom/ has to be added here or it silently never ships, and
+      # every local check still passes.
+      # ---------------------------------------------------------------- #
+      - name: Upload the gate room
+        run: |
+          if [ ! -f dist/gateroom/index.html ]; then
+            echo "::error::dist/gateroom/index.html missing — is public/gateroom/ committed?"
+            exit 1
+          fi
+          if [ ! -f dist/gateroom/.htaccess ]; then
+            echo "::error::dist/gateroom/.htaccess missing — it should ride out of longstep/public/"
+            exit 1
+          fi
+          upload() {
+            FILE="$1"; NAME="$2"; TARGET="$3"
+            LOCAL_SIZE=$(wc -c < "$FILE")
+            base64 -w 0 "$FILE" > /tmp/gr_enc.txt
+            RESP=$(curl -sf "https://games.alphazone.com.au/_deploy-relay.php" \
+              -d "key=${{ secrets.GAMES_RELAY_KEY }}&name=${NAME}&target=${TARGET}&mode=w" \
+              --data-urlencode "data@/tmp/gr_enc.txt")
+            echo "  ${TARGET}/${NAME}: $RESP (local: $LOCAL_SIZE bytes)"
+            REMOTE_SIZE=$(echo "$RESP" | sed -n 's/^ok:\([0-9]*\)$/\1/p')
+            if [ "$REMOTE_SIZE" != "$LOCAL_SIZE" ]; then
+              echo "::error::${NAME} upload size mismatch (local $LOCAL_SIZE, remote $REMOTE_SIZE)"
+              exit 1
+            fi
+          }
+          for f in dist/gateroom/assets/*; do
+            upload "$f" "$(basename "$f")" "gateroom/assets"
+          done
+          upload dist/gateroom/index.html index.html gateroom
+          upload dist/gateroom/.htaccess .htaccess gateroom
+
       # Remove retired games via the relay's rmdir (proven against fireash/).
       # Safe to leave in permanently, it's a no-op once a folder is gone.
       #

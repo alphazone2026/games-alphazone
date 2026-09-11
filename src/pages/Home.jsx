@@ -168,7 +168,7 @@ export default function Home() {
               className="block rounded-lg bg-sky-800 hover:bg-sky-700 py-3 px-3 font-semibold transition text-center"
             >
               Stargate
-              <div className="text-xs font-normal text-sky-200">Dial out to the Ashen Shelf</div>
+              <div className="text-xs font-normal text-sky-200">Dial out, walk through, read the marks</div>
             </a>
           </div>
         </div>

@@ -1,4 +1,4 @@
-<script type="module" crossorigin src="/gateroom/assets/index-Px8n2GOK.js"></script>
+<script type="module" crossorigin src="/gateroom/assets/index-ySZWDYZz.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Stargate — Marrowfield</title>
@@ -44,8 +44,32 @@
   #log .o div { padding-left: 14px; position: relative; margin-bottom: 3px; }
   #log .o div::before { content: '—'; position: absolute; left: 0; color: #7d868d; }
   #log .o div.done { color: #7d868d; text-decoration: line-through; }
+  /* THE PROMPT sits just under the crosshair, where the eye already is. It only
+     ever names an action that WILL work. */
+  #prompt {
+    position: fixed; left: 50%; top: calc(50% + 26px); transform: translateX(-50%);
+    font: 500 13px/1 ui-sans-serif, system-ui, -apple-system, sans-serif;
+    color: #e8eef2; letter-spacing: .07em; opacity: 0; pointer-events: none;
+    text-shadow: 0 1px 4px rgba(0,0,0,.9); transition: opacity .12s ease; white-space: nowrap;
+  }
+  #prompt.on { opacity: 1; }
+  #prompt::after { content: ' [E]'; color: #8c959c; }
+
+  /* ONE TOAST PER PRESS, and it replaces rather than stacks: a refusal cannot
+     fight a press for the slot, because there is only one. */
+  #toast {
+    position: fixed; left: 50%; bottom: 13vh; transform: translateX(-50%);
+    font: 400 13px/1.4 ui-sans-serif, system-ui, -apple-system, sans-serif;
+    color: #e6c98a; background: rgba(8,9,10,.72); padding: 7px 15px; border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.10); opacity: 0; pointer-events: none;
+    transition: opacity .18s ease; text-align: center; max-width: 70vw;
+  }
+  #toast.on { opacity: 1; }
+
   #log .p { margin-top: 10px; color: #7d868d; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
 </style>
 <canvas id="view"></canvas>
 <div id="cross"></div>
+<div id="prompt"></div>
+<div id="toast"></div>
 <div id="hint">Drag to look &middot; W A S D to walk &middot; G to dial &middot; walk through</div>

@@ -133,6 +133,55 @@ jobs:
           # a new file in public/ has to be listed here as well.
           upload dist/burgerbarn/.htaccess .htaccess burgerbarn
 
+      # ---------------------------------------------------------------- #
+      # THE SECOND 3D GAME, served at /console-room/. Built from
+      # ClaudeSessions/doctorwho and vendored into public/console-room, exactly
+      # as Burger Barn is — the games site never builds these, it carries them.
+      #
+      # THE FOLDER AND THE NAME DIFFER ON PURPOSE, the same way Green Hollow
+      # lives at /burgerbarn/ (Ben, 2026-09-11: call it the Doctor Who game on
+      # the card). A neutral path means the display name can change on the home
+      # page in one line without a rebuild, a re-vendor and a dead URL.
+      #
+      # To refresh the vendored copy (macOS):
+      #   cd doctorwho && DW_BASE=/console-room/ node node_modules/vite/bin/vite.js build
+      #   rm -rf ../games-alphazone/public/console-room
+      #   cp -r dist ../games-alphazone/public/console-room
+      #   # then re-add public/console-room/.htaccess — cp -r of dist will not
+      #   # carry it, because it is not part of the build.
+      #
+      # THIS STEP LISTS ITS FILES BY NAME and does not walk the folder, which
+      # is the same trap the Burger Barn step carries: a NEW file in
+      # public/console-room/ has to be added here too or it silently never
+      # ships. The .htaccess is the one that bites, because nothing on the
+      # page fails without it — the site just serves yesterday's build.
+      # ---------------------------------------------------------------- #
+      - name: Upload the console room
+        run: |
+          if [ ! -f dist/console-room/index.html ]; then
+            echo "::error::dist/console-room/index.html missing — is public/console-room/ committed?"
+            exit 1
+          fi
+          upload() {
+            FILE="$1"; NAME="$2"; TARGET="$3"
+            LOCAL_SIZE=$(wc -c < "$FILE")
+            base64 -w 0 "$FILE" > /tmp/cr_enc.txt
+            RESP=$(curl -sf "https://games.alphazone.com.au/_deploy-relay.php" \
+              -d "key=${{ secrets.GAMES_RELAY_KEY }}&name=${NAME}&target=${TARGET}&mode=w" \
+              --data-urlencode "data@/tmp/cr_enc.txt")
+            echo "  ${TARGET}/${NAME}: $RESP (local: $LOCAL_SIZE bytes)"
+            REMOTE_SIZE=$(echo "$RESP" | sed -n 's/^ok:\([0-9]*\)$/\1/p')
+            if [ "$REMOTE_SIZE" != "$LOCAL_SIZE" ]; then
+              echo "::error::${NAME} upload size mismatch (local $LOCAL_SIZE, remote $REMOTE_SIZE)"
+              exit 1
+            fi
+          }
+          for f in dist/console-room/assets/*; do
+            upload "$f" "$(basename "$f")" "console-room/assets"
+          done
+          upload dist/console-room/index.html index.html console-room
+          upload dist/console-room/.htaccess .htaccess console-room
+
       # Remove retired games via the relay's rmdir (proven against fireash/).
       # Safe to leave in permanently, it's a no-op once a folder is gone.
       #

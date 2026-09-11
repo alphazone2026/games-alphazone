@@ -120,6 +120,29 @@ export default function Home() {
               Green Hollow
               <div className="text-xs font-normal text-lime-200">A life in a country town</div>
             </a>
+
+            {/* THE SECOND 3D GAME. Like Green Hollow it has its own build and
+                is a plain link out, not a `go()` call that would mint a room
+                code — there is no multiplayer in it yet.
+
+                THE PATH IS NEUTRAL AND THE NAME IS NOT, deliberately, and for
+                the same reason Green Hollow is served from /burgerbarn/: a
+                live path is the one thing you cannot change cheaply, because
+                renaming it breaks every link anyone has. The display name is
+                THIS LINE and nothing else, so it can change without a rebuild,
+                a re-vendor and a dead URL. (Ben, 2026-09-11, on being told the
+                marks belong to the BBC: call it the Doctor Who game.)
+
+                It is an EARLY BUILD and a room rather than a game — you walk
+                around a console room and touch things. It is listed anyway
+                (Ben: "List it alongside Green Hollow"). */}
+            <a
+              href="/console-room/"
+              className="block rounded-lg bg-indigo-800 hover:bg-indigo-700 py-3 px-3 font-semibold transition text-center"
+            >
+              Doctor Who
+              <div className="text-xs font-normal text-indigo-200">Step inside the ship</div>
+            </a>
           </div>
         </div>
 

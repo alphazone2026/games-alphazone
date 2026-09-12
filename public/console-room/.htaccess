@@ -1,3 +1,16 @@
+# TRACKED HERE, IN THE GAME'S OWN REPO, AND NOT HAND-COPIED INTO THE GAMES SITE.
+#
+# It lived in games-alphazone/public/console-room/ for the first four deploys,
+# which meant every one of them had a step that read "now put the .htaccess
+# back, because `cp -r dist` will not carry it" — and nothing visibly fails
+# when that step is missed. The site just serves yesterday's build, and every
+# check against it passes. Ben lost an afternoon to exactly that on Green
+# Hollow on 2026-09-10.
+#
+# Vite copies `public/` into `dist/` verbatim, so `cp -r dist` now carries it
+# and the hand step is gone. This is what `longstep` already does and the
+# reason that game has never been the one that bit.
+#
 # Same reason as public/burgerbarn/.htaccess, and it is worth restating rather
 # than cross-referencing, because a file that only says "see the other one" is
 # the file nobody reads.

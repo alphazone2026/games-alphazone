@@ -241,6 +241,62 @@ jobs:
           upload dist/gateroom/index.html index.html gateroom
           upload dist/gateroom/.htaccess .htaccess gateroom
 
+      # ---------------------------------------------------------------- #
+      # THE FOURTH 3D GAME, served at /range/. Built from
+      # ClaudeSessions/games/games/predestiny and vendored into public/range,
+      # exactly as the other three are — the games site never builds these,
+      # it carries them.
+      #
+      # THE PATH IS NEUTRAL AND THE NAME IS NOT, a fourth time, same reason:
+      # a live path is the one thing you cannot change cheaply. This is a
+      # gray-box gunplay test range only so far — not the actual game's
+      # content, just shooting/damage/reload proven working — so the path
+      # says what is HONESTLY there right now rather than committing to a
+      # name the real game may or may not keep.
+      #
+      # To refresh the vendored copy (macOS):
+      #   cd games/games/predestiny && PD_BASE=/range/ npx vite build
+      #   rm -rf ../../../games-alphazone/public/range
+      #   cp -r dist ../../../games-alphazone/public/range
+      #
+      # No hand .htaccess step needed — it is tracked at
+      # predestiny/public/.htaccess, so Vite copies it into dist and cp -r
+      # carries it across, the same arrangement THE LONG STEP uses.
+      #
+      # THIS STEP LISTS ITS FILES BY NAME and does not walk the folder: a
+      # NEW file under public/range/ has to be added here too or it silently
+      # never ships.
+      # ---------------------------------------------------------------- #
+      - name: Upload the range
+        run: |
+          if [ ! -f dist/range/index.html ]; then
+            echo "::error::dist/range/index.html missing — is public/range/ committed?"
+            exit 1
+          fi
+          if [ ! -f dist/range/.htaccess ]; then
+            echo "::error::dist/range/.htaccess missing — it should ride out of predestiny/public/"
+            exit 1
+          fi
+          upload() {
+            FILE="$1"; NAME="$2"; TARGET="$3"
+            LOCAL_SIZE=$(wc -c < "$FILE")
+            base64 -w 0 "$FILE" > /tmp/rg_enc.txt
+            RESP=$(curl -sf "https://games.alphazone.com.au/_deploy-relay.php" \
+              -d "key=${{ secrets.GAMES_RELAY_KEY }}&name=${NAME}&target=${TARGET}&mode=w" \
+              --data-urlencode "data@/tmp/rg_enc.txt")
+            echo "  ${TARGET}/${NAME}: $RESP (local: $LOCAL_SIZE bytes)"
+            REMOTE_SIZE=$(echo "$RESP" | sed -n 's/^ok:\([0-9]*\)$/\1/p')
+            if [ "$REMOTE_SIZE" != "$LOCAL_SIZE" ]; then
+              echo "::error::${NAME} upload size mismatch (local $LOCAL_SIZE, remote $REMOTE_SIZE)"
+              exit 1
+            fi
+          }
+          for f in dist/range/assets/*; do
+            upload "$f" "$(basename "$f")" "range/assets"
+          done
+          upload dist/range/index.html index.html range
+          upload dist/range/.htaccess .htaccess range
+
       # Remove retired games via the relay's rmdir (proven against fireash/).
       # Safe to leave in permanently, it's a no-op once a folder is gone.
       #

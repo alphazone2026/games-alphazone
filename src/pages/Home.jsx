@@ -170,6 +170,29 @@ export default function Home() {
               Stargate
               <div className="text-xs font-normal text-sky-200">Dial out, walk through, read the marks</div>
             </a>
+
+            {/* THE FOURTH 3D GAME, and the first honest one: it is not "an
+                early build" of the real game, it IS the test range and
+                nothing else — three target dummies, a hitscan weapon, a real
+                magazine and reload, built to prove Damage.js/Weapon.js/
+                Viewmodel.js work before any mission content exists. The name
+                says so rather than oversell it.
+
+                THE PATH IS NEUTRAL AND THE NAME IS NOT, a fourth time. It is
+                served from /range/ (games/games/predestiny, vendored into
+                public/range/) for the same reason as the other three: a live
+                path is the one thing you cannot change cheaply. This one is
+                doubly provisional — both the path and the display name are
+                placeholders until Ben settles on what the real game's URL
+                should be once it has actual mission content, not just a
+                shooting range. */}
+            <a
+              href="/range/"
+              className="block rounded-lg bg-rose-800 hover:bg-rose-700 py-3 px-3 font-semibold transition text-center"
+            >
+              Pre-Destiny — Test Range
+              <div className="text-xs font-normal text-rose-200">Shoot, reload, repeat. Gunplay only, no mission yet</div>
+            </a>
           </div>
         </div>
 

@@ -1,0 +1,13 @@
+# index.html must always revalidate — it is the map to every hashed bundle.
+# The bundles themselves are content-addressed (index-<hash>.js), so a name
+# never means two different files and they can be cached forever. Same
+# convention as the other three games in this repo (see longstep/public/.htaccess
+# for the incident that made this mandatory rather than optional).
+<IfModule mod_headers.c>
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache, must-revalidate, max-age=0"
+  </FilesMatch>
+  <FilesMatch "\.(js|css|png|jpg|svg|woff2?)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>

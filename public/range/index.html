@@ -1,8 +1,19 @@
-<script type="module" crossorigin src="/range/assets/index-BpWJSztJ.js"></script>
+<script type="module" crossorigin src="/range/assets/index-Ca6xyxj0.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Pre-Destiny — test range</title>
 <style>
+  /* Restyled toward Destiny 2's actual Firing Range HUD — a teal/cyan accent,
+     round ability icons, a radar compass, digital-scoreboard readouts. This
+     is a colour-and-shape language taken from a screenshot, not traced
+     assets: every shape below is CSS or an inline SVG path drawn for this
+     file, matching the house rule (no external art) the same way the rest
+     of this engine already does. */
+  :root {
+    --dz-teal: #35d8c2;
+    --dz-teal-glow: rgba(53, 216, 194, .55);
+    --dz-green: #7be36a;
+  }
   html, body { margin: 0; height: 100%; background: #0b0c0d; overflow: hidden; }
   #view { display: block; width: 100vw; height: 100vh; touch-action: none; }
 
@@ -43,28 +54,29 @@
   /* ================================================================= */
   #vitals { position: fixed; left: 20px; bottom: 20px; width: 268px; pointer-events: none; }
 
-  #abilities { display: flex; align-items: flex-end; gap: 8px; margin-bottom: 10px; }
+  #abilities { display: flex; align-items: flex-end; gap: 10px; margin-bottom: 10px; }
+  /* ROUND, not square — the Firing Range's own ability icons are circles. */
   .ability {
-    position: relative; width: 44px; height: 44px; border-radius: 5px;
-    background: #262c32; border: 1px solid rgba(255,255,255,.16);
+    position: relative; width: 42px; height: 42px; border-radius: 50%;
+    background: #1a2320; border: 1.5px solid rgba(255,255,255,.14);
     display: flex; align-items: center; justify-content: center;
     overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,.5); flex: none;
   }
   .ability .key {
-    font: 700 12px/1 ui-monospace, monospace; color: #dfe8ec;
+    font: 700 11px/1 ui-monospace, monospace; color: #dfe8ec;
     text-shadow: 0 1px 2px rgba(0,0,0,.9); z-index: 2;
   }
   .ability .cd {
-    position: absolute; inset: 0;
+    position: absolute; inset: 0; border-radius: 50%;
     background: conic-gradient(rgba(4,6,8,.90) var(--pct, 0%), transparent 0);
   }
-  .ability.ready { border-color: rgba(130,225,255,.85); box-shadow: 0 0 0 1px rgba(130,225,255,.5) inset, 0 0 8px rgba(130,225,255,.35); }
-  .ability.ready .key { color: #bdeeff; }
+  .ability.ready { border-color: var(--dz-teal); box-shadow: 0 0 0 1px var(--dz-teal-glow) inset, 0 0 9px var(--dz-teal-glow); }
+  .ability.ready .key { color: var(--dz-teal); }
 
-  /* The Super sits taller than the other three, diamond-ish via a 45°
-     inner rotation — the one silhouette Destiny never reuses for anything
-     else, so a glance tells Super apart from an ordinary ability. */
-  #ab-super { width: 52px; height: 52px; margin-left: 4px; border-radius: 6px; }
+  /* The Super sits slightly larger, ringed in gold when charged rather than
+     teal — the one icon that must read differently from the other three at
+     a glance. */
+  #ab-super { width: 50px; height: 50px; margin-left: 4px; }
   #ab-super .key { font-size: 10px; letter-spacing: .03em; }
   #ab-super.ready {
     border-color: rgba(255,205,120,.9);
@@ -76,12 +88,33 @@
     50% { box-shadow: 0 0 0 1px rgba(255,205,120,.9) inset, 0 0 18px rgba(255,205,120,.7); }
   }
 
+  /* RADAR — top-left, the Firing Range's own corner for it. No multiplayer
+     here to actually track, so it's a compass: the triangle shows the way
+     the camera is facing, redrawn from `view.yaw` every frame. Decorative
+     enough to be honest about that, functional enough to not be a lie. */
+  #radar {
+    position: fixed; left: 20px; top: 20px; width: 74px; height: 74px;
+    border-radius: 50%; background: radial-gradient(circle, #0e1614 0%, #0a100e 78%);
+    border: 1.5px solid rgba(53,216,194,.45); box-shadow: 0 0 10px rgba(53,216,194,.18);
+    pointer-events: none;
+  }
+  #radar::before {
+    content: ''; position: absolute; inset: 10px; border-radius: 50%;
+    border: 1px solid rgba(53,216,194,.22);
+  }
+  #radar-needle {
+    position: absolute; left: 50%; top: 50%; width: 0; height: 0;
+    margin: -20px 0 0 -6px; transform-origin: 6px 20px;
+    border-left: 6px solid transparent; border-right: 6px solid transparent;
+    border-bottom: 13px solid var(--dz-teal); filter: drop-shadow(0 0 3px var(--dz-teal-glow));
+  }
+
   #vitals .bar {
     height: 8px; border-radius: 1px; background: rgba(255,255,255,.08);
     overflow: hidden; margin-bottom: 4px; box-shadow: 0 1px 2px rgba(0,0,0,.6);
   }
   #vitals .fill { height: 100%; width: 100%; }
-  #vitals .shield .fill { background: linear-gradient(90deg, #4fb8e8, #d5f3ff); }
+  #vitals .shield .fill { background: linear-gradient(90deg, var(--dz-teal), #cffaf1); }
   #vitals .health .fill { height: 100%; width: 100%; background: linear-gradient(90deg, #dfe3e6, #ffffff); margin-bottom: 0; }
 
   /* ================================================================= */
@@ -89,32 +122,44 @@
   /* ================================================================= */
   #hud {
     position: fixed; right: 22px; bottom: 26px; text-align: right;
-    font: 700 26px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-    color: #e8eef2; text-shadow: 0 2px 5px rgba(0,0,0,.85);
-    pointer-events: none;
+    font: 700 30px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--dz-teal); text-shadow: 0 0 10px var(--dz-teal-glow), 0 2px 5px rgba(0,0,0,.85);
+    pointer-events: none; letter-spacing: .02em;
   }
-  #hud .reserve { font-size: 14px; font-weight: 600; color: #97a3aa; margin-left: 6px; }
-  #hud .low { color: #e08a5a; }
-  #hud .status { font: 600 11px/1.6 ui-sans-serif, system-ui, sans-serif; letter-spacing: .08em; color: #e0b25a; text-transform: uppercase; }
-  #hud .weaponname { font: 600 12px/1.8 ui-sans-serif, system-ui, sans-serif; letter-spacing: .04em; color: #97a3aa; text-transform: uppercase; }
+  #hud .reserve { font-size: 15px; font-weight: 600; color: #7fa39c; margin-left: 6px; text-shadow: none; }
+  #hud .low { color: #e08a5a; text-shadow: 0 0 10px rgba(224,138,90,.5); }
+  #hud .status { font: 600 11px/1.6 ui-sans-serif, system-ui, sans-serif; letter-spacing: .08em; color: #e0b25a; text-transform: uppercase; text-shadow: none; }
+  #hud .weaponname { font: 600 12px/1.8 ui-sans-serif, system-ui, sans-serif; letter-spacing: .1em; color: #6b8a84; text-transform: uppercase; text-shadow: none; }
   /* Special ammo meter — a global per-kill meter, same as Destiny's own
      (it fills off any kill regardless of what's equipped); a brick drops on
      the next kill once it's full. */
   #specialmeter { width: 120px; height: 4px; margin: 6px 0 0 auto; background: rgba(255,255,255,.10); border-radius: 1px; overflow: hidden; }
-  #specialmeter .fill { height: 100%; background: #4ec97a; }
-  #specialmeter.full .fill { background: #8bf0a8; animation: specialPulse 0.9s ease-in-out infinite; }
+  #specialmeter .fill { height: 100%; background: var(--dz-green); }
+  #specialmeter.full .fill { background: #a8f79c; animation: specialPulse 0.9s ease-in-out infinite; }
   @keyframes specialPulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
 
-  /* Test-range-only debug readout — not part of a real Destiny HUD, kept
-     deliberately small/secondary so it doesn't compete with it. */
+  /* TARGET SCOREBOARDS — restyled after the Firing Range's own digital
+     lane readouts above each target: a dark LCD panel per lane, glowing
+     monospace digits, tabular so the numbers don't jitter the layout. */
   #targets {
-    position: fixed; right: 22px; top: 18px; min-width: 130px;
-    font: 400 12px/1.6 ui-sans-serif, system-ui, -apple-system, sans-serif;
-    color: #93a0a8; text-shadow: 0 1px 3px rgba(0,0,0,.8);
+    position: fixed; right: 22px; top: 18px; display: flex; flex-direction: column; gap: 6px;
     pointer-events: none;
   }
-  #targets .row { display: flex; justify-content: space-between; gap: 12px; }
-  #targets .down { color: #5e666c; }
+  #targets .row {
+    display: flex; justify-content: space-between; align-items: center; gap: 14px;
+    min-width: 150px; padding: 5px 10px; background: rgba(6,10,9,.72);
+    border: 1px solid rgba(53,216,194,.30); border-radius: 3px;
+  }
+  #targets .row span:first-child {
+    font: 600 11px ui-sans-serif, system-ui, sans-serif; letter-spacing: .05em;
+    color: #5e8b83; text-transform: uppercase;
+  }
+  #targets .row span:last-child {
+    font: 700 15px/1 ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums;
+    color: var(--dz-teal); text-shadow: 0 0 6px var(--dz-teal-glow);
+  }
+  #targets .down { border-color: rgba(255,255,255,.10); }
+  #targets .down span:last-child { color: #565d61; text-shadow: none; }
 
   #hint {
     position: fixed; left: 50%; top: 6vh; transform: translateX(-50%);
@@ -154,7 +199,7 @@
     letter-spacing: .04em; text-transform: uppercase; color: #b7c0c6;
     background: #1e2226; border: 1px solid rgba(255,255,255,.12); border-radius: 5px; cursor: pointer;
   }
-  #menu-classes button.active { color: #bdeeff; border-color: rgba(130,225,255,.8); background: #202c33; }
+  #menu-classes button.active { color: var(--dz-teal); border-color: var(--dz-teal-glow); background: #17302c; }
   #menu-inv-title { font: 600 11px ui-sans-serif, system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #7d868d; margin: 0 0 10px; }
   .inv-slot {
     display: flex; justify-content: space-between; align-items: center;
@@ -162,7 +207,7 @@
     border-radius: 6px; cursor: pointer; font: 400 14px ui-sans-serif, system-ui, sans-serif; color: #d7dde1;
   }
   .inv-slot:hover { border-color: rgba(255,255,255,.22); }
-  .inv-slot.equipped { border-color: rgba(130,225,255,.7); background: #1a2830; }
+  .inv-slot.equipped { border-color: var(--dz-teal-glow); background: #14231f; }
   .inv-slot .ammo-tag {
     font: 600 10px ui-sans-serif, system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase;
     padding: 3px 8px; border-radius: 3px; color: #17321f; background: #4ec97a;
@@ -170,13 +215,14 @@
   .inv-slot .ammo-tag.primary { background: #9db3bd; color: #10171a; }
   #menu-resume {
     margin-top: 18px; width: 100%; padding: 10px 0; font: 600 13px ui-sans-serif, system-ui, sans-serif;
-    letter-spacing: .04em; text-transform: uppercase; color: #14171a; background: #bdeeff; border: none;
+    letter-spacing: .04em; text-transform: uppercase; color: #0a1512; background: var(--dz-teal); border: none;
     border-radius: 6px; cursor: pointer;
   }
 </style>
 <canvas id="view"></canvas>
 <div id="cross"></div>
 <div id="hitmarker"></div>
+<div id="radar"><div id="radar-needle"></div></div>
 
 <div id="vitals">
   <div id="abilities">

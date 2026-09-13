@@ -1,4 +1,4 @@
-<script type="module" crossorigin src="/range/assets/index-DKejo9bC.js"></script>
+<script type="module" crossorigin src="/range/assets/index-BpWJSztJ.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Pre-Destiny — test range</title>
@@ -97,6 +97,13 @@
   #hud .low { color: #e08a5a; }
   #hud .status { font: 600 11px/1.6 ui-sans-serif, system-ui, sans-serif; letter-spacing: .08em; color: #e0b25a; text-transform: uppercase; }
   #hud .weaponname { font: 600 12px/1.8 ui-sans-serif, system-ui, sans-serif; letter-spacing: .04em; color: #97a3aa; text-transform: uppercase; }
+  /* Special ammo meter — a global per-kill meter, same as Destiny's own
+     (it fills off any kill regardless of what's equipped); a brick drops on
+     the next kill once it's full. */
+  #specialmeter { width: 120px; height: 4px; margin: 6px 0 0 auto; background: rgba(255,255,255,.10); border-radius: 1px; overflow: hidden; }
+  #specialmeter .fill { height: 100%; background: #4ec97a; }
+  #specialmeter.full .fill { background: #8bf0a8; animation: specialPulse 0.9s ease-in-out infinite; }
+  @keyframes specialPulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
 
   /* Test-range-only debug readout — not part of a real Destiny HUD, kept
      deliberately small/secondary so it doesn't compete with it. */
@@ -118,6 +125,54 @@
     transition: opacity .5s ease; text-align: center; max-width: 90vw;
   }
   #hint.gone { opacity: 0; }
+
+  /* ================================================================= */
+  /* CHARACTER SCREEN — Escape. A Guardian preview (the new class bodies)*/
+  /* plus basic weapon inventory, Destiny's own "character screen" idea */
+  /* kept to what this range actually needs: no stats, no mods, just a  */
+  /* look and a loadout.                                                */
+  /* ================================================================= */
+  #menu {
+    position: fixed; inset: 0; background: rgba(6,7,8,.86);
+    display: flex; align-items: center; justify-content: center; z-index: 10;
+  }
+  #menu[hidden] { display: none; }
+  #menu-panel {
+    width: min(640px, 92vw); background: #14171a; border: 1px solid rgba(255,255,255,.12);
+    border-radius: 10px; padding: 24px 28px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  }
+  #menu-panel h1 {
+    margin: 0 0 4px; font: 600 20px/1.2 ui-sans-serif, system-ui, sans-serif; color: #e8eef2;
+  }
+  #menu-panel .sub { margin: 0 0 18px; font: 400 13px ui-sans-serif, system-ui, sans-serif; color: #7d868d; }
+  #menu-body { display: grid; grid-template-columns: 200px 1fr; gap: 24px; }
+  #preview-wrap { background: #0c0e10; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,.08); }
+  #preview-canvas { display: block; width: 100%; height: 220px; }
+  #menu-classes { display: flex; gap: 8px; margin-top: 10px; }
+  #menu-classes button {
+    flex: 1; padding: 8px 0; font: 600 12px ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: .04em; text-transform: uppercase; color: #b7c0c6;
+    background: #1e2226; border: 1px solid rgba(255,255,255,.12); border-radius: 5px; cursor: pointer;
+  }
+  #menu-classes button.active { color: #bdeeff; border-color: rgba(130,225,255,.8); background: #202c33; }
+  #menu-inv-title { font: 600 11px ui-sans-serif, system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #7d868d; margin: 0 0 10px; }
+  .inv-slot {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 14px; margin-bottom: 8px; background: #1c2024; border: 1px solid rgba(255,255,255,.08);
+    border-radius: 6px; cursor: pointer; font: 400 14px ui-sans-serif, system-ui, sans-serif; color: #d7dde1;
+  }
+  .inv-slot:hover { border-color: rgba(255,255,255,.22); }
+  .inv-slot.equipped { border-color: rgba(130,225,255,.7); background: #1a2830; }
+  .inv-slot .ammo-tag {
+    font: 600 10px ui-sans-serif, system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 3px; color: #17321f; background: #4ec97a;
+  }
+  .inv-slot .ammo-tag.primary { background: #9db3bd; color: #10171a; }
+  #menu-resume {
+    margin-top: 18px; width: 100%; padding: 10px 0; font: 600 13px ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: .04em; text-transform: uppercase; color: #14171a; background: #bdeeff; border: none;
+    border-radius: 6px; cursor: pointer;
+  }
 </style>
 <canvas id="view"></canvas>
 <div id="cross"></div>
@@ -137,4 +192,26 @@
 <div id="hud"></div>
 <div id="targets"></div>
 
-<div id="hint">Click lock &middot; WASD move &middot; Space jump/double-jump &middot; click fire (hold for auto) &middot; right-click aim &middot; R reload &middot; 1/2/3 switch weapon &middot; Q grenade &middot; C melee &middot; V ward &middot; F super</div>
+<div id="hint">Click lock &middot; WASD move &middot; Space jump/double-jump &middot; click fire (hold for auto) &middot; right-click aim &middot; R reload &middot; 1/2/3 switch weapon &middot; Q grenade &middot; C melee &middot; V ward &middot; F super &middot; Esc character screen</div>
+
+<div id="menu" hidden>
+  <div id="menu-panel">
+    <h1>Guardian</h1>
+    <p class="sub">Character and loadout — Esc to resume</p>
+    <div id="menu-body">
+      <div>
+        <div id="preview-wrap"><canvas id="preview-canvas"></canvas></div>
+        <div id="menu-classes">
+          <button data-garment="titanPlate">Titan</button>
+          <button data-garment="hunterCloak">Hunter</button>
+          <button data-garment="warlockRobe">Warlock</button>
+        </div>
+      </div>
+      <div>
+        <p id="menu-inv-title">Weapons</p>
+        <div id="menu-inventory"></div>
+      </div>
+    </div>
+    <button id="menu-resume">Resume</button>
+  </div>
+</div>

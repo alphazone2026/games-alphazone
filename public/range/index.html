@@ -1,4 +1,4 @@
-<script type="module" crossorigin src="/range/assets/index-DNEkHH--.js"></script>
+<script type="module" crossorigin src="/range/assets/index-yD-91tUV.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Pre-Destiny — test range</title>
@@ -261,7 +261,7 @@
      HUD's weapon column reaches further right than Destiny's, and at 33 the
      strip's left fade ran over the magazine number in the first screenshot. */
   #subtitle {
-    left: 50%; bottom: calc(32 * var(--u)); transform: translateX(-50%);
+    left: 50%; bottom: calc(19.5 * var(--u)); transform: translateX(-50%);
     width: calc(302 * var(--u)); text-align: center; text-shadow: none;
     font-size: max(12px, calc(8 * var(--u))); line-height: 1.8;
     opacity: 0; transition: opacity .35s ease;
@@ -349,7 +349,10 @@
      used here because this game runs the 2018-onward ammo economy (special
      bricks). A four-column grid keeps every number right-aligned on one
      edge whichever row is drawn. */
-  #weapons { position: absolute; left: calc(116 * var(--u)); top: calc(18 * var(--u)); width: calc(96 * var(--u)); display: flex; flex-direction: column; }
+  /* 92 units wide, not 96: with the subtitle strip now level with the foot of
+     these rows, a 96-unit column put its right edge 5 px inside the strip's
+     left fade at 1280 x 720 (measured, getBoundingClientRect). */
+  #weapons { position: absolute; left: calc(116 * var(--u)); top: calc(18 * var(--u)); width: calc(92 * var(--u)); display: flex; flex-direction: column; }
   .wpn {
     position: relative; display: grid; align-items: center;
     grid-template-columns: calc(38 * var(--u)) calc(10 * var(--u)) 1fr calc(24 * var(--u));
@@ -374,7 +377,10 @@
   }
   .wpn.active.low .mag { color: color-mix(in srgb, var(--white) 45%, var(--warn)); }
   .wpn.empty .reserve, .wpn.active.empty .mag { color: var(--warn); }
-  .wpn.empty { opacity: .5; }
+  /* Stowed rows only: `.wpn.active` and `.wpn.empty` weigh the same, so a
+     plain `.wpn.empty` came later and dimmed the DRAWN weapon below the other
+     two at exactly the moment its red 0 needs reading. */
+  .wpn.empty:not(.active) { opacity: .5; }
   .wpn .meter { position: absolute; left: 0; bottom: 0; width: calc(24 * var(--u)); height: max(1px, calc(1 * var(--u))); background: rgba(255,255,255,.12); }
   .wpn.active .meter { width: calc(38 * var(--u)); }
   .wpn .meter .fill { height: 100%; background: var(--ammo-special); }

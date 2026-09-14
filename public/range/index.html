@@ -1,21 +1,48 @@
-<script type="module" crossorigin src="/range/assets/index-C8PQEH2-.js"></script>
+<script type="module" crossorigin src="/range/assets/index-DNEkHH--.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Pre-Destiny — test range</title>
 <style>
-  /* Restyled toward Destiny 2's actual Firing Range HUD — a teal/cyan accent,
-     round ability icons, a radar compass, digital-scoreboard readouts. This
-     is a colour-and-shape language taken from a screenshot, not traced
-     assets: every shape below is CSS or an inline SVG path drawn for this
-     file, matching the house rule (no external art) the same way the rest
-     of this engine already does. */
+  /* =================================================================== */
+  /* THE HUD — laid out after a Destiny 2 strike screenshot (the Inverted */
+  /* Spire, 2017) and a researched pass over each region: the radar, the  */
+  /* activity banner, the Guardian's health, who is talking, and the      */
+  /* Super / ability / weapon cluster. Layout, colour and behaviour are   */
+  /* copied; no artwork is. Every glyph below is an inline SVG drawn for  */
+  /* this file, and the weapon icons are rendered at boot from this game's */
+  /* own gun models (see main.js).                                        */
+  /*                                                                     */
+  /* ONE UNIT, --u, IS ONE PIXEL OF THAT 740 px-WIDE REFERENCE. Sizes were */
+  /* measured off the screenshot in those pixels, so the numbers read     */
+  /* straight across, and the whole HUD scales with the window instead of */
+  /* shrinking into the corners on a big screen.                          */
+  /* =================================================================== */
   :root {
-    --dz-teal: #35d8c2;
-    --dz-teal-glow: rgba(53, 216, 194, .55);
-    --dz-green: #7be36a;
+    --u: calc(min(100vw, 177.78vh) / 740);
+    --hud-font: "Helvetica Neue", Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
+    --white: #f4f4f2;
+    --dim: rgba(244, 244, 242, .72);
+    --shade: 0 0 calc(2 * var(--u)) rgba(0, 0, 0, .7), 0 calc(.5 * var(--u)) calc(1 * var(--u)) rgba(0, 0, 0, .55);
+    --glass: rgba(10, 14, 20, .45);
+    --line: rgba(255, 255, 255, .25);
+    --super: #f2d14b;
+    --super-charging: rgba(242, 209, 75, .62);
+    --element: #f07a2a;          /* the subclass tint: solar. Arc #7bd3f7, void #a57be0 */
+    --threat: #ff3b2b;
+    --enemy-minor: #d0402e;
+    --warn: #e0493c;
+    --ally: #8cc8ff;
+    --ammo-primary: #ffffff;
+    --ammo-special: #5fd35a;
+    --ammo-heavy: #9b6ae0;
+    --teal: #35d8c2;
   }
   html, body { margin: 0; height: 100%; background: #0b0c0d; overflow: hidden; }
+  /* An author `display: flex` beats the browser's own [hidden] rule, so
+     without this a hidden objective row still draws its empty box. */
+  [hidden] { display: none !important; }
   #view { display: block; width: 100vw; height: 100vh; touch-action: none; }
+  .hud { position: fixed; pointer-events: none; font-family: var(--hud-font); color: var(--white); text-shadow: var(--shade); }
 
   #cross {
     position: fixed; left: 50%; top: 50%; width: 5px; height: 5px;
@@ -26,9 +53,7 @@
   }
   #cross.aiming { width: 3px; height: 3px; margin: -1.5px 0 0 -1.5px; opacity: .6; }
 
-  /* HIT MARKER — the real answer to "did that connect", since a tracer aimed
-     dead down the sightline is geometrically foreshortened to a dot. Two
-     crossed bars over the crosshair, gold for a kill, white for a hit. */
+  /* HIT MARKER — two crossed bars over the crosshair, gold for a kill. */
   #hitmarker {
     position: fixed; left: 50%; top: 50%; width: 22px; height: 22px;
     margin: -11px 0 0 -11px; pointer-events: none; opacity: 0;
@@ -44,157 +69,321 @@
   #hitmarker.fade { opacity: 0; transition: opacity .18s ease-out; }
   #hitmarker.kill::before, #hitmarker.kill::after { background: #ffcf6b; }
 
+  /* RED EDGES once the shield is gone and health is draining. */
+  #vignette {
+    position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity .35s ease;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(160, 0, 0, .45) 100%);
+  }
+
   /* ================================================================= */
-  /* BOTTOM-LEFT CLUSTER — Destiny's own corner for all of this: the    */
-  /* ability row sits directly above the shield/health bars, not off   */
-  /* on its own. Researched against Destiny 2's real PC HUD rather than */
-  /* invented — abilities top, shield, then health at the very edge.   */
-  /* Health/shield stay static-full: nothing in this range damages the  */
-  /* player yet, so this is chrome ahead of the mechanic.               */
+  /* NAMEPLATES — over a target you are aiming at or have just hurt     */
   /* ================================================================= */
-  #vitals { position: fixed; left: 20px; bottom: 20px; width: 268px; pointer-events: none; }
+  #nameplates { position: fixed; inset: 0; overflow: hidden; pointer-events: none; }
+  .plate {
+    position: absolute; left: 0; top: 0; display: flex; align-items: flex-end; gap: calc(3 * var(--u));
+    font-family: var(--hud-font); opacity: 0; transition: opacity .2s ease;
+  }
+  .plate.on { opacity: 1; }
+  .plate .name {
+    font-size: max(10px, calc(6.5 * var(--u))); font-weight: 600; color: #f0f0f0; white-space: nowrap;
+    text-shadow: 0 0 2px rgba(0,0,0,.85), 0 1px 1px rgba(0,0,0,.6); letter-spacing: .01em; margin-bottom: calc(1.2 * var(--u));
+  }
+  .plate .bar {
+    position: relative; width: calc(40 * var(--u)); height: max(3px, calc(2.2 * var(--u)));
+    background: rgba(0, 0, 0, .45); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .22);
+  }
+  .plate .bar .fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--enemy-minor); }
+  .plate .bar .shield { position: absolute; left: 0; bottom: 0; height: 35%; background: #fff; }
 
-  #abilities { display: flex; align-items: flex-end; gap: 10px; margin-bottom: 10px; }
-  /* BOXES — rounded squares, corrected from an earlier circular pass after
-     a closer reference screenshot. */
-  .ability {
-    position: relative; width: 42px; height: 42px; border-radius: 8px;
-    background: #1a2320; border: 1.5px solid rgba(255,255,255,.14);
-    display: flex; align-items: center; justify-content: center;
-    overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,.5); flex: none;
-  }
-  .ability .key {
-    font: 700 11px/1 ui-monospace, monospace; color: #dfe8ec;
-    text-shadow: 0 1px 2px rgba(0,0,0,.9); z-index: 2;
-  }
-  .ability .cd {
-    position: absolute; inset: 0; border-radius: 6px;
-    background: conic-gradient(rgba(4,6,8,.90) var(--pct, 0%), transparent 0);
-  }
-  .ability.ready { border-color: var(--dz-teal); box-shadow: 0 0 0 1px var(--dz-teal-glow) inset, 0 0 9px var(--dz-teal-glow); }
-  .ability.ready .key { color: var(--dz-teal); }
-
-  /* SUPER — a filling gold BAR, not an icon. Sits above the three ability
-     boxes rather than among them, the way a meter reads differently from a
-     cooldown at a glance. */
-  #ab-super {
-    width: 100%; height: 12px; border-radius: 3px; margin-bottom: 8px;
-    background: #1a1712; border: 1px solid rgba(255,255,255,.14);
-    position: relative; overflow: hidden;
-  }
-  #ab-super .fill {
-    position: absolute; inset: 0; width: var(--charge, 0%);
-    background: linear-gradient(90deg, #b98a2e, #ffd97a);
-  }
-  #ab-super .key {
-    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
-    font: 700 9px/1 ui-monospace, monospace; color: #2a2110; z-index: 2;
-    text-shadow: none;
-  }
-  #ab-super.ready {
-    border-color: #ffd97a; box-shadow: 0 0 10px rgba(255,217,122,.6);
-    animation: superPulse 1.4s ease-in-out infinite;
-  }
-  @keyframes superPulse {
-    0%, 100% { box-shadow: 0 0 8px rgba(255,217,122,.45); }
-    50% { box-shadow: 0 0 16px rgba(255,217,122,.85); }
-  }
-
-  /* RADAR — top-left, player-centred like a real FPS minimap: the triangle
-     at centre is fixed pointing "up" (forward is always up), and everything
-     ELSE moves around it as the player turns. Live target dummies show as
-     red blips at their true relative bearing, computed each frame from the
-     player's position and facing — a real direction, not a decoration. */
+  /* ================================================================= */
+  /* TOP-LEFT — the radar, and the activity banner under it             */
+  /* ================================================================= */
+  /* The radar is one SVG built in main.js: two thin rings on a see-through
+     disc, and red threat sectors — Destiny's radar never plots an enemy as
+     a dot, it lights the slice they are in. It drops out while aiming down
+     sights and comes back after a beat. */
   #radar {
-    position: fixed; left: 20px; top: 20px; width: 74px; height: 74px;
-    border-radius: 50%; background: radial-gradient(circle, #0e1614 0%, #0a100e 78%);
-    border: 1.5px solid rgba(53,216,194,.45); box-shadow: 0 0 10px rgba(53,216,194,.18);
-    pointer-events: none; overflow: hidden;
+    left: calc(16 * var(--u)); top: calc(6 * var(--u));
+    width: calc(66 * var(--u)); height: calc(66 * var(--u));
+    transition: opacity .2s ease; text-shadow: none;
   }
-  #radar::before {
-    content: ''; position: absolute; inset: 10px; border-radius: 50%;
-    border: 1px solid rgba(53,216,194,.22);
-  }
-  #radar-needle {
-    position: absolute; left: 50%; top: 50%; width: 0; height: 0;
-    margin: -20px 0 0 -6px;
-    border-left: 6px solid transparent; border-right: 6px solid transparent;
-    border-bottom: 13px solid var(--dz-teal); filter: drop-shadow(0 0 3px var(--dz-teal-glow));
-    z-index: 2;
-  }
-  #radar-blips { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
-  .blip {
-    position: absolute; left: -4px; top: -4px; width: 8px; height: 8px; border-radius: 50%;
-    background: #ff4a3c; box-shadow: 0 0 6px rgba(255,74,60,.9);
-  }
+  #radar.ads { opacity: 0; transition: opacity .12s ease; }
+  #radar svg { width: 100%; height: 100%; display: block; overflow: visible; }
 
+  /* THE ACTIVITY BANNER — measured off 2017 captures: a flat bar from the
+     screen's left edge with a hard square end and a thin light line along
+     its bottom, a shield-shaped badge breaking through it, and under the
+     badge a narrow hanging column holding the objective bullets, with the
+     text aligned to the title. The whole block tilts down to the right by
+     about two degrees — the same visor curve that tilts the speaker name up
+     on the other side. The bar's tint changes by activity; the reference
+     strike's is this pale see-through one. */
+  #activity { left: 0; top: calc(84 * var(--u)); transform: rotate(1.9deg); transform-origin: 0 0; }
+  #activity .head {
+    position: relative; display: flex; align-items: center;
+    width: calc(172 * var(--u)); height: calc(11 * var(--u));
+    background: rgba(214, 230, 240, .26); box-shadow: inset 0 calc(-.8 * var(--u)) 0 rgba(255, 255, 255, .45);
+  }
+  #activity .head::after {
+    content: ''; position: absolute; right: 0; top: calc(-2.5 * var(--u));
+    width: 1px; height: calc(2.5 * var(--u)); background: rgba(255, 255, 255, .55);
+  }
+  #activity .badge {
+    position: absolute; left: calc(33 * var(--u)); top: calc(-1.2 * var(--u));
+    width: calc(15.5 * var(--u)); height: calc(18 * var(--u));
+  }
+  #activity .badge svg { display: block; width: 100%; height: 100%; }
+  #activity .title {
+    margin-left: calc(52 * var(--u)); font-size: max(10px, calc(6.5 * var(--u))); font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase; white-space: nowrap;
+  }
+  #objectives { position: relative; margin-top: calc(5 * var(--u)); padding: calc(1 * var(--u)) 0 calc(3 * var(--u)); }
+  #objectives::before {
+    content: ''; position: absolute; left: calc(34.5 * var(--u)); top: calc(-4 * var(--u)); bottom: 0; width: calc(12 * var(--u));
+    box-shadow: inset 1px 0 rgba(255, 255, 255, .14), inset -1px 0 rgba(255, 255, 255, .14);
+    border-bottom: max(1px, calc(.9 * var(--u))) solid rgba(255, 255, 255, .6);
+  }
+  #objective { position: relative; }
+  .obj {
+    position: relative; display: flex; align-items: center; gap: calc(4 * var(--u));
+    padding-left: calc(52 * var(--u)); min-height: calc(12 * var(--u));
+    font-size: max(10px, calc(7.5 * var(--u))); font-weight: 500; color: rgba(236, 241, 245, .95); white-space: nowrap;
+  }
+  .obj .box {
+    position: absolute; left: calc(38 * var(--u)); top: 50%; transform: translateY(-50%);
+    width: calc(5 * var(--u)); height: calc(5 * var(--u));
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .85); transition: background .12s;
+  }
+  /* A COUNTED objective, the 2017 way: the step as a heading with no bullet,
+     a bulleted label under it in smaller lighter text, and the value on its
+     own line beneath. No progress bar. */
+  .obj.main.step .box { display: none; }
+  .obj.sub { min-height: calc(10 * var(--u)); font-size: max(9px, calc(6.2 * var(--u))); font-weight: 400; color: var(--dim); }
+  .obj.value { min-height: calc(10 * var(--u)); font-size: max(9px, calc(6.8 * var(--u))); font-variant-numeric: tabular-nums; }
+  .obj .key {
+    font-size: .78em; font-weight: 700; padding: 0 calc(2.5 * var(--u)); line-height: 1.5;
+    border: 1px solid var(--dim); border-radius: calc(1.5 * var(--u)); text-shadow: none;
+  }
+  .obj .key:empty { display: none; }
+  /* New objective: wipes in left to right with a white sweep behind it. */
+  #objective.fresh { animation: objIn .3s ease-out; }
+  #objective.fresh::after {
+    content: ''; position: absolute; inset: 0 auto 0 0; width: 100%; pointer-events: none;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .35), transparent);
+    animation: objSweep .45s ease-out forwards;
+  }
+  @keyframes objIn { from { clip-path: inset(0 100% 0 0); opacity: 0; } to { clip-path: inset(0 0 0 0); opacity: 1; } }
+  @keyframes objSweep { from { transform: translateX(-100%); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+  /* Completed objective: its box fills, the row flashes, then it dims. */
+  #objective.complete .box { background: #fff; }
+  #objective.complete { animation: objDone .7s ease-out forwards; }
+  @keyframes objDone { 0% { filter: brightness(1); } 20% { filter: brightness(1.8); } 100% { filter: brightness(1); opacity: .45; } }
+
+  /* BUFFS — in 2017 these listed on the left under the objectives. */
+  #buffs { margin: calc(4 * var(--u)) 0 0 calc(36 * var(--u)); display: flex; flex-direction: column; gap: calc(3 * var(--u)); }
+  .buff { display: flex; align-items: center; gap: calc(5 * var(--u)); font-size: max(9px, calc(6 * var(--u))); }
+  .buff[hidden] { display: none; }
+  .buff .glyph { width: calc(6 * var(--u)); height: calc(6 * var(--u)); transform: rotate(45deg); background: var(--element); box-shadow: 0 0 calc(2 * var(--u)) rgba(0,0,0,.6); margin: 0 calc(1.5 * var(--u)); }
+  .buff .time { color: var(--dim); font-variant-numeric: tabular-nums; }
+
+  /* ================================================================= */
+  /* TOP-CENTRE — the Guardian's own health and shield                  */
+  /* ================================================================= */
+  /* One continuous strip: health the left third, shield the right two
+     thirds, draining from the right. Hidden while full; it snaps on at the
+     first hit and holds a moment after refilling before it fades. */
+  #vitals {
+    left: 50%; top: calc(36 * var(--u)); transform: translateX(-50%);
+    width: calc(160 * var(--u)); text-shadow: none;
+  }
   #vitals .bar {
-    height: 8px; border-radius: 1px; background: rgba(255,255,255,.08);
-    overflow: hidden; margin-bottom: 4px; box-shadow: 0 1px 2px rgba(0,0,0,.6);
+    display: flex; height: max(3px, calc(2.6 * var(--u))); background: rgba(0, 0, 0, .35);
+    opacity: 0; transition: opacity .5s ease 1.2s;
   }
-  #vitals .fill { height: 100%; width: 100%; }
-  #vitals .shield .fill { background: linear-gradient(90deg, var(--dz-teal), #cffaf1); }
-  #vitals .health .fill { height: 100%; width: 100%; background: linear-gradient(90deg, #dfe3e6, #ffffff); margin-bottom: 0; }
+  #vitals.shown .bar { opacity: 1; transition: opacity .1s ease; }
+  #vitals .seg { position: relative; }
+  #vitals .seg.hp { flex: 70; }
+  #vitals .seg.sh { flex: 130; }
+  #vitals .seg .fill { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(242, 244, 245, .95); box-shadow: 0 0 calc(2 * var(--u)) rgba(255, 255, 255, .35); }
+  #vitals .seg.hp .fill { width: calc(var(--hp, 1) * 100%); }
+  #vitals .seg.sh .fill { width: calc(var(--sh, 1) * 100%); }
+  #vitals.broken .seg.hp .fill { background: #e0412f; box-shadow: 0 0 calc(2 * var(--u)) rgba(224, 65, 47, .5); }
+  #vitals.critical .seg.hp .fill { animation: hpPulse .5s ease-in-out infinite alternate; }
+  @keyframes hpPulse { from { opacity: 1; } to { opacity: .45; } }
+  #vitals.shattered .bar { animation: shieldBreak .25s ease-out; }
+  @keyframes shieldBreak { 0% { filter: brightness(3); } 100% { filter: brightness(1); } }
+
+  /* THE DIAMOND UNDER THE BAR is most plausibly the no-respawn ("Darkness
+     Zone") marker — but no source actually names that icon, so it is the
+     best reading, not a fact. Its own element, so it shows whether the
+     health bar is up or not. Nothing on this range is such a zone. */
+  #zone {
+    width: calc(13 * var(--u)); height: calc(13 * var(--u)); margin: calc(7 * var(--u)) auto 0;
+    position: relative; opacity: 0; transition: opacity .25s ease;
+  }
+  #zone.on { opacity: 1; }
+  #zone::before {
+    content: ''; position: absolute; inset: 0; transform: rotate(45deg);
+    background: rgba(10, 12, 14, .45); box-shadow: inset 0 0 0 max(1.5px, calc(1 * var(--u))) #e8eaeb;
+  }
+  #zone svg { position: absolute; inset: 22%; width: 56%; height: 56%; }
 
   /* ================================================================= */
-  /* AMMO — bottom-right, Destiny's own spot for it                     */
+  /* TOP-RIGHT — who is talking, and the subtitle for what they said    */
   /* ================================================================= */
-  /* WEAPON SLOTS — three, scrollable (mouse wheel, same as 1/2/3). The
-     equipped one is the wide teal-filled pill; the other two sit dim. */
-  #weapon-slots {
-    position: fixed; right: 22px; bottom: 118px; display: flex; justify-content: flex-end;
-    gap: 5px; pointer-events: auto; cursor: default;
+  /* Measured off a 2017 frame of an NPC talking: the emblem 4.8% of the
+     width and 3.5% in from the edge, the name 2.3% before it with very wide
+     tracking and sitting a touch low, the pair tilted up to the right by a
+     couple of degrees. No box, no waveform, no ring. */
+  #comms {
+    right: calc(26 * var(--u)); top: calc(23 * var(--u));
+    display: flex; align-items: center; gap: calc(17 * var(--u));
+    opacity: 0; transform: translateX(calc(4 * var(--u))) rotate(-2deg); transform-origin: 100% 50%;
+    transition: opacity .35s ease, transform .35s ease;
   }
-  #weapon-slots .slot {
-    width: 10px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.18);
-    transition: width .15s ease, background .15s ease;
+  #comms.on { opacity: 1; transform: rotate(-2deg); transition: opacity .18s ease-out, transform .18s ease-out; }
+  #comms .speaker {
+    position: relative; top: calc(4 * var(--u));
+    font-size: max(10px, calc(8.3 * var(--u))); font-weight: 400; letter-spacing: .45em; margin-right: -.45em;
+    text-transform: uppercase; color: rgba(205, 210, 214, .88);
   }
-  #weapon-slots .slot.active { width: 26px; background: var(--dz-teal); box-shadow: 0 0 6px var(--dz-teal-glow); }
+  #comms .emblem { width: calc(35.5 * var(--u)); height: calc(35.5 * var(--u)); filter: drop-shadow(0 0 2px rgba(0,0,0,.5)); }
+  #comms.on .emblem { animation: shimmer 1.6s ease-in-out infinite; }
+  @keyframes shimmer { 0%, 100% { opacity: 1; } 50% { opacity: .85; } }
 
-  #hud {
-    position: fixed; right: 22px; bottom: 26px; text-align: right;
-    font: 700 30px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-    color: var(--dz-teal); text-shadow: 0 0 10px var(--dz-teal-glow), 0 2px 5px rgba(0,0,0,.85);
-    pointer-events: none; letter-spacing: .02em;
+  /* 2017 subtitles, measured off 2017 frames: white text on a dark strip per
+     line — hard top and bottom edges, ends that fade out past the words —
+     wrapping at about 36% of the width, the last line level with the foot of
+     the weapon cluster. NO speaker prefix; the top-right corner is how you
+     tell who is talking. Always on here, because nothing in this game has a
+     voice to hear: the subtitle IS the line. */
+  /* The fade past each end is 18 units, not the ~33 the capture shows: this
+     HUD's weapon column reaches further right than Destiny's, and at 33 the
+     strip's left fade ran over the magazine number in the first screenshot. */
+  #subtitle {
+    left: 50%; bottom: calc(32 * var(--u)); transform: translateX(-50%);
+    width: calc(302 * var(--u)); text-align: center; text-shadow: none;
+    font-size: max(12px, calc(8 * var(--u))); line-height: 1.8;
+    opacity: 0; transition: opacity .35s ease;
   }
-  #hud .reserve { font-size: 15px; font-weight: 600; color: #7fa39c; margin-left: 6px; text-shadow: none; }
-  #hud .low { color: #e08a5a; text-shadow: 0 0 10px rgba(224,138,90,.5); }
-  #hud .status { font: 600 11px/1.6 ui-sans-serif, system-ui, sans-serif; letter-spacing: .08em; color: #e0b25a; text-transform: uppercase; text-shadow: none; }
-  #hud .weaponname { font: 600 12px/1.8 ui-sans-serif, system-ui, sans-serif; letter-spacing: .1em; color: #6b8a84; text-transform: uppercase; text-shadow: none; }
-  /* Special ammo meter — a global per-kill meter, same as Destiny's own
-     (it fills off any kill regardless of what's equipped); a brick drops on
-     the next kill once it's full. */
-  #specialmeter { width: 120px; height: 4px; margin: 6px 0 0 auto; background: rgba(255,255,255,.10); border-radius: 1px; overflow: hidden; }
-  #specialmeter .fill { height: 100%; background: var(--dz-green); }
-  #specialmeter.full .fill { background: #a8f79c; animation: specialPulse 0.9s ease-in-out infinite; }
-  @keyframes specialPulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+  #subtitle.on { opacity: 1; transition: opacity .15s ease; }
+  #subtitle .line {
+    display: inline; color: #fff; padding: calc(1.2 * var(--u)) calc(18 * var(--u));
+    background: linear-gradient(90deg, rgba(0,0,0,0), rgba(0,0,0,.5) calc(18 * var(--u)), rgba(0,0,0,.5) calc(100% - 18 * var(--u)), rgba(0,0,0,0));
+    -webkit-box-decoration-break: clone; box-decoration-break: clone;
+  }
 
-  /* TARGET SCOREBOARDS — restyled after the Firing Range's own digital
-     lane readouts above each target: a dark LCD panel per lane, glowing
-     monospace digits, tabular so the numbers don't jitter the layout. */
-  #targets {
-    position: fixed; right: 22px; top: 18px; display: flex; flex-direction: column; gap: 6px;
-    pointer-events: none;
+  /* ================================================================= */
+  /* BOTTOM-LEFT — Super, three abilities, three weapons                */
+  /* ================================================================= */
+  #loadout { left: calc(10 * var(--u)); bottom: calc(22 * var(--u)); width: calc(230 * var(--u)); height: calc(62 * var(--u)); }
+
+  /* SUPER — a diamond at the corner and a bar along the top of the whole
+     cluster. The bar leaves the diamond's right point, so the diamond is
+     centred on the bar's line. The bar fills yellow as the Super charges and
+     burns full gold when it is ready (Destiny's own charging bar is grey;
+     this one stays yellow because that is the look Ben asked for); the
+     diamond stays dark glass until then and fills solid gold the moment it
+     is. Clip-path rather than a rotated square, so the edges stay where the
+     layout measured them. */
+  #super-diamond { position: absolute; left: 0; top: calc(-7 * var(--u)); width: calc(38 * var(--u)); height: calc(38 * var(--u)); }
+  #super-diamond .edge, #super-diamond .inner { position: absolute; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+  #super-diamond .edge { inset: 0; background: rgba(255, 255, 255, .45); }
+  #super-diamond .inner { inset: max(1px, calc(1.2 * var(--u))); background: var(--glass); }
+  #super-diamond svg { position: absolute; left: 28%; top: 28%; width: 44%; height: 44%; color: rgba(244, 244, 242, .8); }
+  #super.ready #super-diamond { animation: superPop .7s ease-out, superBreathe 2.4s ease-in-out .7s infinite; }
+  #super.ready #super-diamond .edge { background: #fff3c4; }
+  #super.ready #super-diamond .inner { background: var(--super); }
+  #super.ready #super-diamond svg { color: #1a1a1a; }
+  @keyframes superPop { 0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(242,209,75,0)); } 40% { transform: scale(1.25); filter: drop-shadow(0 0 calc(10 * var(--u)) rgba(242,209,75,1)); } 100% { transform: scale(1); filter: drop-shadow(0 0 calc(6 * var(--u)) rgba(242,209,75,.7)); } }
+  @keyframes superBreathe { 0%, 100% { filter: drop-shadow(0 0 calc(6 * var(--u)) rgba(242,209,75,.7)); opacity: 1; } 50% { filter: drop-shadow(0 0 calc(3 * var(--u)) rgba(242,209,75,.45)); opacity: .88; } }
+  #super-bar {
+    position: absolute; left: calc(40 * var(--u)); top: calc(11 * var(--u)); overflow: hidden;
+    width: calc(177 * var(--u)); height: max(2px, calc(2.2 * var(--u))); background: rgba(255, 255, 255, .18);
   }
-  #targets .row {
-    display: flex; justify-content: space-between; align-items: center; gap: 14px;
-    min-width: 150px; padding: 5px 10px; background: rgba(6,10,9,.72);
-    border: 1px solid rgba(53,216,194,.30); border-radius: 3px;
+  #super-bar .fill { position: relative; height: 100%; width: calc(var(--charge, 0) * 100%); background: var(--super-charging); }
+  #super.ready #super-bar .fill { background: var(--super); box-shadow: 0 0 calc(3 * var(--u)) rgba(242, 209, 75, .55); }
+  #super.ready #super-bar .fill::after {
+    content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.95), transparent);
+    background-size: 30% 100%; background-repeat: no-repeat; animation: gloss .7s ease-out forwards;
   }
-  #targets .row span:first-child {
-    font: 600 11px ui-sans-serif, system-ui, sans-serif; letter-spacing: .05em;
-    color: #5e8b83; text-transform: uppercase;
+  @keyframes gloss { from { background-position: -40% 0; } to { background-position: 140% 0; } }
+  /* SUPER CHARGED — a short flash the moment the Super fills, replayed on
+     unpause while it is still full. Both of those are confirmed; where it sits
+     on screen is not, so it sits with the thing it is about. */
+  #super-flash {
+    position: absolute; left: calc(42 * var(--u)); top: calc(-8 * var(--u)); white-space: nowrap;
+    font-size: max(9px, calc(6.5 * var(--u))); font-weight: 300; letter-spacing: .45em; text-transform: uppercase;
+    color: var(--super); opacity: 0;
   }
-  #targets .row span:last-child {
-    font: 700 15px/1 ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums;
-    color: var(--dz-teal); text-shadow: 0 0 6px var(--dz-teal-glow);
+  #super-flash.show { animation: superFlash 1.8s ease-out forwards; }
+  @keyframes superFlash { 0% { opacity: 0; transform: translateX(calc(-6 * var(--u))); } 15% { opacity: 1; transform: none; } 70% { opacity: 1; } 100% { opacity: 0; } }
+
+  /* ABILITIES — three sharp-cornered squares of dark glass. The subclass
+     tint climbs from the bottom as a cooldown comes back — a choice: the
+     sources only say ready is "fully coloured in", not which way it fills.
+     Ready is the whole square solid, with a flash and a pop as it arrives. */
+  #abilities { position: absolute; left: calc(41 * var(--u)); top: calc(19 * var(--u)); display: flex; gap: calc(3.5 * var(--u)); }
+  .ability {
+    position: relative; width: calc(20 * var(--u)); height: calc(20 * var(--u));
+    background: var(--glass); box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; text-shadow: none;
   }
-  #targets .down { border-color: rgba(255,255,255,.10); }
-  #targets .down span:last-child { color: #565d61; text-shadow: none; }
+  .ability .charge {
+    position: absolute; left: 0; right: 0; bottom: 0; height: calc(100% - var(--pct, 0%));
+    background: color-mix(in srgb, var(--element) 55%, transparent);
+  }
+  .ability svg { position: absolute; left: 20%; top: 20%; width: 60%; height: 60%; color: #8f959b; }
+  .ability .key {
+    position: absolute; right: calc(1.2 * var(--u)); bottom: calc(.3 * var(--u));
+    font-size: max(7px, calc(4.2 * var(--u))); font-weight: 700; color: rgba(255,255,255,.7);
+  }
+  .ability.ready { background: var(--element); animation: abilityReady .22s ease-out; }
+  .ability.ready .charge { display: none; }
+  .ability.ready svg { color: #fff; }
+  @keyframes abilityReady { 0% { transform: scale(1.15); filter: brightness(2); } 100% { transform: scale(1); filter: brightness(1); } }
+
+  /* WEAPONS — the drawn weapon always takes the big top row (silhouette,
+     small reserve, big magazine); the other two drop to compact rows in
+     slot order with a chip and one total. In 2017 that chip was an element
+     badge; the white/green ammo-type chip arrived in 2018, and it is the one
+     used here because this game runs the 2018-onward ammo economy (special
+     bricks). A four-column grid keeps every number right-aligned on one
+     edge whichever row is drawn. */
+  #weapons { position: absolute; left: calc(116 * var(--u)); top: calc(18 * var(--u)); width: calc(96 * var(--u)); display: flex; flex-direction: column; }
+  .wpn {
+    position: relative; display: grid; align-items: center;
+    grid-template-columns: calc(38 * var(--u)) calc(10 * var(--u)) 1fr calc(24 * var(--u));
+    height: calc(12 * var(--u)); opacity: .78;
+  }
+  .wpn .icon { grid-column: 1; width: calc(24 * var(--u)); height: calc(9 * var(--u)); object-fit: contain; object-position: left center; filter: drop-shadow(0 0 calc(1.2 * var(--u)) rgba(0,0,0,.8)); }
+  .wpn .ammo-type { grid-column: 2; display: inline-flex; gap: calc(.8 * var(--u)); }
+  .wpn .ammo-type i { display: block; width: calc(1.6 * var(--u)); height: calc(5 * var(--u)); border-radius: calc(.8 * var(--u)) calc(.8 * var(--u)) 0 0; background: var(--ammo-primary); box-shadow: 0 0 calc(1 * var(--u)) rgba(0,0,0,.7); }
+  .wpn .ammo-type.primary i:nth-child(n+2) { display: none; }
+  .wpn .ammo-type.special i { background: var(--ammo-special); }
+  .wpn .ammo-type.special i:nth-child(3) { display: none; }
+  .wpn .ammo-type.heavy i { background: var(--ammo-heavy); }
+  .wpn .reserve { grid-column: 3; justify-self: end; font-size: max(9px, calc(6.2 * var(--u))); font-weight: 400; font-variant-numeric: tabular-nums; }
+  .wpn .mag { display: none; }
+  .wpn.active { height: calc(21 * var(--u)); opacity: 1; }
+  .wpn.active .icon { width: calc(38 * var(--u)); height: calc(15 * var(--u)); }
+  .wpn.active .ammo-type { visibility: hidden; }
+  .wpn.active .reserve { align-self: start; margin-top: calc(3 * var(--u)); font-weight: 300; color: var(--dim); }
+  .wpn.active .mag {
+    display: block; grid-column: 4; justify-self: end;
+    font-size: max(15px, calc(14 * var(--u))); font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1;
+  }
+  .wpn.active.low .mag { color: color-mix(in srgb, var(--white) 45%, var(--warn)); }
+  .wpn.empty .reserve, .wpn.active.empty .mag { color: var(--warn); }
+  .wpn.empty { opacity: .5; }
+  .wpn .meter { position: absolute; left: 0; bottom: 0; width: calc(24 * var(--u)); height: max(1px, calc(1 * var(--u))); background: rgba(255,255,255,.12); }
+  .wpn.active .meter { width: calc(38 * var(--u)); }
+  .wpn .meter .fill { height: 100%; background: var(--ammo-special); }
+  .wpn .meter.full .fill { animation: specialPulse .9s ease-in-out infinite; }
+  @keyframes specialPulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
 
   #hint {
-    position: fixed; left: 50%; top: 6vh; transform: translateX(-50%);
-    font: 400 13px/1.4 ui-sans-serif, system-ui, -apple-system, sans-serif;
+    position: fixed; left: 50%; top: 64vh; transform: translateX(-50%);
+    font: 400 13px/1.4 var(--hud-font);
     color: #c9cfd4; letter-spacing: .04em; text-transform: uppercase;
     background: rgba(8,9,10,.55); padding: 8px 16px; border-radius: 999px;
     border: 1px solid rgba(255,255,255,.10); pointer-events: none;
@@ -203,10 +392,7 @@
   #hint.gone { opacity: 0; }
 
   /* ================================================================= */
-  /* CHARACTER SCREEN — Escape. A Guardian preview (the new class bodies)*/
-  /* plus basic weapon inventory, Destiny's own "character screen" idea */
-  /* kept to what this range actually needs: no stats, no mods, just a  */
-  /* look and a loadout.                                                */
+  /* CHARACTER SCREEN — Escape. A Guardian preview plus basic loadout.  */
   /* ================================================================= */
   #menu {
     position: fixed; inset: 0; background: rgba(6,7,8,.86);
@@ -230,7 +416,7 @@
     letter-spacing: .04em; text-transform: uppercase; color: #b7c0c6;
     background: #1e2226; border: 1px solid rgba(255,255,255,.12); border-radius: 5px; cursor: pointer;
   }
-  #menu-classes button.active { color: var(--dz-teal); border-color: var(--dz-teal-glow); background: #17302c; }
+  #menu-classes button.active { color: var(--teal); border-color: rgba(53,216,194,.55); background: #17302c; }
   #menu-inv-title { font: 600 11px ui-sans-serif, system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #7d868d; margin: 0 0 10px; }
   .inv-slot {
     display: flex; justify-content: space-between; align-items: center;
@@ -238,7 +424,7 @@
     border-radius: 6px; cursor: pointer; font: 400 14px ui-sans-serif, system-ui, sans-serif; color: #d7dde1;
   }
   .inv-slot:hover { border-color: rgba(255,255,255,.22); }
-  .inv-slot.equipped { border-color: var(--dz-teal-glow); background: #14231f; }
+  .inv-slot.equipped { border-color: rgba(53,216,194,.55); background: #14231f; }
   .inv-slot .ammo-tag {
     font: 600 10px ui-sans-serif, system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase;
     padding: 3px 8px; border-radius: 3px; color: #17321f; background: #4ec97a;
@@ -246,31 +432,73 @@
   .inv-slot .ammo-tag.primary { background: #9db3bd; color: #10171a; }
   #menu-resume {
     margin-top: 18px; width: 100%; padding: 10px 0; font: 600 13px ui-sans-serif, system-ui, sans-serif;
-    letter-spacing: .04em; text-transform: uppercase; color: #0a1512; background: var(--dz-teal); border: none;
+    letter-spacing: .04em; text-transform: uppercase; color: #0a1512; background: var(--teal); border: none;
     border-radius: 6px; cursor: pointer;
   }
 </style>
 <canvas id="view"></canvas>
+<div id="vignette"></div>
+<div id="nameplates"></div>
 <div id="cross"></div>
 <div id="hitmarker"></div>
-<div id="radar"><div id="radar-blips"></div><div id="radar-needle"></div></div>
 
-<div id="vitals">
-  <div id="ab-super"><div class="fill"></div><span class="key">F</span></div>
-  <div id="abilities">
-    <div class="ability" id="ab-grenade"><span class="key">Q</span><div class="cd"></div></div>
-    <div class="ability" id="ab-melee"><span class="key">C</span><div class="cd"></div></div>
-    <div class="ability" id="ab-class"><span class="key">V</span><div class="cd"></div></div>
+<!-- TOP-LEFT -->
+<div id="radar" class="hud"><svg id="radar-svg" viewBox="0 0 200 200" aria-hidden="true"></svg></div>
+<div id="activity" class="hud">
+  <div class="head">
+    <div class="badge"><svg viewBox="0 0 31 36" aria-hidden="true"><path d="M1 1H30V22L15.5 35 1 22Z" fill="rgba(40,52,62,.85)" stroke="rgba(255,255,255,.85)" stroke-width="2"/><path d="M15.5 7 22 10v5.5c0 3.6-2.6 6-6.5 7.4C11.6 21.5 9 19.1 9 15.5V10Z" fill="none" stroke="#fff" stroke-width="1.6"/><path d="M12.3 13.5 15.5 16.7l3.2-3.2" fill="none" stroke="#fff" stroke-width="1.6"/></svg></div>
+    <div class="title">Test Range</div>
   </div>
-  <div class="bar shield"><div class="fill"></div></div>
-  <div class="bar health"><div class="fill"></div></div>
+  <div id="objectives">
+    <div id="objective" hidden>
+      <div class="obj main"><span class="box"></span><span class="text"></span><span class="key"></span></div>
+      <div class="obj sub" hidden><span class="box"></span><span class="label"></span></div>
+      <div class="obj value" hidden><span class="count"></span></div>
+    </div>
+  </div>
+  <div id="buffs">
+    <div class="buff" id="buff-ward" hidden><span class="glyph"></span><span class="name">Ward</span><span class="time"></span></div>
+  </div>
 </div>
 
-<div id="weapon-slots"></div>
-<div id="hud"></div>
-<div id="targets"></div>
+<!-- TOP-CENTRE -->
+<div id="vitals" class="hud">
+  <div class="bar"><div class="seg hp"><div class="fill"></div></div><div class="seg sh"><div class="fill"></div></div></div>
+  <div id="zone"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 3h12v7.5l-2 2-1.5-1.5L11 13l-1-1-1 1-1.5-1.5L6 12.5l-2-2Z" fill="#fff"/><path d="M6.2 6.5h2.6M11.2 6.5h2.6" stroke="#111" stroke-width="1.6"/><path d="M8 16h4" stroke="#fff" stroke-width="1.6"/></svg></div>
+</div>
 
-<div id="hint">Click lock &middot; WASD move &middot; Space jump/double-jump &middot; click fire (hold for auto) &middot; right-click aim &middot; R reload &middot; 1/2/3 switch weapon &middot; Q grenade &middot; C melee &middot; V ward &middot; F super &middot; Esc character screen</div>
+<!-- TOP-RIGHT -->
+<div id="comms" class="hud">
+  <span class="speaker">Ghost</span>
+  <svg class="emblem" viewBox="0 0 40 40" aria-hidden="true">
+    <g transform="rotate(20 20 20)" fill="#fff">
+      <path d="M20 1.5 25.5 11 20 14 14.5 11Z"/>
+      <path d="M20 1.5 25.5 11 20 14 14.5 11Z" transform="rotate(90 20 20)"/>
+      <path d="M20 1.5 25.5 11 20 14 14.5 11Z" transform="rotate(180 20 20)"/>
+      <path d="M20 1.5 25.5 11 20 14 14.5 11Z" transform="rotate(270 20 20)"/>
+    </g>
+    <circle cx="20" cy="20" r="4.2" fill="none" stroke="#fff" stroke-width="1"/>
+    <path d="M20 18.3 21.7 20 20 21.7 18.3 20Z" fill="#fff"/>
+  </svg>
+</div>
+<div id="subtitle" class="hud"><span class="line"></span></div>
+
+<!-- BOTTOM-LEFT -->
+<div id="loadout" class="hud">
+  <div id="super">
+    <div id="super-diamond"><div class="edge"></div><div class="inner"></div><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="3.6" fill="currentColor"/><path d="M10 1.5v3.5M10 15v3.5M1.5 10H5M15 10h3.5M4 4l2.4 2.4M13.6 13.6 16 16M16 4l-2.4 2.4M6.4 13.6 4 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+    <div id="super-bar"><div class="fill"></div></div>
+    <div id="super-flash">Super charged</div>
+  </div>
+  <div id="abilities">
+    <div class="ability" id="ab-grenade"><div class="charge"></div><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="11" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="10" cy="11" r="2.2" fill="currentColor"/><path d="M10 5V2.5h3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span class="key">Q</span></div>
+    <div class="ability" id="ab-melee"><div class="charge"></div><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 17 15 3l2 2L5 17Z" fill="currentColor"/><path d="M3.5 12.5l4 4" stroke="currentColor" stroke-width="1.8"/></svg><span class="key">C</span></div>
+    <div class="ability" id="ab-class"><div class="charge"></div><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2 17 5v5c0 4-3 6.5-7 8-4-1.5-7-4-7-8V5Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6.5 9 10 12.5 13.5 9" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span class="key">V</span></div>
+  </div>
+  <div id="weapons"></div>
+</div>
+
+<div id="hint">Click lock &middot; WASD move &middot; Space jump/double-jump &middot; click fire (hold for auto) &middot; right-click aim &middot; R reload &middot; 1/2/3 or scroll switch weapon &middot; Q grenade &middot; C melee &middot; V class ability &middot; F super &middot; Esc character screen</div>
 
 <div id="menu" hidden>
   <div id="menu-panel">

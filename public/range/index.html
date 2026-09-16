@@ -1,4 +1,4 @@
-<script type="module" crossorigin src="/range/assets/index-yD-91tUV.js"></script>
+<script type="module" crossorigin src="/range/assets/index-Cn4XBY8a.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Pre-Destiny — test range</title>
@@ -30,6 +30,8 @@
     --element: #f07a2a;          /* the subclass tint: solar. Arc #7bd3f7, void #a57be0 */
     --threat: #ff3b2b;
     --enemy-minor: #d0402e;
+    --enemy-elite: #e8862f;
+    --enemy-boss: #f0c53c;
     --warn: #e0493c;
     --ally: #8cc8ff;
     --ammo-primary: #ffffff;
@@ -68,6 +70,10 @@
   #hitmarker.show { opacity: 1; transition: opacity 0s; }
   #hitmarker.fade { opacity: 0; transition: opacity .18s ease-out; }
   #hitmarker.kill::before, #hitmarker.kill::after { background: #ffcf6b; }
+  /* A PRECISION hit: yellow and a touch bigger. Destiny 2 shows precision as
+     yellow damage numbers; this range has no numbers, so the marker carries it. */
+  #hitmarker.crit { transform: scale(1.2); }
+  #hitmarker.crit::before, #hitmarker.crit::after { background: #f7d94c; }
 
   /* RED EDGES once the shield is gone and health is draining. */
   #vignette {
@@ -94,6 +100,17 @@
   }
   .plate .bar .fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--enemy-minor); }
   .plate .bar .shield { position: absolute; left: 0; bottom: 0; height: 35%; background: #fff; }
+  /* RANK IS THE BAR: red minor; ORANGE elite in three segments, the tier Destiny
+     2 added in 2017; yellow boss, a little wider. */
+  .plate.elite .bar .fill { background: var(--enemy-elite); }
+  .plate.elite .bar::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(to right,
+      transparent calc(33.33% - 1px), rgba(0, 0, 0, .75) calc(33.33% - 1px) 33.33%,
+      transparent 33.33% calc(66.67% - 1px), rgba(0, 0, 0, .75) calc(66.67% - 1px) 66.67%, transparent 66.67%);
+  }
+  .plate.boss .bar { width: calc(56 * var(--u)); }
+  .plate.boss .bar .fill { background: var(--enemy-boss); }
 
   /* ================================================================= */
   /* TOP-LEFT — the radar, and the activity banner under it             */

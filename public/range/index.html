@@ -1,4 +1,4 @@
-<script type="module" crossorigin src="/range/assets/index-BJzPxTKA.js"></script>
+<script type="module" crossorigin src="/range/assets/index-Cp2yCSUj.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Pre-Destiny — test range</title>
@@ -73,6 +73,13 @@
      yellow damage numbers; this range has no numbers, so the marker carries it. */
   #hitmarker.crit { transform: scale(1.2); }
   #hitmarker.crit::before, #hitmarker.crit::after { background: #f7d94c; }
+
+  /* THIRD PERSON: the dot belongs to the eye, and the eye is not where the
+     picture is drawn from (architecture §B7) — EXCEPT while an aimed Super is
+     being aimed (the Void Burst, the Knife of Light, until the release): the boom
+     is parallel to the eye, so the dot still marks the aim. The hit marker stays:
+     a Super's kills should show it. */
+  body.third-person:not(.tp-aim) #cross { visibility: hidden; }
 
   /* RED EDGES once the shield is gone and health is draining. */
   #vignette {

@@ -1,6 +1,6 @@
 <html class="start-open">
-<script type="module" crossorigin src="/range/assets/index-BKvV7DdA.js"></script>
-<link rel="stylesheet" crossorigin href="/range/assets/index-CToeQAET.css">
+<script type="module" crossorigin src="/range/assets/index-DF004e_E.js"></script>
+<link rel="stylesheet" crossorigin href="/range/assets/index-DDUOWzSb.css">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -894,6 +894,85 @@
     </div>
     <button id="start-kit-back" class="st-kit-prompt st-kit-back" type="button"><span class="st-key st-key-30"><svg viewBox="0 0 30 18" aria-hidden="true" focusable="false"><path class="st-cap" d="M0 0 H30 V14.5 L26.5 18 H0 Z"/></svg><span class="st-keylabel">Esc</span></span><span>Back</span></button>
     <button id="start-kit-select" class="st-kit-prompt st-kit-select" type="button"><span class="st-key st-key-42"><svg viewBox="0 0 42 18" aria-hidden="true" focusable="false"><path class="st-cap" d="M0 0 H42 V14.5 L38.5 18 H0 Z"/></svg><span class="st-keylabel">Enter</span></span><span>Select</span></button>
+    </div>
+  </section>
+  <!-- CUSTOMISE, THEN RISE (start-screens-design.md §2.4.2, §3; S3). The tab
+       column and RISE on the left of the right-hand half, the open tab's
+       options in the 880-1217 panel, the 3D Risen still on the left of the
+       stage. Every word is written by start.js from names.js START, so the
+       copy has one source; this markup is structure, roles and ids only.
+       DOM ORDER (B11): the three panels come immediately after the tab list. -->
+  <section id="start-cust" class="st-cust" hidden>
+    <div class="st-stage">
+    <i class="st-kit-shadow"></i>
+    <i id="start-cust-turn" class="st-kit-turn" aria-hidden="true"></i>
+    <!-- THE PROMPT ROW (§2.4.2) comes BEFORE the column, so Tab reaches RISE last, and after
+         the drag zone, so all three paint above it. [Drag] Turn is a label and not a control:
+         there is no key to press, and it leaves with the zone under the compact breakpoint. -->
+    <button id="start-cust-back" class="st-kit-prompt st-kit-back" type="button"><span class="st-key st-key-30"><svg viewBox="0 0 30 18" aria-hidden="true" focusable="false"><path class="st-cap" d="M0 0 H30 V14.5 L26.5 18 H0 Z"/></svg><span class="st-keylabel">Esc</span></span><span id="start-cust-back-word"></span></button>
+    <p id="start-cust-turn-prompt" class="st-kit-prompt st-turn-prompt"><span class="st-key st-key-36"><svg viewBox="0 0 36 18" aria-hidden="true" focusable="false"><path class="st-cap" d="M0 0 H36 V14.5 L32.5 18 H0 Z"/></svg><span class="st-keylabel">Drag</span></span><span id="start-cust-turn-word"></span></p>
+    <button id="start-cust-choose" class="st-kit-prompt st-kit-select" type="button"><span class="st-key st-key-42"><svg viewBox="0 0 42 18" aria-hidden="true" focusable="false"><path class="st-cap" d="M0 0 H42 V14.5 L38.5 18 H0 Z"/></svg><span class="st-keylabel">Enter</span></span><span id="start-cust-choose-word"></span></button>
+    <div class="st-cust-col">
+    <div class="st-cust-heading" role="heading" aria-level="2"><span id="start-cust-heading"></span></div>
+    <div class="st-tabs" role="tablist" aria-orientation="vertical">
+      <button id="start-cust-tab-0" class="st-tab" type="button" role="tab" aria-selected="true" aria-controls="start-cust-panel-0"><span></span></button>
+      <button id="start-cust-tab-1" class="st-tab" type="button" role="tab" aria-selected="false" aria-controls="start-cust-panel-1"><span></span></button>
+      <button id="start-cust-tab-2" class="st-tab" type="button" role="tab" aria-selected="false" aria-controls="start-cust-panel-2"><span></span></button>
+    </div>
+    <div id="start-cust-panel-0" class="st-panel" role="tabpanel" aria-labelledby="start-cust-tab-0">
+      <p id="start-cust-g-kind" class="st-strip" role="heading" aria-level="3"></p>
+      <div class="st-opts">
+      <button id="start-cust-kind-0" class="st-opt" type="button" aria-pressed="false"><span class="st-opt-text"></span></button>
+      <button id="start-cust-kind-1" class="st-opt" type="button" aria-pressed="false"><span class="st-opt-text"></span></button>
+      <button id="start-cust-kind-2" class="st-opt" type="button" aria-pressed="false"><span class="st-opt-text"></span></button>
+      </div>
+      <p id="start-cust-kind-line" class="st-say"></p>
+      <p id="start-cust-g-body" class="st-strip" role="heading" aria-level="3"></p>
+      <div class="st-opts">
+      <button id="start-cust-body-0" class="st-opt" type="button" aria-pressed="false"><span class="st-opt-text"></span></button>
+      <button id="start-cust-body-1" class="st-opt" type="button" aria-pressed="false"><span class="st-opt-text"></span></button>
+      </div>
+      <p id="start-cust-body-note" class="st-say st-say-quiet"></p>
+    </div>
+    <div id="start-cust-panel-1" class="st-panel" role="tabpanel" aria-labelledby="start-cust-tab-1" hidden>
+      <p id="start-cust-g-dye" class="st-strip" role="heading" aria-level="3"></p>
+      <div class="st-opts st-opts-sw">
+      <button id="start-cust-dye-0" class="st-sw" type="button" aria-pressed="false"><i class="st-sw-chip"></i></button>
+      <button id="start-cust-dye-1" class="st-sw" type="button" aria-pressed="false"><i class="st-sw-chip"></i></button>
+      <button id="start-cust-dye-2" class="st-sw" type="button" aria-pressed="false"><i class="st-sw-chip"></i></button>
+      <button id="start-cust-dye-3" class="st-sw" type="button" aria-pressed="false"><i class="st-sw-chip"></i></button>
+      <button id="start-cust-dye-4" class="st-sw" type="button" aria-pressed="false"><i class="st-sw-chip"></i></button>
+      </div>
+      <p id="start-cust-dye-line" class="st-say"></p>
+      <p id="start-cust-g-finish" class="st-strip" role="heading" aria-level="3"></p>
+      <div class="st-opts st-opts-sw">
+      <button id="start-cust-finish-0" class="st-sw" type="button" aria-pressed="false"><i class="st-sw-chip"></i></button>
+      <button id="start-cust-finish-1" class="st-sw" type="button" aria-pressed="false"><i class="st-sw-chip"></i></button>
+      <button id="start-cust-finish-2" class="st-sw" type="button" aria-pressed="false"><i class="st-sw-chip"></i></button>
+      </div>
+      <p id="start-cust-finish-line" class="st-say"></p>
+    </div>
+    <div id="start-cust-panel-2" class="st-panel" role="tabpanel" aria-labelledby="start-cust-tab-2" hidden>
+      <p id="start-cust-g-crest" class="st-strip" role="heading" aria-level="3"></p>
+      <div class="st-opts st-opts-tile">
+      <button id="start-cust-crest-0" class="st-tile" type="button" aria-pressed="false"><svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d=""/></svg></button>
+      <button id="start-cust-crest-1" class="st-tile" type="button" aria-pressed="false"><svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d=""/></svg></button>
+      <button id="start-cust-crest-2" class="st-tile" type="button" aria-pressed="false"><svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d=""/></svg></button>
+      <button id="start-cust-crest-3" class="st-tile" type="button" aria-pressed="false"><svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d=""/></svg></button>
+      </div>
+      <p id="start-cust-crest-line" class="st-say"></p>
+      <p id="start-cust-g-bar" class="st-strip" role="heading" aria-level="3"></p>
+      <div id="start-cust-bar" class="st-bar" role="img">
+        <svg class="st-bar-big" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path id="start-cust-bar-big" fill="#000" fill-opacity=".12" fill-rule="evenodd" d=""/></svg>
+        <svg class="st-bar-crest" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path id="start-cust-bar-crest" fill="currentColor" fill-rule="evenodd" d=""/></svg>
+        <span id="start-cust-bar-kit" class="st-bar-kit"></span>
+        <span id="start-cust-bar-kind" class="st-bar-kind"></span>
+        <span id="start-cust-bar-element" class="st-bar-element"></span>
+        <span id="start-cust-bar-made" class="st-bar-made"></span>
+      </div>
+    </div>
+    <button id="start-cust-rise" class="st-rise" type="button"><span></span></button>
+    </div>
     </div>
   </section>
   <div id="start-gate" class="st-gate" hidden>

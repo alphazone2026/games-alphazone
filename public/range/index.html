@@ -1,5 +1,5 @@
 <html class="start-open">
-<script type="module" crossorigin src="/range/assets/index-xg8S1AA5.js"></script>
+<script type="module" crossorigin src="/range/assets/index-Cm14IRKL.js"></script>
 <link rel="stylesheet" crossorigin href="/range/assets/index-D6sAsFKN.css">
 
 <meta charset="utf-8">
@@ -30,7 +30,8 @@
     --line: rgba(255, 255, 255, .25);
     --super: #f2d14b;
     --super-charging: rgba(242, 209, 75, .62);
-    --element: #f07a2a;          /* the subclass tint: solar. Arc #7bd3f7, void #a57be0 */
+    --element: #f07a2a;          /* the class element's HUD tint, set by main.js applyClassHud from kit.js ELEMENTS.
+                                    This default is the default class's (Hunter, Solar); the harness holds them equal. */
     --threat: #ff3b2b;
     --enemy-minor: #d0402e;
     --enemy-elite: #e8862f;
@@ -454,6 +455,23 @@
     background: #1e2226; border: 1px solid rgba(255,255,255,.12); border-radius: 5px; cursor: pointer;
   }
   #menu-classes button.active { color: var(--teal); border-color: rgba(53,216,194,.55); background: #17302c; }
+  #menu-comfort { display: flex; align-items: center; gap: 6px; margin: 12px 0 0; }
+  #menu-comfort-title { font: 600 11px ui-sans-serif, system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #7d868d; margin: 0 6px 0 0; }
+  #menu-comfort button { font: 600 11px ui-sans-serif, system-ui, sans-serif; padding: 3px 8px; border-radius: 4px; background: #1c2024; color: #b7c0c6; border: 1px solid rgba(255,255,255,.12); }
+  #menu-comfort button.active { color: #0b0c0d; background: rgba(53, 216, 194, .85); }
+  #menu-kit-title { font: 600 11px ui-sans-serif, system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #7d868d; margin: 16px 0 8px; }
+  #menu-kit-element { margin-left: 6px; padding: 1px 6px; border-radius: 3px; color: #0b0c0d; background: var(--element); letter-spacing: .06em; }
+  .kit-row {
+    display: grid; grid-template-columns: 22px 20px 1fr auto; align-items: center; gap: 8px;
+    padding: 6px 10px; margin-bottom: 6px; background: #1c2024; border: 1px solid rgba(255,255,255,.08); border-radius: 6px;
+    font: 400 13px ui-sans-serif, system-ui, sans-serif; color: #d7dde1;
+  }
+  .kit-key { font: 700 10px ui-sans-serif, system-ui, sans-serif; line-height: 16px; text-align: center; color: #b7c0c6; border: 1px solid rgba(255,255,255,.35); border-radius: 3px; }
+  .kit-glyph { width: 18px; height: 18px; color: var(--element); }
+  .kit-glyph svg { display: block; width: 100%; height: 100%; }
+  .kit-slot { font: 600 10px ui-sans-serif, system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #7d868d; }
+  .kit-charged { grid-column: 3 / 5; font-size: 11px; color: #7d868d; }
+  .kit-charged:empty { display: none; }
   #menu-inv-title { font: 600 11px ui-sans-serif, system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #7d868d; margin: 0 0 10px; }
   .inv-slot {
     display: flex; justify-content: space-between; align-items: center;
@@ -537,14 +555,14 @@
 <!-- BOTTOM-LEFT -->
 <div id="loadout" class="hud">
   <div id="super">
-    <div id="super-diamond"><div class="edge"></div><div class="inner"></div><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="3.6" fill="currentColor"/><path d="M10 1.5v3.5M10 15v3.5M1.5 10H5M15 10h3.5M4 4l2.4 2.4M13.6 13.6 16 16M16 4l-2.4 2.4M6.4 13.6 4 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+    <div id="super-diamond"><div class="edge"></div><div class="inner"></div><svg data-for="titanPlate" hidden viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5v8.5M6.6 7.8 10 11.2l3.4-3.4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.5 14h15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M6.5 16 4 18.2M13.5 16 16 18.2M10 16.3v2.2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><svg data-for="hunterCloak" viewBox="0 0 20 20" aria-hidden="true"><path d="M17.2 2.8 8.6 11.4l2 2 8.6-8.6Z" fill="currentColor"/><path d="M8.6 11.4 6.4 13.6l2 2 2.2-2.2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M1.8 12.6h3.4M2.8 16h3.4M5.2 18.6h2.6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><svg data-for="warlockRobe" hidden viewBox="0 0 20 20" aria-hidden="true"><circle cx="12.6" cy="10" r="4.6" fill="currentColor"/><path d="M1.8 7h4.4M1 10h4.2M1.8 13h4.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
     <div id="super-bar"><div class="fill"></div></div>
     <div id="super-flash">Super charged</div>
   </div>
   <div id="abilities">
-    <div class="ability" id="ab-grenade"><div class="charge"></div><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="11" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="10" cy="11" r="2.2" fill="currentColor"/><path d="M10 5V2.5h3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span class="key">Q</span></div>
-    <div class="ability" id="ab-melee"><div class="charge"></div><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 17 15 3l2 2L5 17Z" fill="currentColor"/><path d="M3.5 12.5l4 4" stroke="currentColor" stroke-width="1.8"/></svg><span class="key">C</span></div>
-    <div class="ability" id="ab-class"><div class="charge"></div><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2 17 5v5c0 4-3 6.5-7 8-4-1.5-7-4-7-8V5Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6.5 9 10 12.5 13.5 9" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span class="key">V</span></div>
+    <div class="ability" id="ab-grenade"><div class="charge"></div><svg data-for="titanPlate" hidden viewBox="0 0 20 20" aria-hidden="true"><path d="M10 7.2 12.8 10 10 12.8 7.2 10Z" fill="currentColor"/><circle cx="10" cy="10" r="5.2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="10" cy="10" r="8.2" fill="none" stroke="currentColor" stroke-width="1.3"/></svg><svg data-for="hunterCloak" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="13" r="4.8" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="10" cy="13" r="1.8" fill="currentColor"/><path d="M6.6 6.4c0-1.4 1-1.9 1-3.4M10 5.8c0-1.6 1.1-2.2 1.1-3.9M13.4 6.4c0-1.4 1-1.9 1-3.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><svg data-for="warlockRobe" hidden viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="2.8" fill="currentColor"/><circle cx="10" cy="10" r="7.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="2.4 2.2"/><path d="M4.2 4.2 6.4 6.4M15.8 4.2 13.6 6.4M4.2 15.8l2.2-2.2M15.8 15.8l-2.2-2.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span class="key">Q</span></div>
+    <div class="ability" id="ab-melee"><div class="charge"></div><svg data-for="titanPlate" hidden viewBox="0 0 20 20" aria-hidden="true"><path d="M2.4 10h6.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><circle cx="11.6" cy="10" r="2.6" fill="currentColor"/><path d="M15.6 5.4l2.2-2.2M16.4 10h2.8M15.6 14.6l2.2 2.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><svg data-for="hunterCloak" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 17 15 3l2 2L5 17Z" fill="currentColor"/><path d="M3.5 12.5l4 4" stroke="currentColor" stroke-width="1.8"/></svg><svg data-for="warlockRobe" hidden viewBox="0 0 20 20" aria-hidden="true"><path d="M6.2 18.4v-7.6c0-.8.6-1.4 1.3-1.4s1.3.6 1.3 1.4V8.2c0-.8.6-1.4 1.3-1.4s1.3.6 1.3 1.4v2.3-1.1c0-.8.6-1.4 1.3-1.4s1.3.6 1.3 1.4v4.4c0 2.8-2.2 4.6-4.6 4.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M3.6 12.6H1.6M4.4 8.8 2.8 7.4M4.4 16.4l-1.6 1.2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span class="key">C</span></div>
+    <div class="ability" id="ab-class"><div class="charge"></div><svg data-for="titanPlate" hidden viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 17.5h15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M4 15.5V8h12v7.5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M4 11.75h12M8 8v3.75M12 11.75v3.75" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M7.5 5.5 10 3l2.5 2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><svg data-for="hunterCloak" viewBox="0 0 20 20" aria-hidden="true"><path d="M15.2 12.6A5.6 5.6 0 1 1 13.9 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M11.2 4.1 14.6 4.4 14.1 7.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="10.6" r="1.9" fill="currentColor"/></svg><svg data-for="warlockRobe" hidden viewBox="0 0 20 20" aria-hidden="true"><ellipse cx="10" cy="14.5" rx="7.5" ry="2.9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10 12.5V4.5M6.9 7.4 10 4.3l3.1 3.1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="key">V</span></div>
   </div>
   <div id="weapons"></div>
 </div>
@@ -567,6 +585,14 @@
       <div>
         <p id="menu-inv-title">Weapons</p>
         <div id="menu-inventory"></div>
+        <p id="menu-kit-title">Kit <span id="menu-kit-element">Solar</span></p>
+        <div id="menu-kit">
+          <div class="kit-row" data-slot="grenade"><span class="kit-key">Q</span><span class="kit-glyph"></span><span class="kit-name">Solar Blaze</span><span class="kit-slot">Grenade</span><span class="kit-charged"></span></div>
+          <div class="kit-row" data-slot="melee"><span class="kit-key">C</span><span class="kit-glyph"></span><span class="kit-name">Knife</span><span class="kit-slot">Melee</span><span class="kit-charged">charged: Solar Knife</span></div>
+          <div class="kit-row" data-slot="class"><span class="kit-key">V</span><span class="kit-glyph"></span><span class="kit-name">Roll</span><span class="kit-slot">Class ability</span><span class="kit-charged"></span></div>
+          <div class="kit-row" data-slot="super"><span class="kit-key">F</span><span class="kit-glyph"></span><span class="kit-name">Knife of Light</span><span class="kit-slot">Super</span><span class="kit-charged"></span></div>
+        </div>
+        <div id="menu-comfort"><p id="menu-comfort-title">Camera motion</p><button data-motion="1" class="active">Full</button><button data-motion="0.5">Half</button><button data-motion="0">Off</button></div>
       </div>
     </div>
     <button id="menu-resume">Resume</button>

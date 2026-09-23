@@ -1,6 +1,6 @@
 <html class="start-open">
-<script type="module" crossorigin src="/range/assets/index-DWtxxNdD.js"></script>
-<link rel="stylesheet" crossorigin href="/range/assets/index-DDUOWzSb.css">
+<script type="module" crossorigin src="/range/assets/index-BeJatUR-.js"></script>
+<link rel="stylesheet" crossorigin href="/range/assets/index-C29zm_3B.css">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -523,7 +523,7 @@
     </div>
   </div>
   <div id="buffs">
-    <div class="buff" id="buff-ward" hidden><span class="glyph"></span><span class="name">Ward</span><span class="time"></span></div>
+    <div class="buff" id="buff-emboldened" hidden><span class="glyph"></span><span class="name">Emboldened</span><span class="time"></span></div>
   </div>
 </div>
 
@@ -975,6 +975,84 @@
     </div>
     </div>
   </section>
+  <!-- WHO'S PLAYING? (start-screens-design.md §2.2; S5a). The three choice bars are a tab list
+       (B11: start.js keeps only the open bar in the Tab order, the roving pattern), each
+       panel straight after the list. Two real <form>s, so the browser and a password manager see a
+       sign-in and a sign-up: autocomplete names every field, paste is never blocked, and Enter in a
+       field submits natively. method="post" so that a submit no script caught could never put a
+       password into the address bar. Every word is written by start.js from names.js START. -->
+  <section id="start-who" class="st-who" hidden>
+    <div class="st-stage">
+    <svg class="st-who-mark" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path id="start-who-mark" fill="currentColor" fill-rule="evenodd" d=""/></svg>
+    <button id="start-who-back" class="st-kit-prompt st-kit-back" type="button"><span class="st-key st-key-30"><svg viewBox="0 0 30 18" aria-hidden="true" focusable="false"><path class="st-cap" d="M0 0 H30 V14.5 L26.5 18 H0 Z"/></svg><span class="st-keylabel">Esc</span></span><span id="start-who-back-word"></span></button>
+    <button id="start-who-enter" class="st-kit-prompt st-kit-select" type="button"><span class="st-key st-key-42"><svg viewBox="0 0 42 18" aria-hidden="true" focusable="false"><path class="st-cap" d="M0 0 H42 V14.5 L38.5 18 H0 Z"/></svg><span class="st-keylabel">Enter</span></span><span id="start-who-enter-word"></span></button>
+    <div class="st-who-heading" role="heading" aria-level="2"><span id="start-who-heading"></span></div>
+    <i class="st-who-bar"></i>
+    <p id="start-who-intro" class="st-who-intro"></p>
+    <div class="st-choices" role="tablist" aria-orientation="vertical">
+      <button id="start-who-choice-0" class="st-choice" type="button" role="tab" aria-selected="true" aria-controls="start-who-panel-0"><span class="st-choice-cell"><svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path id="start-who-choice-0-glyph" fill="currentColor" fill-rule="evenodd" d=""/></svg></span><span id="start-who-choice-0-word"></span></button>
+      <button id="start-who-choice-1" class="st-choice" type="button" role="tab" aria-selected="false" aria-controls="start-who-panel-1"><span class="st-choice-cell"><svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path id="start-who-choice-1-glyph" fill="currentColor" fill-rule="evenodd" d=""/></svg></span><span id="start-who-choice-1-word"></span></button>
+      <button id="start-who-choice-2" class="st-choice" type="button" role="tab" aria-selected="false" aria-controls="start-who-panel-2"><span class="st-choice-cell"><svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path id="start-who-choice-2-glyph" fill="currentColor" fill-rule="evenodd" d=""/></svg></span><span id="start-who-choice-2-word"></span></button>
+    </div>
+    <div id="start-who-panel-0" class="st-who-panel" role="tabpanel" aria-labelledby="start-who-choice-0">
+      <form id="start-who-in-form" class="st-who-form" method="post" autocomplete="on">
+        <label id="start-who-in-name-label" class="st-who-label" for="start-who-in-name"></label>
+        <input id="start-who-in-name" class="st-field" type="text" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="32">
+        <p class="st-who-label st-who-label-row"><label id="start-who-in-pass-label" for="start-who-in-pass"></label><button id="start-who-in-show" class="st-link" type="button" aria-pressed="false" aria-controls="start-who-in-pass"></button></p>
+        <input id="start-who-in-pass" class="st-field" type="password" name="password" autocomplete="current-password" maxlength="128">
+        <label class="st-check"><input id="start-who-in-stay" type="checkbox" name="stay" checked><span id="start-who-in-stay-label"></span></label>
+        <p id="start-who-in-error" class="st-who-error" role="alert" hidden></p>
+        <button id="start-who-in-go" class="st-go" type="submit"><span id="start-who-in-go-word"></span></button>
+        <p id="start-who-in-forgot" class="st-who-say"></p>
+      </form>
+    </div>
+    <div id="start-who-panel-1" class="st-who-panel" role="tabpanel" aria-labelledby="start-who-choice-1" hidden>
+      <form id="start-who-mk-form" class="st-who-form" method="post" autocomplete="on">
+        <label id="start-who-mk-name-label" class="st-who-label" for="start-who-mk-name"></label>
+        <input id="start-who-mk-name" class="st-field" type="text" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="32" aria-describedby="start-who-mk-rules">
+        <p id="start-who-mk-rules" class="st-who-say st-who-rules"></p>
+        <div class="st-who-pair">
+          <div class="st-who-cell">
+            <p class="st-who-label st-who-label-row"><label id="start-who-mk-pass-label" for="start-who-mk-pass"></label><button id="start-who-mk-show" class="st-link" type="button" aria-pressed="false" aria-controls="start-who-mk-pass start-who-mk-again"></button></p>
+            <input id="start-who-mk-pass" class="st-field" type="password" name="new-password" autocomplete="new-password" maxlength="128" aria-describedby="start-who-mk-min">
+          </div>
+          <div class="st-who-cell">
+            <label id="start-who-mk-again-label" class="st-who-label" for="start-who-mk-again"></label>
+            <input id="start-who-mk-again" class="st-field" type="password" name="new-password-again" autocomplete="new-password" maxlength="128">
+          </div>
+        </div>
+        <p id="start-who-mk-min" class="st-who-say st-who-rules"></p>
+        <label class="st-check"><input id="start-who-mk-stay" type="checkbox" name="stay" checked><span id="start-who-mk-stay-label"></span></label>
+        <p id="start-who-mk-error" class="st-who-error" role="alert" hidden></p>
+        <button id="start-who-mk-go" class="st-go" type="submit"><span id="start-who-mk-go-word"></span></button>
+        <p id="start-who-mk-note" class="st-who-say st-who-note"></p>
+      </form>
+    </div>
+    <div id="start-who-panel-2" class="st-who-panel" role="tabpanel" aria-labelledby="start-who-choice-2" hidden>
+      <p id="start-who-guest-saved" class="st-who-text"></p>
+      <p id="start-who-guest-later" class="st-who-text"></p>
+      <button id="start-who-guest-go" class="st-go" type="button"><span id="start-who-guest-go-word"></span></button>
+    </div>
+    </div>
+  </section>
+  <!-- THE ACCOUNT LINE, top right on Who's playing?, Choose your kit and Customise (S5a): who is
+       signed in and Sign out, or "Playing without an account" and Sign in, and What we store,
+       whose panel opens under it. -->
+  <div id="start-acct" class="st-acct" hidden>
+    <div class="st-stage">
+    <p class="st-acct-line"><span id="start-acct-who"></span><button id="start-acct-out" class="st-link" type="button"></button><button id="start-acct-store" class="st-link" type="button" aria-expanded="false" aria-controls="start-store"></button></p>
+    <div id="start-store" class="st-store" role="region" aria-labelledby="start-store-heading" hidden>
+      <p id="start-store-heading" class="st-strip"></p>
+      <p id="start-store-account" class="st-store-say"></p>
+      <p id="start-store-password" class="st-store-say"></p>
+      <p id="start-store-browser" class="st-store-say"></p>
+      <p id="start-store-guest" class="st-store-say"></p>
+      <p class="st-store-say"><span id="start-store-contact"></span> <a id="start-store-mail" class="st-store-mail" href=""></a></p>
+      <p id="start-store-id-row" class="st-store-say st-store-idrow" hidden><span id="start-store-id-label"></span> <span id="start-store-id" class="st-store-id"></span></p>
+      <button id="start-store-close" class="st-link st-store-close" type="button"></button>
+    </div>
+    </div>
+  </div>
   <div id="start-gate" class="st-gate" hidden>
     <div class="st-stage"><p class="st-gate-line">PRESS ANY KEY</p><p class="st-gate-note">Sound on · Esc for silence</p></div>
   </div>

@@ -1,6 +1,6 @@
 <html class="start-open">
-<script type="module" crossorigin src="/range/assets/index-BeJatUR-.js"></script>
-<link rel="stylesheet" crossorigin href="/range/assets/index-C29zm_3B.css">
+<script type="module" crossorigin src="/range/assets/index-xg8S1AA5.js"></script>
+<link rel="stylesheet" crossorigin href="/range/assets/index-D6sAsFKN.css">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -473,33 +473,18 @@
     border-radius: 6px; cursor: pointer;
   }
 </style>
-<!-- THE TITLE'S EARLY PRESS (src/front/start.js, its header; flow-accounts §2.2). Until the bundle
-     runs nothing listens, so an Enter, Space or click on the loading title would be lost. This
-     marks <html> "start-pressed" instead; start.boot() reads the mark and the press begins the
-     moment the range is ready. It goes quiet once boot() has run (#start.st-booted). No global, no
-     text, nothing prevented; with scripts off it never runs. tools/guardian/start-screens.mjs
-     (group C) runs this very script over a fake page.
-     It also puts "st-wait" on <html> before the first paint: start.css holds the title's reveal at
-     its first frame on the dark page until start.js says go (at ready(), or at the sound gate's
-     press), so the plate never flashes up before the gate. With scripts off there is no st-wait,
-     and the reveal runs from the first paint as before. -->
+<!-- THE TITLE'S WAIT (src/front/start.js, its header). This puts "st-wait" on <html> before the
+     first paint: start.css holds the title's reveal at its first frame on the dark page until
+     start.js says go (at ready(), or at the sound gate's press), so the plate never flashes up
+     before the gate. With scripts off there is no st-wait, and the reveal runs from the first paint.
+     It used to be the EARLY-PRESS listener too (S1, flow-accounts §2.2): an Enter, Space or click on
+     the loading title marked <html> "start-pressed" and began the moment the range was ready. That
+     was taken out on purpose (Ben, 24 Sep: no press before the title is fully in, and none kept for
+     later), so nothing here listens. tools/guardian/start-screens.mjs (group C) runs this very
+     script over a fake page. -->
 <script>
 (function () {
   document.documentElement.classList.add('st-wait');
-  function mark() {
-    var start = document.getElementById('start');
-    if (start && start.classList.contains('st-booted')) return;
-    document.documentElement.classList.add('start-pressed');
-  }
-  addEventListener('keydown', function (e) {
-    if (e.repeat || e.isComposing) return;
-    var c = e.code, k = e.key;
-    if (c === 'Enter' || c === 'NumpadEnter' || c === 'Space' || (!c && (k === 'Enter' || k === ' '))) mark();
-  }, true);
-  addEventListener('click', function (e) {
-    var begin = document.getElementById('start-begin');
-    if (e.button === 0 && begin && begin.contains(e.target)) mark();
-  }, true);
 })();
 </script>
 <canvas id="view"></canvas>
@@ -927,12 +912,27 @@
       <button id="start-cust-kind-2" class="st-opt" type="button" aria-pressed="false"><span class="st-opt-text"></span></button>
       </div>
       <p id="start-cust-kind-line" class="st-say"></p>
+      <p id="start-cust-g-skin" class="st-strip" role="heading" aria-level="3"></p>
+      <div class="st-opts st-opts-sw">
+      <button id="start-cust-skin-0" class="st-sw" type="button" aria-pressed="false"><i class="st-sw-chip"></i></button>
+      <button id="start-cust-skin-1" class="st-sw" type="button" aria-pressed="false"><i class="st-sw-chip"></i></button>
+      <button id="start-cust-skin-2" class="st-sw" type="button" aria-pressed="false"><i class="st-sw-chip"></i></button>
+      <button id="start-cust-skin-3" class="st-sw" type="button" aria-pressed="false"><i class="st-sw-chip"></i></button>
+      <button id="start-cust-skin-4" class="st-sw" type="button" aria-pressed="false"><i class="st-sw-chip"></i></button>
+      </div>
+      <p id="start-cust-skin-line" class="st-say"></p>
       <p id="start-cust-g-body" class="st-strip" role="heading" aria-level="3"></p>
       <div class="st-opts">
       <button id="start-cust-body-0" class="st-opt" type="button" aria-pressed="false"><span class="st-opt-text"></span></button>
       <button id="start-cust-body-1" class="st-opt" type="button" aria-pressed="false"><span class="st-opt-text"></span></button>
       </div>
       <p id="start-cust-body-note" class="st-say st-say-quiet"></p>
+      <p id="start-cust-g-helmet" class="st-strip" role="heading" aria-level="3"></p>
+      <div class="st-opts">
+      <button id="start-cust-helmet-0" class="st-opt" type="button" aria-pressed="false"><span class="st-opt-text"></span></button>
+      <button id="start-cust-helmet-1" class="st-opt" type="button" aria-pressed="false"><span class="st-opt-text"></span></button>
+      </div>
+      <p id="start-cust-helmet-line" class="st-say"></p>
     </div>
     <div id="start-cust-panel-1" class="st-panel" role="tabpanel" aria-labelledby="start-cust-tab-1" hidden>
       <p id="start-cust-g-dye" class="st-strip" role="heading" aria-level="3"></p>

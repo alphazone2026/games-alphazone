@@ -1,6 +1,6 @@
 <html class="start-open">
-<script type="module" crossorigin src="/range/assets/index-Cy-VExk1.js"></script>
-<link rel="stylesheet" crossorigin href="/range/assets/index-D6sAsFKN.css">
+<script type="module" crossorigin src="/range/assets/index-Bj-U8Z9t.js"></script>
+<link rel="stylesheet" crossorigin href="/range/assets/index-DsWuTc6L.css">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -998,6 +998,49 @@
       </div>
     </div>
     <button id="start-cust-rise" class="st-rise" type="button"><span></span></button>
+    <p id="start-cust-say" class="st-cust-say" role="alert" hidden></p>
+    </div>
+    </div>
+  </section>
+  <!-- CHOOSE YOUR RISEN (start-screens-design.md §2.3, §5; S4 online). The character select of a
+       signed-in account: up to three bars read from the account, in the order they were made, and one
+       "+" bar while there is room; the 3D Risen on the left is the focused one. Every word is written by
+       start.js from names.js START. The three rows are drawn by start.js as a character, the "+" bar,
+       a skeleton while the list loads, or hidden. The delete dialog (§2.3, S4b) is the section's own,
+       so nothing of it shows on any other screen. -->
+  <section id="start-sel" class="st-sel" hidden>
+    <div class="st-stage">
+    <i class="st-kit-shadow st-sel-shadow"></i>
+    <svg class="st-sel-mark" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path id="start-sel-mark" fill="currentColor" fill-rule="evenodd" d=""/></svg>
+    <button id="start-sel-back" class="st-kit-prompt st-kit-back" type="button"><span class="st-key st-key-30"><svg viewBox="0 0 30 18" aria-hidden="true" focusable="false"><path class="st-cap" d="M0 0 H30 V14.5 L26.5 18 H0 Z"/></svg><span class="st-keylabel">Esc</span></span><span id="start-sel-back-word"></span></button>
+    <div class="st-sel-right">
+      <button id="start-sel-del" class="st-kit-prompt" type="button"><span class="st-key st-key-46"><svg viewBox="0 0 46 18" aria-hidden="true" focusable="false"><path class="st-cap" d="M0 0 H46 V14.5 L42.5 18 H0 Z"/></svg><span class="st-keylabel">Hold F</span></span><span id="start-sel-del-word"></span></button>
+      <button id="start-sel-play" class="st-kit-prompt" type="button"><span class="st-key st-key-42"><svg viewBox="0 0 42 18" aria-hidden="true" focusable="false"><path class="st-cap" d="M0 0 H42 V14.5 L38.5 18 H0 Z"/></svg><span class="st-keylabel">Enter</span></span><span id="start-sel-play-word"></span></button>
+    </div>
+    <p id="start-sel-note" class="st-sel-note" role="alert" hidden></p>
+    <div class="st-sel-heading" role="heading" aria-level="2"><span id="start-sel-heading"></span></div>
+    <i class="st-who-bar st-sel-bar"></i>
+    <p id="start-sel-name" class="st-sel-name"></p>
+    <div class="st-sel-rows">
+      <button id="start-sel-row-0" class="st-rbar" type="button" hidden><svg class="st-bar-big" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path id="start-sel-row-0-big" fill="#000" fill-opacity=".12" fill-rule="evenodd" d=""/></svg><svg class="st-bar-crest" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path id="start-sel-row-0-crest" fill="currentColor" fill-rule="evenodd" d=""/></svg><span id="start-sel-row-0-kit" class="st-bar-kit"></span><span id="start-sel-row-0-kind" class="st-bar-kind"></span><span id="start-sel-row-0-element" class="st-bar-element"></span><span id="start-sel-row-0-made" class="st-bar-made"></span><span id="start-sel-row-0-plus" class="st-rbar-plus"></span><i id="start-sel-row-0-hold" class="st-rbar-hold"></i></button>
+      <button id="start-sel-row-1" class="st-rbar" type="button" hidden><svg class="st-bar-big" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path id="start-sel-row-1-big" fill="#000" fill-opacity=".12" fill-rule="evenodd" d=""/></svg><svg class="st-bar-crest" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path id="start-sel-row-1-crest" fill="currentColor" fill-rule="evenodd" d=""/></svg><span id="start-sel-row-1-kit" class="st-bar-kit"></span><span id="start-sel-row-1-kind" class="st-bar-kind"></span><span id="start-sel-row-1-element" class="st-bar-element"></span><span id="start-sel-row-1-made" class="st-bar-made"></span><span id="start-sel-row-1-plus" class="st-rbar-plus"></span><i id="start-sel-row-1-hold" class="st-rbar-hold"></i></button>
+      <button id="start-sel-row-2" class="st-rbar" type="button" hidden><svg class="st-bar-big" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path id="start-sel-row-2-big" fill="#000" fill-opacity=".12" fill-rule="evenodd" d=""/></svg><svg class="st-bar-crest" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path id="start-sel-row-2-crest" fill="currentColor" fill-rule="evenodd" d=""/></svg><span id="start-sel-row-2-kit" class="st-bar-kit"></span><span id="start-sel-row-2-kind" class="st-bar-kind"></span><span id="start-sel-row-2-element" class="st-bar-element"></span><span id="start-sel-row-2-made" class="st-bar-made"></span><span id="start-sel-row-2-plus" class="st-rbar-plus"></span><i id="start-sel-row-2-hold" class="st-rbar-hold"></i></button>
+    </div>
+    <div id="start-sel-panel" class="st-sel-panel" hidden>
+      <p id="start-sel-panel-text" class="st-who-text" role="alert"></p>
+      <button id="start-sel-retry" class="st-go" type="button"><span id="start-sel-retry-word"></span></button>
+      <button id="start-sel-guest" class="st-go" type="button"><span id="start-sel-guest-word"></span></button>
+      <button id="start-sel-out" class="st-link" type="button" hidden></button>
+    </div>
+    <p id="start-sel-build" class="st-sel-build"></p>
+    <div id="start-del" class="st-del" role="dialog" aria-modal="true" aria-labelledby="start-del-heading" hidden>
+      <p id="start-del-heading" class="st-strip"></p>
+      <p id="start-del-line" class="st-del-line"></p>
+      <p id="start-del-warn" class="st-who-text"></p>
+      <p id="start-del-how" class="st-who-say"></p>
+      <div class="st-del-keys"><button id="start-del-key-0" class="st-del-key" type="button"><span id="start-del-key-0-cap"></span></button><button id="start-del-key-1" class="st-del-key" type="button"><span id="start-del-key-1-cap"></span></button><button id="start-del-key-2" class="st-del-key" type="button"><span id="start-del-key-2-cap"></span></button></div>
+      <p id="start-del-say" class="st-who-error" role="alert" hidden></p>
+      <div class="st-del-go"><button id="start-del-keep" class="st-go" type="button"><span id="start-del-keep-word"></span></button><button id="start-del-yes" class="st-go" type="button" aria-disabled="true"><span id="start-del-yes-word"></span></button></div>
     </div>
     </div>
   </section>

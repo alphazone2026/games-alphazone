@@ -1,4 +1,4 @@
-import{C as C0,B as B0,l as e0,aE as P0,ac as I0,M as T0}from"./index-DuWKZdsp.js";const E0=`
+import{C as C0,B as B0,l as e0,aE as P0,ac as I0,M as T0}from"./index-DUFenSvb.js";const E0=`
   attribute vec2 corner;
   attribute float size;
   attribute vec3 tint;

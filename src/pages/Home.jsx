@@ -182,16 +182,16 @@ export default function Home() {
                 served from /range/ (games/games/predestiny, vendored into
                 public/range/) for the same reason as the other three: a live
                 path is the one thing you cannot change cheaply. This one is
-                doubly provisional — both the path and the display name are
-                placeholders until Ben settles on what the real game's URL
-                should be once it has actual mission content, not just a
-                shooting range. */}
+                still provisional: the game outgrew the shooting range (it has
+                its prologues, a mission and the open valley now), and Ben
+                named the tile "Pre-Destiny - Rustlight" on 2026-09-24, but
+                the path stays /range/ so no link breaks. */}
             <a
               href="/range/"
               className="block rounded-lg bg-rose-800 hover:bg-rose-700 py-3 px-3 font-semibold transition text-center"
             >
-              Pre-Destiny — Test Range
-              <div className="text-xs font-normal text-rose-200">Shoot, reload, repeat. Gunplay only, no mission yet</div>
+              Pre-Destiny - Rustlight
+              <div className="text-xs font-normal text-rose-200">A co-op shooter in the Dark Age: story, fireteams and an open valley</div>
             </a>
           </div>
         </div>

@@ -1,5 +1,5 @@
 <html class="start-open">
-<script type="module" crossorigin src="/range/assets/index-BnyXZXuX.js"></script>
+<script type="module" crossorigin src="/range/assets/index-CBxGvGWD.js"></script>
 <link rel="stylesheet" crossorigin href="/range/assets/index-Hjz5Kqvs.css">
 
 <meta charset="utf-8">
@@ -22,7 +22,9 @@
   /* =================================================================== */
   :root {
     --u: calc(min(100vw, 177.78vh) / 740);
-    --hud-font: "Helvetica Neue", Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
+    /* A5: the start screens' face (start.css @font-face, Hanken Grotesk, 300-700) first, so the HUD, the menu and
+       the title read as one game; the old stack stays behind it for the moment before the font arrives. */
+    --hud-font: "Hanken Grotesk", "Helvetica Neue", Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
     --white: #f4f4f2;
     --dim: rgba(244, 244, 242, .72);
     --shade: 0 0 calc(2 * var(--u)) rgba(0, 0, 0, .7), 0 calc(.5 * var(--u)) calc(1 * var(--u)) rgba(0, 0, 0, .55);
@@ -90,10 +92,44 @@
      a Super's kills should show it. */
   body.third-person:not(.tp-aim) #cross { visibility: hidden; }
 
-  /* RED EDGES once the shield is gone and health is draining. */
+  /* RED EDGES once the shield is gone and health is draining. A5: under half health the edges also BEAT, a
+     double pulse about once a second (main.js updateVitals: #vignette.pulse), over the steady red, and the steady
+     red is deeper at the very edge. Still under reduced motion (html.pd-reduced, below). */
   #vignette {
     position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity .35s ease;
-    background: radial-gradient(ellipse at center, transparent 55%, rgba(160, 0, 0, .45) 100%);
+    background: radial-gradient(ellipse at center, transparent 52%, rgba(140, 0, 0, .34) 82%, rgba(175, 8, 8, .56) 100%);
+  }
+  #vignette::after {
+    content: ''; position: absolute; inset: 0; opacity: 0;
+    background: radial-gradient(ellipse at center, transparent 42%, rgba(210, 16, 16, .5) 100%);
+  }
+  #vignette.pulse::after { animation: vigPulse 1.05s ease-in-out infinite; }
+  @keyframes vigPulse { 0%, 100% { opacity: 0; } 16% { opacity: 1; } 30% { opacity: .3; } 44% { opacity: .75; } 70% { opacity: .1; } }
+
+  /* ================================================================= */
+  /* THE WAYPOINT (A5, src/hud/waypoint.js) — the objective's place    */
+  /* ================================================================= */
+  /* A small white diamond with a solid heart and a cool glow, the metres under it; moved by transform only.
+     Pinned to the edge (.edge) it grows an arrow pointing the way to turn (--wp-angle, from the maths). */
+  #waypoint { left: 0; top: 0; opacity: 0; text-shadow: none; will-change: transform, opacity; }
+  #waypoint .wp-mark { position: absolute; left: 0; top: 0; width: calc(11 * var(--u)); height: calc(11 * var(--u)); transform: translate(-50%, -50%); }
+  #waypoint .wp-diamond {
+    position: absolute; inset: 0; transform: rotate(45deg) scale(.72);
+    border: max(1.5px, calc(1.1 * var(--u))) solid #fff; background: rgba(255, 255, 255, .12);
+    box-shadow: 0 0 calc(4 * var(--u)) rgba(150, 205, 255, .6), inset 0 0 calc(2 * var(--u)) rgba(255, 255, 255, .35);
+  }
+  #waypoint .wp-diamond::after { content: ''; position: absolute; inset: 30%; background: #fff; }
+  #waypoint .wp-arrow {
+    display: none; position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-origin: 0 0;
+    border-left: calc(5.5 * var(--u)) solid #fff; border-top: calc(3.6 * var(--u)) solid transparent; border-bottom: calc(3.6 * var(--u)) solid transparent;
+    transform: rotate(var(--wp-angle, 0rad)) translate(calc(9.5 * var(--u)), -50%);
+    filter: drop-shadow(0 0 calc(1.5 * var(--u)) rgba(0, 0, 0, .6));
+  }
+  #waypoint.edge .wp-arrow { display: block; }
+  #waypoint .wp-dist {
+    position: absolute; left: 0; top: calc(8 * var(--u)); transform: translateX(-50%); white-space: nowrap;
+    font-size: max(10px, calc(6.2 * var(--u))); font-weight: 600; letter-spacing: .06em; font-variant-numeric: tabular-nums;
+    text-shadow: var(--shade);
   }
 
   /* ================================================================= */
@@ -197,19 +233,20 @@
     border: 1px solid var(--dim); border-radius: calc(1.5 * var(--u)); text-shadow: none;
   }
   .obj .key:empty { display: none; }
-  /* New objective: wipes in left to right with a white sweep behind it. */
-  #objective.fresh { animation: objIn .3s ease-out; }
+  /* New objective: slides in from the left as it wipes in, with a white sweep behind it (A5: the slide). */
+  #objective.fresh { animation: objIn .38s cubic-bezier(.2, .8, .2, 1); }
   #objective.fresh::after {
     content: ''; position: absolute; inset: 0 auto 0 0; width: 100%; pointer-events: none;
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .35), transparent);
     animation: objSweep .45s ease-out forwards;
   }
-  @keyframes objIn { from { clip-path: inset(0 100% 0 0); opacity: 0; } to { clip-path: inset(0 0 0 0); opacity: 1; } }
+  @keyframes objIn { from { clip-path: inset(0 100% 0 0); opacity: 0; transform: translateX(calc(-14 * var(--u))); } 60% { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 0 0); opacity: 1; transform: none; } }
   @keyframes objSweep { from { transform: translateX(-100%); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
-  /* Completed objective: its box fills, the row flashes, then it dims. */
+  /* Completed objective: its box fills, the row flashes, then it fades out drifting right (A5: it used to dim to
+     .45 and be swapped, so the old line and the new one met with a jump). */
   #objective.complete .box { background: #fff; }
   #objective.complete { animation: objDone .7s ease-out forwards; }
-  @keyframes objDone { 0% { filter: brightness(1); } 20% { filter: brightness(1.8); } 100% { filter: brightness(1); opacity: .45; } }
+  @keyframes objDone { 0% { filter: brightness(1); } 20% { filter: brightness(1.8); } 50% { opacity: 1; transform: none; } 100% { filter: brightness(1); opacity: 0; transform: translateX(calc(6 * var(--u))); } }
 
   /* BUFFS — in 2017 these listed on the left under the objectives. */
   #buffs { margin: calc(4 * var(--u)) 0 0 calc(36 * var(--u)); display: flex; flex-direction: column; gap: calc(3 * var(--u)); }
@@ -284,11 +321,15 @@
   @keyframes shimmer { 0%, 100% { opacity: 1; } 50% { opacity: .85; } }
 
   /* 2017 subtitles, measured off 2017 frames: white text on a dark strip per
-     line — hard top and bottom edges, ends that fade out past the words —
-     wrapping at about 36% of the width, the last line level with the foot of
-     the weapon cluster. NO speaker prefix; the top-right corner is how you
-     tell who is talking. Always on here, because nothing in this game has a
-     voice to hear: the subtitle IS the line. */
+     line, ends that fade out past the words — wrapping at about 36% of the
+     width, the last line level with the foot of the weapon cluster.
+     A5 (Ben's polish pass, "styled like Destiny's"): the SPEAKER'S NAME now
+     leads the line in the element's colour, the way Destiny 2's later
+     subtitles name who is talking, and the strip is softer (a lighter fill
+     with a soft glow round it rather than hard edges). The top-right corner
+     still shows the speaker too. Subtitles can be turned off in Settings
+     (html body.pd-no-subtitles); on by default, because nothing in this game
+     has a voice to hear yet: the subtitle IS the line. */
   /* The fade past each end is 18 units, not the ~33 the capture shows: this
      HUD's weapon column reaches further right than Destiny's, and at 33 the
      strip's left fade ran over the magazine number in the first screenshot. */
@@ -300,10 +341,17 @@
   }
   #subtitle.on { opacity: 1; transition: opacity .15s ease; }
   #subtitle .line {
-    display: inline; color: #fff; padding: calc(1.2 * var(--u)) calc(18 * var(--u));
-    background: linear-gradient(90deg, rgba(0,0,0,0), rgba(0,0,0,.5) calc(18 * var(--u)), rgba(0,0,0,.5) calc(100% - 18 * var(--u)), rgba(0,0,0,0));
+    display: inline; color: #fff; padding: calc(1.6 * var(--u)) calc(18 * var(--u));
+    background: linear-gradient(90deg, rgba(4,6,8,0), rgba(4,6,8,.46) calc(18 * var(--u)), rgba(4,6,8,.46) calc(100% - 18 * var(--u)), rgba(4,6,8,0));
+    text-shadow: 0 0 calc(2 * var(--u)) rgba(0, 0, 0, .55);
     -webkit-box-decoration-break: clone; box-decoration-break: clone;
   }
+  #subtitle .who {
+    color: var(--element); font-weight: 700; font-size: .84em; letter-spacing: .12em; text-transform: uppercase;
+    margin-right: .55em; text-shadow: 0 0 calc(2 * var(--u)) rgba(0, 0, 0, .7);
+  }
+  #subtitle .who:empty { display: none; }
+  .pd-no-subtitles #subtitle { display: none !important; }
 
   /* ================================================================= */
   /* BOTTOM-LEFT — Super, three abilities, three weapons                */
@@ -369,6 +417,16 @@
     position: absolute; right: calc(1.2 * var(--u)); bottom: calc(.3 * var(--u));
     font-size: max(7px, calc(4.2 * var(--u))); font-weight: 700; color: rgba(255,255,255,.7);
   }
+  /* A5: A RING round the square that fills clockwise from the top as the cooldown comes back (--done 0..1, set
+     every frame by main.js setCooldownEl, so it moves smoothly), over the climbing tint. A conic gradient masked to
+     the border; white-hot for a moment when the square comes ready. */
+  .ability::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none; padding: max(1.5px, calc(1.1 * var(--u)));
+    background: conic-gradient(color-mix(in srgb, var(--element) 70%, #fff) calc(var(--done, 1) * 360deg), rgba(255, 255, 255, .08) 0);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  }
+  .ability.ready::after { background: rgba(255, 255, 255, .6); }
   .ability.ready { background: var(--element); animation: abilityReady .22s ease-out; }
   .ability.ready .charge { display: none; }
   .ability.ready svg { color: #fff; }
@@ -429,6 +487,32 @@
   }
   #hint.gone { opacity: 0; }
 
+  /* A5: REDUCED MOTION (Settings, or the OS's when it is left on System): html.pd-reduced, set by main.js
+     applySettings. The HUD keeps every state change and loses the travel: no slide, no sweep, no beat, no pulse. */
+  .pd-reduced #objective.fresh { animation: objFade .2s ease-out; }
+  .pd-reduced #objective.fresh::after { display: none; }
+  .pd-reduced #objective.complete { animation: objFade .2s ease-out reverse forwards; }
+  @keyframes objFade { from { opacity: 0; } to { opacity: 1; } }
+  .pd-reduced #vignette.pulse::after { animation: none; opacity: .45; }
+  .pd-reduced #comms.on .emblem, .pd-reduced #super.ready #super-diamond, .pd-reduced .wpn .meter.full .fill, .pd-reduced #vitals.critical .seg.hp .fill { animation: none; }
+  .pd-reduced .ability.ready { animation: none; }
+
+  /* A5: A PLACE'S ESTABLISHING SHOT (main.js playHostedIntro, src/hud/intro.js): no HUD over it, and the caption
+     in the lobby's type (lobby.css .lb-akind / .lb-arule / .lb-aname / .lb-aplace / .lb-accent, the same sizes on
+     the start screens' --s), low on the left where Setting out showed the same words a moment before. */
+  body.pd-intro .hud, body.pd-intro #cross, body.pd-intro #hitmarker, body.pd-intro #nameplates, body.pd-intro #hint,
+  body.pd-intro #vignette, body.pd-intro #hosted-prompt { visibility: hidden; }
+  #intro-caption {
+    position: fixed; left: calc(76 * var(--s)); bottom: calc(52 * var(--s)); z-index: 5; pointer-events: none;
+    font-family: var(--ui); color: var(--bone); text-shadow: 0 0 calc(14 * var(--s)) rgba(0, 0, 0, .6);
+    -webkit-font-smoothing: antialiased;
+  }
+  #intro-caption .ic-kicker { font: 700 calc(13.5 * var(--s))/1 var(--ui); letter-spacing: .3em; color: var(--ash-3); }
+  #intro-caption .ic-rule { width: calc(436 * var(--s)); height: 1px; margin: calc(4 * var(--s)) 0 calc(5 * var(--s)); background: rgba(244, 239, 228, .22); }
+  #intro-caption .ic-title { font: 700 calc(64.5 * var(--s))/1 var(--ui); letter-spacing: -.005em; white-space: nowrap; }
+  #intro-caption .ic-place { margin-top: calc(6 * var(--s)); font: 400 calc(15 * var(--s))/1 var(--ui); color: var(--ash-2); }
+  #intro-caption .ic-accent { width: calc(60 * var(--s)); height: calc(3 * var(--s)); margin-top: calc(22 * var(--s)); background: var(--lit); }
+
   /* ================================================================= */
   /* CHARACTER SCREEN — Escape. A Guardian preview plus basic loadout.  */
   /* ================================================================= */
@@ -442,51 +526,51 @@
     border-radius: 10px; padding: 24px 28px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
   }
   #menu-panel h1 {
-    margin: 0 0 4px; font: 600 20px/1.2 ui-sans-serif, system-ui, sans-serif; color: #e8eef2;
+    margin: 0 0 4px; font: 600 20px/1.2 var(--hud-font); color: #e8eef2;
   }
-  #menu-panel .sub { margin: 0 0 18px; font: 400 13px ui-sans-serif, system-ui, sans-serif; color: #7d868d; }
+  #menu-panel .sub { margin: 0 0 18px; font: 400 13px var(--hud-font); color: #7d868d; }
   #menu-body { display: grid; grid-template-columns: 200px 1fr; gap: 24px; }
   #preview-wrap { background: #0c0e10; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,.08); }
   #preview-canvas { display: block; width: 100%; height: 220px; }
   #menu-classes { display: flex; gap: 8px; margin-top: 10px; }
   #menu-classes button {
-    flex: 1; padding: 8px 0; font: 600 12px ui-sans-serif, system-ui, sans-serif;
+    flex: 1; padding: 8px 0; font: 600 12px var(--hud-font);
     letter-spacing: .04em; text-transform: uppercase; color: #b7c0c6;
     background: #1e2226; border: 1px solid rgba(255,255,255,.12); border-radius: 5px; cursor: pointer;
   }
   #menu-classes button.active { color: var(--teal); border-color: rgba(53,216,194,.55); background: #17302c; }
   #menu-comfort { display: flex; align-items: center; gap: 6px; margin: 12px 0 0; }
-  #menu-comfort-title { font: 600 11px ui-sans-serif, system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #7d868d; margin: 0 6px 0 0; }
-  #menu-comfort button { font: 600 11px ui-sans-serif, system-ui, sans-serif; padding: 3px 8px; border-radius: 4px; background: #1c2024; color: #b7c0c6; border: 1px solid rgba(255,255,255,.12); }
+  #menu-comfort-title { font: 600 11px var(--hud-font); letter-spacing: .1em; text-transform: uppercase; color: #7d868d; margin: 0 6px 0 0; }
+  #menu-comfort button { font: 600 11px var(--hud-font); padding: 3px 8px; border-radius: 4px; background: #1c2024; color: #b7c0c6; border: 1px solid rgba(255,255,255,.12); }
   #menu-comfort button.active { color: #0b0c0d; background: rgba(53, 216, 194, .85); }
-  #menu-kit-title { font: 600 11px ui-sans-serif, system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #7d868d; margin: 16px 0 8px; }
+  #menu-kit-title { font: 600 11px var(--hud-font); letter-spacing: .1em; text-transform: uppercase; color: #7d868d; margin: 16px 0 8px; }
   #menu-kit-element { margin-left: 6px; padding: 1px 6px; border-radius: 3px; color: #0b0c0d; background: var(--element); letter-spacing: .06em; }
   .kit-row {
     display: grid; grid-template-columns: 22px 20px 1fr auto; align-items: center; gap: 8px;
     padding: 6px 10px; margin-bottom: 6px; background: #1c2024; border: 1px solid rgba(255,255,255,.08); border-radius: 6px;
-    font: 400 13px ui-sans-serif, system-ui, sans-serif; color: #d7dde1;
+    font: 400 13px var(--hud-font); color: #d7dde1;
   }
-  .kit-key { font: 700 10px ui-sans-serif, system-ui, sans-serif; line-height: 16px; text-align: center; color: #b7c0c6; border: 1px solid rgba(255,255,255,.35); border-radius: 3px; }
+  .kit-key { font: 700 10px var(--hud-font); line-height: 16px; text-align: center; color: #b7c0c6; border: 1px solid rgba(255,255,255,.35); border-radius: 3px; }
   .kit-glyph { width: 18px; height: 18px; color: var(--element); }
   .kit-glyph svg { display: block; width: 100%; height: 100%; }
-  .kit-slot { font: 600 10px ui-sans-serif, system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #7d868d; }
+  .kit-slot { font: 600 10px var(--hud-font); letter-spacing: .06em; text-transform: uppercase; color: #7d868d; }
   .kit-charged { grid-column: 3 / 5; font-size: 11px; color: #7d868d; }
   .kit-charged:empty { display: none; }
-  #menu-inv-title { font: 600 11px ui-sans-serif, system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #7d868d; margin: 0 0 10px; }
+  #menu-inv-title { font: 600 11px var(--hud-font); letter-spacing: .1em; text-transform: uppercase; color: #7d868d; margin: 0 0 10px; }
   .inv-slot {
     display: flex; justify-content: space-between; align-items: center;
     padding: 12px 14px; margin-bottom: 8px; background: #1c2024; border: 1px solid rgba(255,255,255,.08);
-    border-radius: 6px; cursor: pointer; font: 400 14px ui-sans-serif, system-ui, sans-serif; color: #d7dde1;
+    border-radius: 6px; cursor: pointer; font: 400 14px var(--hud-font); color: #d7dde1;
   }
   .inv-slot:hover { border-color: rgba(255,255,255,.22); }
   .inv-slot.equipped { border-color: rgba(53,216,194,.55); background: #14231f; }
   .inv-slot .ammo-tag {
-    font: 600 10px ui-sans-serif, system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase;
+    font: 600 10px var(--hud-font); letter-spacing: .06em; text-transform: uppercase;
     padding: 3px 8px; border-radius: 3px; color: #17321f; background: #4ec97a;
   }
   .inv-slot .ammo-tag.primary { background: #9db3bd; color: #10171a; }
   #menu-resume {
-    margin-top: 18px; width: 100%; padding: 10px 0; font: 600 13px ui-sans-serif, system-ui, sans-serif;
+    margin-top: 18px; width: 100%; padding: 10px 0; font: 600 13px var(--hud-font);
     letter-spacing: .04em; text-transform: uppercase; color: #0a1512; background: var(--teal); border: none;
     border-radius: 6px; cursor: pointer;
   }
@@ -550,7 +634,7 @@
     <path d="M20 18.3 21.7 20 20 21.7 18.3 20Z" fill="#fff"/>
   </svg>
 </div>
-<div id="subtitle" class="hud"><span class="line"></span></div>
+<div id="subtitle" class="hud"><span class="line"><span class="who"></span><span class="text"></span></span></div>
 
 <!-- BOTTOM-LEFT -->
 <div id="loadout" class="hud">

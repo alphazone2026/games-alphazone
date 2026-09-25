@@ -1,5 +1,5 @@
 <html class="start-open">
-<script type="module" crossorigin src="/range/assets/index-B5ZOtyOn.js"></script>
+<script type="module" crossorigin src="/range/assets/index-DTTvEVVY.js"></script>
 <link rel="stylesheet" crossorigin href="/range/assets/index-C_SP5dOu.css">
 
 <meta charset="utf-8">
@@ -16,69 +16,10 @@
      without this a hidden objective row still draws its empty box. */
   [hidden] { display: none !important; }
   #view { display: block; width: 100vw; height: 100vh; touch-action: none; }
-  /* THE HUD'S STYLES are src/hud/hud.css (PD UI, UI2: the one HUD stylesheet, linked below); the Escape screen's stay here. */
+  /* THE HUD'S STYLES are src/hud/hud.css (PD UI, UI2: the one HUD stylesheet, linked below). */
 
-  /* ================================================================= */
-  /* CHARACTER SCREEN — Escape. A Guardian preview plus basic loadout.  */
-  /* ================================================================= */
-  #menu {
-    position: fixed; inset: 0; background: rgba(6,7,8,.86);
-    display: flex; align-items: center; justify-content: center; z-index: 10;
-  }
-  #menu[hidden] { display: none; }
-  #menu-panel {
-    width: min(640px, 92vw); background: #14171a; border: 1px solid rgba(255,255,255,.12);
-    border-radius: 10px; padding: 24px 28px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
-  }
-  #menu-panel h1 {
-    margin: 0 0 4px; font: 600 20px/1.2 var(--hud-font); color: #e8eef2;
-  }
-  #menu-panel .sub { margin: 0 0 18px; font: 400 13px var(--hud-font); color: #7d868d; }
-  #menu-body { display: grid; grid-template-columns: 200px 1fr; gap: 24px; }
-  #preview-wrap { background: #0c0e10; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,.08); }
-  #preview-canvas { display: block; width: 100%; height: 220px; }
-  #menu-classes { display: flex; gap: 8px; margin-top: 10px; }
-  #menu-classes button {
-    flex: 1; padding: 8px 0; font: 600 12px var(--hud-font);
-    letter-spacing: .04em; text-transform: uppercase; color: #b7c0c6;
-    background: #1e2226; border: 1px solid rgba(255,255,255,.12); border-radius: 5px; cursor: pointer;
-  }
-  #menu-classes button.active { color: var(--teal); border-color: rgba(53,216,194,.55); background: #17302c; }
-  #menu-comfort { display: flex; align-items: center; gap: 6px; margin: 12px 0 0; }
-  #menu-comfort-title { font: 600 11px var(--hud-font); letter-spacing: .1em; text-transform: uppercase; color: #7d868d; margin: 0 6px 0 0; }
-  #menu-comfort button { font: 600 11px var(--hud-font); padding: 3px 8px; border-radius: 4px; background: #1c2024; color: #b7c0c6; border: 1px solid rgba(255,255,255,.12); }
-  #menu-comfort button.active { color: #0b0c0d; background: rgba(53, 216, 194, .85); }
-  #menu-kit-title { font: 600 11px var(--hud-font); letter-spacing: .1em; text-transform: uppercase; color: #7d868d; margin: 16px 0 8px; }
-  #menu-kit-element { margin-left: 6px; padding: 1px 6px; border-radius: 3px; color: #0b0c0d; background: var(--element); letter-spacing: .06em; }
-  .kit-row {
-    display: grid; grid-template-columns: 22px 20px 1fr auto; align-items: center; gap: 8px;
-    padding: 6px 10px; margin-bottom: 6px; background: #1c2024; border: 1px solid rgba(255,255,255,.08); border-radius: 6px;
-    font: 400 13px var(--hud-font); color: #d7dde1;
-  }
-  .kit-key { font: 700 10px var(--hud-font); line-height: 16px; text-align: center; color: #b7c0c6; border: 1px solid rgba(255,255,255,.35); border-radius: 3px; }
-  .kit-glyph { width: 18px; height: 18px; color: var(--element); }
-  .kit-glyph svg { display: block; width: 100%; height: 100%; }
-  .kit-slot { font: 600 10px var(--hud-font); letter-spacing: .06em; text-transform: uppercase; color: #7d868d; }
-  .kit-charged { grid-column: 3 / 5; font-size: 11px; color: #7d868d; }
-  .kit-charged:empty { display: none; }
-  #menu-inv-title { font: 600 11px var(--hud-font); letter-spacing: .1em; text-transform: uppercase; color: #7d868d; margin: 0 0 10px; }
-  .inv-slot {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 12px 14px; margin-bottom: 8px; background: #1c2024; border: 1px solid rgba(255,255,255,.08);
-    border-radius: 6px; cursor: pointer; font: 400 14px var(--hud-font); color: #d7dde1;
-  }
-  .inv-slot:hover { border-color: rgba(255,255,255,.22); }
-  .inv-slot.equipped { border-color: rgba(53,216,194,.55); background: #14231f; }
-  .inv-slot .ammo-tag {
-    font: 600 10px var(--hud-font); letter-spacing: .06em; text-transform: uppercase;
-    padding: 3px 8px; border-radius: 3px; color: #17321f; background: #4ec97a;
-  }
-  .inv-slot .ammo-tag.primary { background: #9db3bd; color: #10171a; }
-  #menu-resume {
-    margin-top: 18px; width: 100%; padding: 10px 0; font: 600 13px var(--hud-font);
-    letter-spacing: .04em; text-transform: uppercase; color: #0a1512; background: var(--teal); border: none;
-    border-radius: 6px; cursor: pointer;
-  }
+  /* The Escape screen's styles are src/guardians/ui/characterScreen.js CHARACTER_CSS (PD UI, UI3: a full-screen page;
+     the rounded card and its teal buttons, UI1 item 11, are gone). */
 </style>
 <!-- THE TITLE'S WAIT (src/front/start.js, its header). This puts "st-wait" on <html> before the
      first paint: start.css holds the title's reveal at its first frame on the dark page until
@@ -718,6 +659,6 @@
   </div>
 </div>
 <div id="start-veil" class="st-veil" hidden>
-  <div class="st-stage"><p class="st-veil-line">CLICK TO PLAY</p><p class="st-veil-hint">WASD move · Space jump/double-jump · click fire (hold for auto) · right-click aim · R reload · 1/2/3 or scroll switch weapon · Q grenade · C melee · V kit ability · F super · Esc character screen</p></div>
+  <div class="st-stage"><p class="st-veil-line">CLICK TO PLAY</p><p class="st-veil-hint">The game keeps the mouse until you press Esc.</p></div>
 </div>
 

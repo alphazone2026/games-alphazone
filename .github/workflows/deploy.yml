@@ -297,6 +297,61 @@ jobs:
           upload dist/range/index.html index.html range
           upload dist/range/.htaccess .htaccess range
 
+      # ---------------------------------------------------------------- #
+      # THE FIFTH 3D GAME, served at /tsitp/. Built from
+      # ClaudeSessions/games/games/tsitp and vendored into public/tsitp,
+      # exactly as the other four are — the games site never builds these,
+      # it carries them.
+      #
+      # THE PATH IS NEUTRAL AND THE NAME IS NOT, a fifth time: the folder
+      # (tsitp) is permanent per the game's own session, the display name
+      # lives only in Home.jsx. It is a 3D walkable Cousins Beach built from
+      # real lidar/OSM/canopy data — nothing to play yet beyond walking and
+      # flying around.
+      #
+      # Unlike the other four games, this one has no assets/.htaccess pair —
+      # instead it has a world/ folder of binary terrain data (height.bin,
+      # surface.bin, plants.bin, ground.png, features.json) fetched relative
+      # to index.html at runtime, so it must be walked and uploaded the same
+      # way assets/ is. No .htaccess — single static page, no client routing.
+      #
+      # To refresh the vendored copy (macOS):
+      #   cd games/games/tsitp && TS_BASE=/tsitp/ npm run build -w @az/tsitp
+      #   rm -rf ../../../games-alphazone/public/tsitp
+      #   cp -r dist ../../../games-alphazone/public/tsitp
+      #
+      # THIS STEP LISTS index.html BY NAME and WALKS assets/ and world/: a
+      # NEW top-level folder under public/tsitp/ (not assets/ or world/) has
+      # to be added here too or it silently never ships.
+      # ---------------------------------------------------------------- #
+      - name: Upload Cousins Beach
+        run: |
+          if [ ! -f dist/tsitp/index.html ]; then
+            echo "::error::dist/tsitp/index.html missing — is public/tsitp/ committed?"
+            exit 1
+          fi
+          upload() {
+            FILE="$1"; NAME="$2"; TARGET="$3"
+            LOCAL_SIZE=$(wc -c < "$FILE")
+            base64 -w 0 "$FILE" > /tmp/ts_enc.txt
+            RESP=$(curl -sf "https://games.alphazone.com.au/_deploy-relay.php" \
+              -d "key=${{ secrets.GAMES_RELAY_KEY }}&name=${NAME}&target=${TARGET}&mode=w" \
+              --data-urlencode "data@/tmp/ts_enc.txt")
+            echo "  ${TARGET}/${NAME}: $RESP (local: $LOCAL_SIZE bytes)"
+            REMOTE_SIZE=$(echo "$RESP" | sed -n 's/^ok:\([0-9]*\)$/\1/p')
+            if [ "$REMOTE_SIZE" != "$LOCAL_SIZE" ]; then
+              echo "::error::${NAME} upload size mismatch (local $LOCAL_SIZE, remote $REMOTE_SIZE)"
+              exit 1
+            fi
+          }
+          for f in dist/tsitp/assets/*; do
+            upload "$f" "$(basename "$f")" "tsitp/assets"
+          done
+          for f in dist/tsitp/world/*; do
+            upload "$f" "$(basename "$f")" "tsitp/world"
+          done
+          upload dist/tsitp/index.html index.html tsitp
+
       # Remove retired games via the relay's rmdir (proven against fireash/).
       # Safe to leave in permanently, it's a no-op once a folder is gone.
       #

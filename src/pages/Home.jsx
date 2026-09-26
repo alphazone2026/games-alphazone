@@ -193,6 +193,32 @@ export default function Home() {
               Pre-Destiny - Rustlight
               <div className="text-xs font-normal text-rose-200">A co-op shooter in the Dark Age: story, fireteams and an open valley</div>
             </a>
+
+            {/* THE FIFTH 3D GAME, served at /tsitp/. Built from
+                ClaudeSessions/games/games/tsitp and vendored into public/tsitp,
+                exactly as the other four are — the games site never builds
+                these, it carries them.
+
+                THE PATH IS NEUTRAL AND THE NAME IS NOT, a fifth time. The
+                folder name (tsitp) is permanent per the game's own session;
+                the display name lives only in this line. Nothing to play yet
+                beyond walking/flying around a 3D Cousins Beach built from real
+                lidar/OSM/canopy data.
+
+                To refresh the vendored copy (macOS):
+                  cd games/games/tsitp && TS_BASE=/tsitp/ npm run build -w @az/tsitp
+                  rm -rf ../../../games-alphazone/public/tsitp
+                  cp -r dist ../../../games-alphazone/public/tsitp
+
+                No .htaccess in this build (single static page, no client
+                routing) — nothing to carry across on that front. */}
+            <a
+              href="/tsitp/"
+              className="block rounded-lg bg-cyan-700 hover:bg-cyan-600 py-3 px-3 font-semibold transition text-center"
+            >
+              Cousins Beach
+              <div className="text-xs font-normal text-cyan-200">A summer beach town you can walk: Southport, the club and the island, built from real maps</div>
+            </a>
           </div>
         </div>
 

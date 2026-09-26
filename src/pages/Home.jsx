@@ -242,7 +242,7 @@ export default function Home() {
               className="block rounded-lg bg-amber-700 hover:bg-amber-600 py-3 px-3 font-semibold transition text-center"
             >
               Wiparat's Worldwide Kitchen
-              <div className="text-xs font-normal text-amber-200">Cook the world's street food on your phone: Pad Thai at a Bangkok night market</div>
+              <div className="text-xs font-normal text-amber-200">Cook the world's street food on your phone: four Thai dishes to master at a Bangkok night market</div>
             </a>
           </div>
         </div>

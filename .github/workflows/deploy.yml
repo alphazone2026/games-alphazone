@@ -352,6 +352,53 @@ jobs:
           done
           upload dist/tsitp/index.html index.html tsitp
 
+      # ---------------------------------------------------------------- #
+      # THE SIXTH GAME, served at /kitchen/. Built from
+      # ClaudeSessions/games/games/kitchen and vendored into public/kitchen,
+      # exactly as the other five are — the games site never builds these,
+      # it carries them.
+      #
+      # THE PATH IS NEUTRAL AND THE NAME IS NOT, a sixth time: the folder
+      # (kitchen) is permanent per the game's own session, the display name
+      # ("Wiparat's Worldwide Kitchen") lives only in Home.jsx. A phone-first
+      # cooking game.
+      #
+      # To refresh the vendored copy (macOS):
+      #   cd games/games/kitchen && KT_BASE=/kitchen/ npm run build -w @az/kitchen
+      #   rm -rf ../../../games-alphazone/public/kitchen
+      #   cp -r dist ../../../games-alphazone/public/kitchen
+      #
+      # No .htaccess in this build (single static page, no client routing).
+      #
+      # THIS STEP LISTS ITS FILES BY NAME and does not walk the folder for
+      # index.html: a NEW top-level folder under public/kitchen/ (not
+      # assets/) has to be added here too or it silently never ships.
+      # ---------------------------------------------------------------- #
+      - name: Upload Wiparat's Worldwide Kitchen
+        run: |
+          if [ ! -f dist/kitchen/index.html ]; then
+            echo "::error::dist/kitchen/index.html missing — is public/kitchen/ committed?"
+            exit 1
+          fi
+          upload() {
+            FILE="$1"; NAME="$2"; TARGET="$3"
+            LOCAL_SIZE=$(wc -c < "$FILE")
+            base64 -w 0 "$FILE" > /tmp/kt_enc.txt
+            RESP=$(curl -sf "https://games.alphazone.com.au/_deploy-relay.php" \
+              -d "key=${{ secrets.GAMES_RELAY_KEY }}&name=${NAME}&target=${TARGET}&mode=w" \
+              --data-urlencode "data@/tmp/kt_enc.txt")
+            echo "  ${TARGET}/${NAME}: $RESP (local: $LOCAL_SIZE bytes)"
+            REMOTE_SIZE=$(echo "$RESP" | sed -n 's/^ok:\([0-9]*\)$/\1/p')
+            if [ "$REMOTE_SIZE" != "$LOCAL_SIZE" ]; then
+              echo "::error::${NAME} upload size mismatch (local $LOCAL_SIZE, remote $REMOTE_SIZE)"
+              exit 1
+            fi
+          }
+          for f in dist/kitchen/assets/*; do
+            upload "$f" "$(basename "$f")" "kitchen/assets"
+          done
+          upload dist/kitchen/index.html index.html kitchen
+
       # Remove retired games via the relay's rmdir (proven against fireash/).
       # Safe to leave in permanently, it's a no-op once a folder is gone.
       #

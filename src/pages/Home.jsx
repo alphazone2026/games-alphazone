@@ -219,6 +219,31 @@ export default function Home() {
               Cousins Beach
               <div className="text-xs font-normal text-cyan-200">A summer beach town you can walk: Southport, the club and the island, built from real maps</div>
             </a>
+
+            {/* THE SIXTH GAME, served at /kitchen/. Built from
+                ClaudeSessions/games/games/kitchen and vendored into
+                public/kitchen, exactly as the other five are — the games site
+                never builds these, it carries them.
+
+                THE PATH IS NEUTRAL AND THE NAME IS NOT, a sixth time: the
+                folder (kitchen) is permanent per the game's own session, the
+                display name lives only on this card. A phone-first cooking
+                game.
+
+                To refresh the vendored copy (macOS):
+                  cd games/games/kitchen && KT_BASE=/kitchen/ npm run build -w @az/kitchen
+                  rm -rf ../../../games-alphazone/public/kitchen
+                  cp -r dist ../../../games-alphazone/public/kitchen
+
+                No .htaccess in this build (single static page, no client
+                routing) — nothing to carry across on that front. */}
+            <a
+              href="/kitchen/"
+              className="block rounded-lg bg-amber-700 hover:bg-amber-600 py-3 px-3 font-semibold transition text-center"
+            >
+              Wiparat's Worldwide Kitchen
+              <div className="text-xs font-normal text-amber-200">Cook the world's street food on your phone: Pad Thai at a Bangkok night market</div>
+            </a>
           </div>
         </div>
 

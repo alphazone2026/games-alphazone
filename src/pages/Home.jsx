@@ -242,7 +242,7 @@ export default function Home() {
               className="block rounded-lg bg-amber-700 hover:bg-amber-600 py-3 px-3 font-semibold transition text-center"
             >
               Wiparat's Worldwide Kitchen
-              <div className="text-xs font-normal text-amber-200">Cook the world's street food on your phone: Bangkok, Osaka, Mexico City, Mumbai, Naples and a Route 66 diner</div>
+              <div className="text-xs font-normal text-amber-200">Cook the world's street food on your phone, solo or online with friends: Bangkok, Osaka, Mexico City, Mumbai, Naples and a Route 66 diner</div>
             </a>
           </div>
         </div>

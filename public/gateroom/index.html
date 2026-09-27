@@ -1,21 +1,29 @@
-<script type="module" crossorigin src="/gateroom/assets/index-haYsHhfW.js"></script>
+<!doctype html>
+<script type="module" crossorigin src="/gateroom/assets/index-Cj6m8VJQ.js"></script>
+
+<!--
+  STARGATE at /gateroom/: the three home areas, walkable, in greybox.
+
+  Ben, 2026-09-27: "can we upload this to replace the current stargate game",
+  and, asked what should go live, "Areas only, old game removed". So this page
+  is the SGC, Atlantis and Destiny greyboxes (docs/areas/). Hall Three, the dial
+  and the Marrowfield job (src/main.js) are no longer served; their code and
+  their harnesses stay in the repo.
+
+  ?area=sgc|atlantis|destiny picks the area. The SGC is home and the default.
+-->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Stargate — Marrowfield</title>
+<title>Stargate</title>
 <style>
   html, body { margin: 0; height: 100%; background: #0b0c0d; overflow: hidden; }
   #view { display: block; width: 100vw; height: 100vh; touch-action: none; }
 
-  /* THE CROSSHAIR IS THE AIM. `Walker._updateTarget` computes what you are
-     pointing at from the committed camera, so the dot has to be dead centre and
-     it has to be the ONLY thing claiming to be centre — an offset of a few
-     pixels is a prompt that lights when the thing is not under the mark, which
-     reads as the game being fiddly rather than as the dot being wrong. */
+  /* The crosshair: dead centre, and it never eats a click. */
   #cross {
     position: fixed; left: 50%; top: 50%; width: 5px; height: 5px;
     margin: -2.5px 0 0 -2.5px; border-radius: 50%;
-    background: rgba(226,234,240,.78);
-    box-shadow: 0 0 0 1px rgba(0,0,0,.55);
+    background: rgba(226,234,240,.78); box-shadow: 0 0 0 1px rgba(0,0,0,.55);
     pointer-events: none;
   }
 
@@ -31,45 +39,31 @@
   }
   #hint.gone { opacity: 0; }
 
-  /* THE OBJECTIVE LOG. Top left, out of the crosshair's way, and quiet enough
-     that it never competes with the room for attention. */
-  #log {
-    position: fixed; left: 22px; top: 20px; max-width: 340px;
+  #tag {
+    position: fixed; left: 22px; top: 20px; max-width: 60vw;
     font: 400 13px/1.5 ui-sans-serif, system-ui, -apple-system, sans-serif;
     color: #cfd6db; pointer-events: none; text-shadow: 0 1px 3px rgba(0,0,0,.8);
   }
-  #log .t { font-weight: 600; letter-spacing: .10em; text-transform: uppercase; color: #e8eef2; margin-bottom: 6px; }
-  #log .b { color: #9aa4ab; margin-bottom: 2px; }
-  #log .o { margin-top: 10px; }
-  #log .o div { padding-left: 14px; position: relative; margin-bottom: 3px; }
-  #log .o div::before { content: '—'; position: absolute; left: 0; color: #7d868d; }
-  #log .o div.done { color: #7d868d; text-decoration: line-through; }
-  /* THE PROMPT sits just under the crosshair, where the eye already is. It only
-     ever names an action that WILL work. */
-  #prompt {
-    position: fixed; left: 50%; top: calc(50% + 26px); transform: translateX(-50%);
-    font: 500 13px/1 ui-sans-serif, system-ui, -apple-system, sans-serif;
-    color: #e8eef2; letter-spacing: .07em; opacity: 0; pointer-events: none;
-    text-shadow: 0 1px 4px rgba(0,0,0,.9); transition: opacity .12s ease; white-space: nowrap;
-  }
-  #prompt.on { opacity: 1; }
-  #prompt::after { content: ' [E]'; color: #8c959c; }
 
-  /* ONE TOAST PER PRESS, and it replaces rather than stacks: a refusal cannot
-     fight a press for the slot, because there is only one. */
-  #toast {
-    position: fixed; left: 50%; bottom: 13vh; transform: translateX(-50%);
-    font: 400 13px/1.4 ui-sans-serif, system-ui, -apple-system, sans-serif;
-    color: #e6c98a; background: rgba(8,9,10,.72); padding: 7px 15px; border-radius: 999px;
-    border: 1px solid rgba(255,255,255,.10); opacity: 0; pointer-events: none;
-    transition: opacity .18s ease; text-align: center; max-width: 70vw;
+  /* The three areas. Plain links with a query, so they work under any base. */
+  #areas {
+    position: fixed; right: 18px; top: 16px; display: flex; gap: 6px;
+    font: 500 12px/1 ui-sans-serif, system-ui, -apple-system, sans-serif;
+    letter-spacing: .08em; text-transform: uppercase;
   }
-  #toast.on { opacity: 1; }
-
-  #log .p { margin-top: 10px; color: #7d868d; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+  #areas a {
+    color: #cfd6db; text-decoration: none; padding: 8px 12px; border-radius: 999px;
+    background: rgba(8,9,10,.55); border: 1px solid rgba(255,255,255,.12);
+  }
+  #areas a:hover { border-color: rgba(255,255,255,.35); }
+  #areas a.on { color: #0b0c0d; background: #cfd6db; border-color: #cfd6db; }
 </style>
 <canvas id="view"></canvas>
 <div id="cross"></div>
-<div id="prompt"></div>
-<div id="toast"></div>
-<div id="hint">Drag to look &middot; W A S D to walk &middot; G to dial &middot; walk through</div>
+<div id="tag"></div>
+<nav id="areas">
+  <a href="?area=sgc" data-area="sgc">SGC</a>
+  <a href="?area=atlantis" data-area="atlantis">Atlantis</a>
+  <a href="?area=destiny" data-area="destiny">Destiny</a>
+</nav>
+<div id="hint">Greybox &middot; Drag to look &middot; W A S D to walk &middot; Shift to run</div>

@@ -155,20 +155,19 @@ export default function Home() {
                 path says what the PLACE is — this game will always be about a
                 gate room, and it may not always carry that name.)
 
-                An EARLY BUILD, and rounds 1 to 5 of twelve: the ring, the hall
-                it stands in, the walk up the ramp, the dial — nine chevrons on a
-                scheduled grid, the kawoosh, every sound synthesised from code
-                with no samples anywhere — the pool you can walk through, and now
-                the episode on the other side of it. Cold Ash is a fifteen-key
-                record that brings its own world with it, and everything on that
-                world was proved reachable before a frame of it was drawn. The
-                team who walk it with you are round 7. */}
+                REPLACED 2026-09-27 (Ben: "Areas only, old game removed"): the
+                old Hall Three / Marrowfield episodic game (rounds, the dial,
+                Cold Ash) is gone. This build is three walkable greyboxes at
+                true scale — SGC, Atlantis, Destiny — with a chooser at top
+                right (?area=sgc|atlantis|destiny), SGC default. Drag to look,
+                WASD to walk, Shift to run; no touch walking yet. No database,
+                no localStorage, no Firebase. */}
             <a
               href="/gateroom/"
               className="block rounded-lg bg-sky-800 hover:bg-sky-700 py-3 px-3 font-semibold transition text-center"
             >
               Stargate
-              <div className="text-xs font-normal text-sky-200">Dial out, walk through, read the marks</div>
+              <div className="text-xs font-normal text-sky-200">Walk the SGC, Atlantis and Destiny at true scale (greybox)</div>
             </a>
 
             {/* THE FOURTH 3D GAME, and the first honest one: it is not "an

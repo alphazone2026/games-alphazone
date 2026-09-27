@@ -1,22 +1,40 @@
 <!doctype html>
-<script type="module" crossorigin src="/gateroom/assets/index-Ce7LKKGx.js"></script>
+<script type="module" crossorigin src="/gateroom/assets/index-qqXq1kkT.js"></script>
 
 <!--
-  STARGATE at /gateroom/: the three home areas, walkable, in greybox.
+  STARGATE at /gateroom/: the three home areas and the two exteriors, as a game (LS Shell, stage 1:
+  docs/sessions/LS-SHELL-PLAN.md). A title, an area, a pause menu (Esc), settings and saves.
 
-  Ben, 2026-09-27: "can we upload this to replace the current stargate game",
-  and, asked what should go live, "Areas only, old game removed". So this page
-  is the SGC, Atlantis and Destiny greyboxes (docs/areas/). Hall Three, the dial
-  and the Marrowfield job (src/main.js) are no longer served; their code and
-  their harnesses stay in the repo.
+  Ben, 2026-09-27: "can we upload this to replace the current stargate game", and, asked what should go live, "Areas
+  only, old game removed". Hall Three, the dial and the Marrowfield job (src/main.js) are not served; their code and
+  harnesses stay.
 
-  ?area=sgc|atlantis|destiny picks the area. The SGC is home and the default.
+  ?area=sgc|atlantis|destiny|atlantis-city|destiny-ship goes straight to an area (links keep working). No ?area is the
+  title screen. The SGC is home and the default.
+
+  Layers, bottom to top: the canvas; the crosshair, the tag and the hint; #fade (the lift's black); #screen (title,
+  pause, settings, loading). The loading card below is static, so a slow first build shows a card and not a black page.
 -->
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
 <title>Stargate</title>
 <style>
-  html, body { margin: 0; height: 100%; background: #0b0c0d; overflow: hidden; }
+  :root {
+    --bg: #0b0c0d;
+    --ink: #d5dce1;
+    --ink-2: #9aa5ad;
+    --ink-3: #6e7a83;
+    --panel: rgba(12, 14, 16, .86);
+    --panel-2: rgba(255, 255, 255, .045);
+    --edge: rgba(255, 255, 255, .12);
+    --edge-2: rgba(255, 255, 255, .28);
+    /* The chevron's amber: the one warm thing on the page, spent on what to press next. */
+    --amber: #e3a44a;
+    --amber-ink: #1a1206;
+    --ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; color: var(--ink); font-family: var(--ui); }
   #view { display: block; width: 100vw; height: 100vh; touch-action: none; }
 
   /* The crosshair: dead centre, and it never eats a click. */
@@ -27,45 +45,119 @@
     pointer-events: none;
   }
 
-  /* The hint fades on the first drag. A dark room with no instruction reads as
-     a broken page rather than as a dark room. */
+  /* The hint fades on the first drag, or after ten seconds of play. A dark room with no instruction reads as a broken
+     page rather than as a dark room. */
   #hint {
     position: fixed; left: 50%; bottom: 5vh; transform: translateX(-50%);
-    font: 400 13px/1.4 ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font: 400 13px/1.4 var(--ui);
     color: #c9cfd4; letter-spacing: .09em; text-transform: uppercase;
     background: rgba(8,9,10,.55); padding: 8px 16px; border-radius: 999px;
     border: 1px solid rgba(255,255,255,.10); pointer-events: none;
-    transition: opacity .5s ease; text-align: center;
+    transition: opacity .5s ease; text-align: center; max-width: calc(100vw - 32px); box-sizing: border-box;
   }
   #hint.gone { opacity: 0; }
 
   #tag {
     position: fixed; left: 22px; top: 20px; max-width: 60vw;
-    font: 400 13px/1.5 ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font: 400 13px/1.5 var(--ui);
     color: #cfd6db; pointer-events: none; text-shadow: 0 1px 3px rgba(0,0,0,.8);
   }
 
-  /* The three areas. Plain links with a query, so they work under any base. */
-  #areas {
-    position: fixed; right: 18px; top: 16px; display: flex; gap: 6px;
-    font: 500 12px/1 ui-sans-serif, system-ui, -apple-system, sans-serif;
-    letter-spacing: .08em; text-transform: uppercase;
+  /* In a menu the view is a still frame: no crosshair, no hint. */
+  html:not([data-shell="playing"]) #cross, html:not([data-shell="playing"]) #hint { display: none; }
+  html[data-shell="title"] #tag, html[data-shell="loading"] #tag { display: none; }
+
+  #fade { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity 0s; }
+  #fade.s-black { opacity: 1 !important; transition: opacity .22s ease-in; }
+
+  /* ------------------------------------------------------------------ screens */
+  #screen { position: fixed; inset: 0; z-index: 10; }
+  #screen[hidden] { display: none; }
+  .s-btn, .s-area, .s-toggle, .s-choice, .s-cap {
+    font: 600 13px/1.2 var(--ui); letter-spacing: .06em; color: var(--ink); cursor: pointer;
+    background: var(--panel-2); border: 1px solid var(--edge); border-radius: 4px; padding: 10px 14px;
   }
-  #areas a {
-    color: #cfd6db; text-decoration: none; padding: 8px 12px; border-radius: 999px;
-    background: rgba(8,9,10,.55); border: 1px solid rgba(255,255,255,.12);
+  .s-btn:hover, .s-area:hover, .s-toggle:hover, .s-choice:hover, .s-cap:hover { border-color: var(--edge-2); }
+  .s-btn:focus-visible, .s-area:focus-visible, .s-toggle:focus-visible, .s-choice:focus-visible, .s-cap:focus-visible, .s-range:focus-visible {
+    outline: 2px solid var(--amber); outline-offset: 2px;
   }
-  #areas a:hover { border-color: rgba(255,255,255,.35); }
-  #areas a.on { color: #0b0c0d; background: #cfd6db; border-color: #cfd6db; }
+  .s-primary { background: var(--amber); color: var(--amber-ink); border-color: var(--amber); }
+  .s-primary:hover { border-color: #f4c47c; background: #eab35f; }
+  .s-wide { display: block; width: 100%; padding: 13px 16px; font-size: 14px; letter-spacing: .12em; text-transform: uppercase; }
+  .s-dim { font-weight: 400; opacity: .75; }
+  .s-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .s-eyebrow { margin: 0 0 6px; font: 600 11px/1 var(--ui); letter-spacing: .22em; text-transform: uppercase; color: var(--amber); }
+  .s-h2 { margin: 0 0 16px; font: 300 26px/1.2 var(--ui); letter-spacing: .02em; }
+  .s-head { margin: 18px 0 8px; font: 600 11px/1 var(--ui); letter-spacing: .18em; text-transform: uppercase; color: var(--ink-3); }
+  .s-note { margin: 14px 0 0; font: 400 12px/1.5 var(--ui); color: var(--ink-3); }
+
+  /* The title: the wordmark and the areas in a column over the home area, darkened toward the left. */
+  .s-title { position: absolute; inset: 0; overflow: auto;
+    background: linear-gradient(90deg, rgba(5,6,7,.94) 0%, rgba(5,6,7,.82) 34%, rgba(5,6,7,.25) 70%, rgba(5,6,7,0) 100%); }
+  .s-col { box-sizing: border-box; width: min(460px, 100%); padding: max(7vh, 28px) 16px 40px max(6vw, 16px); }
+  .s-word { margin: 0; font: 200 clamp(40px, 7vw, 76px)/1 var(--ui); letter-spacing: .32em; color: #eef2f4; }
+  .s-tag { margin: 14px 0 26px; font: 400 14px/1.5 var(--ui); color: var(--ink-2); max-width: 36ch; }
+  .s-title .s-primary { display: block; width: 100%; text-align: left; margin-bottom: 4px; }
+  .s-areas { display: grid; gap: 6px; }
+  .s-area { display: grid; gap: 3px; text-align: left; width: 100%; padding: 11px 14px; background: rgba(255,255,255,.035); }
+  .s-area-name { font: 600 14px/1.2 var(--ui); letter-spacing: .03em; }
+  .s-area-blurb { font: 400 12.5px/1.35 var(--ui); color: var(--ink-2); letter-spacing: 0; }
+  .s-home { border-left: 3px solid var(--amber); }
+  .s-here { border-color: var(--edge-2); background: rgba(255,255,255,.08); }
+
+  /* The pause card, settings and change-area: centred over a dim, still view. */
+  .s-pause { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(4,5,6,.55); overflow: auto; padding: 16px; box-sizing: border-box; }
+  .s-card { box-sizing: border-box; width: min(460px, 100%); max-height: calc(100vh - 32px); overflow: auto;
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 6px; padding: 22px 22px 20px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+  .s-cardwide { width: min(720px, 100%); }
+  .s-keys { display: grid; grid-template-columns: max-content 1fr; gap: 5px 16px; margin: 18px 0 0; font: 400 13px/1.3 var(--ui); }
+  .s-keys dt { color: var(--ink-3); }
+  .s-keys dd { margin: 0; color: var(--ink); }
+
+  .s-group { margin-top: 4px; }
+  .s-set { display: grid; grid-template-columns: minmax(120px, 170px) 1fr minmax(56px, auto); align-items: center; gap: 10px; min-height: 40px;
+    padding: 4px 10px; border-bottom: 1px solid rgba(255,255,255,.06); }
+  .s-name { font: 500 13.5px/1.3 var(--ui); }
+  .s-val { font: 600 12.5px/1 var(--ui); color: var(--ink-2); text-align: right; font-variant-numeric: tabular-nums; }
+  .s-range { width: 100%; accent-color: var(--amber); cursor: pointer; }
+  .s-toggle { justify-self: start; min-width: 64px; padding: 7px 12px; }
+  .s-toggle[aria-pressed="true"], .s-choice[aria-pressed="true"] { background: var(--amber); color: var(--amber-ink); border-color: var(--amber); }
+  .s-choices { display: flex; flex-wrap: wrap; gap: 4px; }
+  .s-choice { padding: 7px 11px; font-size: 12px; }
+  .s-bindrow { grid-template-columns: minmax(120px, 170px) 1fr 1fr; }
+  .s-cap { padding: 7px 10px; min-width: 76px; font-variant-numeric: tabular-nums; }
+  .s-cap.s-empty { color: var(--ink-3); font-weight: 400; }
+  .s-cap.s-listen { border-color: var(--amber); color: var(--amber); animation: s-pulse 1s ease-in-out infinite; }
+  @keyframes s-pulse { 50% { background: rgba(227,164,74,.14); } }
+  .s-status { min-height: 1.4em; margin: 0; font: 400 13px/1.4 var(--ui); color: var(--amber); }
+  .s-settings { width: min(980px, 100%); padding-bottom: 0; }
+  .s-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; }
+  .s-foot { position: sticky; bottom: 0; margin: 12px -22px 0; padding: 12px 22px 16px; background: rgba(12,14,16,.97); border-top: 1px solid var(--edge); }
+  .s-foot .s-row { margin-top: 8px; }
+  .s-foot .s-note { margin-top: 8px; }
+
+  .s-loading { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; background: #000; }
+  .s-loading .s-h2 { margin: 0 0 18px; }
+  .s-bar { width: 180px; height: 2px; background: rgba(255,255,255,.1); overflow: hidden; margin: 0 auto; }
+  .s-bar i { display: block; width: 40%; height: 100%; background: var(--amber); animation: s-bar 1.1s ease-in-out infinite; }
+  @keyframes s-bar { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
+
+  .s-lift { display: grid; gap: 6px; }
+  .s-kbd { display: inline-block; min-width: 1.4em; color: var(--amber); }
+
+  @media (max-width: 860px) { .s-cols { grid-template-columns: 1fr; } }
+  @media (max-width: 560px) {
+    .s-set, .s-bindrow { grid-template-columns: 1fr 1fr; }
+    .s-set .s-name { grid-column: 1 / -1; }
+    .s-card { padding: 18px 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .s-bar i, .s-cap.s-listen { animation: none; }
+  }
 </style>
 <canvas id="view"></canvas>
 <div id="cross"></div>
 <div id="tag"></div>
-<nav id="areas">
-  <a href="?area=sgc" data-area="sgc">SGC</a>
-  <a href="?area=atlantis" data-area="atlantis">Atlantis</a>
-  <a href="?area=destiny" data-area="destiny">Destiny</a>
-  <a href="?area=atlantis-city" data-area="atlantis-city">Atlantis city</a>
-  <a href="?area=destiny-ship" data-area="destiny-ship">Destiny ship</a>
-</nav>
 <div id="hint">Greybox &middot; Drag to look &middot; W A S D to walk &middot; Shift to run</div>
+<div id="fade"></div>
+<div id="screen"><div class="s-loading"><p class="s-eyebrow">Loading</p><h2 class="s-h2">Stargate</h2><div class="s-bar"><i></i></div></div></div>

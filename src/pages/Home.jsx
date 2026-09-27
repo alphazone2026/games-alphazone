@@ -243,6 +243,34 @@ export default function Home() {
               Wiparat's Worldwide Kitchen
               <div className="text-xs font-normal text-amber-200">Cook the world's street food on your phone, solo or online with friends: Bangkok, Osaka, Mexico City, Mumbai, Naples and a Route 66 diner</div>
             </a>
+
+            {/* THE SEVENTH GAME, served at /verse/. Built from
+                ClaudeSessions/games/games/firefly and vendored into
+                public/verse, exactly as the others are — the games site never
+                builds these, it carries them.
+
+                THE PATH IS NEUTRAL AND THE NAME IS NOT, a seventh time, same
+                reason as Doctor Who and Stargate: a live path is the one
+                thing you cannot change cheaply. Display name is THIS LINE
+                only. Serenity at true size (82.07 x 51.82 x 23.98 m), every
+                deck walkable, plain grey blocks. Drag to look, WASD to walk,
+                Shift to run, O to orbit, H to hide the hull, C to hide the
+                ceilings. No database, no localStorage, no Firebase.
+
+                To refresh the vendored copy (macOS):
+                  cd games/games/firefly && FF_BASE=/verse/ npx vite build
+                  rm -rf ../../../games-alphazone/public/verse
+                  cp -r dist ../../../games-alphazone/public/verse
+
+                No .htaccess in this build (single static page, no client
+                routing) — nothing to carry across on that front. */}
+            <a
+              href="/verse/"
+              className="block rounded-lg bg-orange-700 hover:bg-orange-600 py-3 px-3 font-semibold transition text-center"
+            >
+              Firefly
+              <div className="text-xs font-normal text-orange-200">Serenity, walkable at true size. Greybox: the first step of a Firefly fan game set in 2516</div>
+            </a>
           </div>
         </div>
 

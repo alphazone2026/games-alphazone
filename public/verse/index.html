@@ -1,0 +1,46 @@
+<!doctype html>
+<script type="module" crossorigin src="/verse/assets/index-BZYQ3ulg.js"></script>
+
+<!--
+  FIREFLY (working name): F1, the Serenity greybox.
+
+  Serenity at true size (82.07 x 51.82 x 23.98 m, the QMx Blueprints), every deck
+  walkable inside, in flat greybox greys. docs/BRIEF.md is the plan; the numbers
+  are in src/ship/serenity.js.
+
+  Walk: W A S D, Shift to run, drag (or click for mouse-look) to turn.
+  O  orbit the ship from outside    H  hide the hull (cutaway)    C  hide ceilings
+-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Serenity · greybox</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0d0f11; overflow: hidden; }
+  #view { display: block; width: 100vw; height: 100vh; touch-action: none; }
+  #cross {
+    position: fixed; left: 50%; top: 50%; width: 5px; height: 5px;
+    margin: -2.5px 0 0 -2.5px; border-radius: 50%;
+    background: rgba(236,230,218,.8); box-shadow: 0 0 0 1px rgba(0,0,0,.55);
+    pointer-events: none;
+  }
+  #cross.off { display: none; }
+  #hint {
+    position: fixed; left: 50%; bottom: 5vh; transform: translateX(-50%);
+    font: 400 13px/1.4 ui-sans-serif, system-ui, -apple-system, sans-serif;
+    color: #d8d2c6; letter-spacing: .08em; text-transform: uppercase;
+    background: rgba(10,9,8,.58); padding: 8px 16px; border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.10); pointer-events: none;
+    transition: opacity .6s ease; text-align: center; max-width: 92vw;
+  }
+  #hint.gone { opacity: 0; }
+  #tag {
+    position: fixed; left: 22px; top: 20px; max-width: 70vw;
+    font: 400 13px/1.5 ui-sans-serif, system-ui, -apple-system, sans-serif;
+    color: #e2dccf; pointer-events: none; text-shadow: 0 1px 3px rgba(0,0,0,.85);
+  }
+  #tag b { font-weight: 600; letter-spacing: .06em; }
+</style>
+<canvas id="view"></canvas>
+<div id="cross"></div>
+<div id="tag"></div>
+<div id="hint">Greybox · W A S D walk · Shift run · drag to look · O orbit · H hull · C ceilings</div>

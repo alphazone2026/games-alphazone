@@ -399,6 +399,53 @@ jobs:
           done
           upload dist/kitchen/index.html index.html kitchen
 
+      # ---------------------------------------------------------------- #
+      # THE SEVENTH GAME, served at /verse/. Built from
+      # ClaudeSessions/games/games/firefly and vendored into public/verse,
+      # exactly as the other six are — the games site never builds these,
+      # it carries them.
+      #
+      # THE PATH IS NEUTRAL AND THE NAME IS NOT, a seventh time: the folder
+      # (verse) is permanent per the game's own session, the display name
+      # ("Firefly") lives only in Home.jsx. Serenity at true size, every
+      # deck walkable, greybox.
+      #
+      # To refresh the vendored copy (macOS):
+      #   cd games/games/firefly && FF_BASE=/verse/ npx vite build
+      #   rm -rf ../../../games-alphazone/public/verse
+      #   cp -r dist ../../../games-alphazone/public/verse
+      #
+      # No .htaccess in this build (single static page, no client routing).
+      #
+      # THIS STEP LISTS ITS FILES BY NAME and does not walk the folder for
+      # index.html: a NEW top-level folder under public/verse/ (not
+      # assets/) has to be added here too or it silently never ships.
+      # ---------------------------------------------------------------- #
+      - name: Upload Firefly
+        run: |
+          if [ ! -f dist/verse/index.html ]; then
+            echo "::error::dist/verse/index.html missing — is public/verse/ committed?"
+            exit 1
+          fi
+          upload() {
+            FILE="$1"; NAME="$2"; TARGET="$3"
+            LOCAL_SIZE=$(wc -c < "$FILE")
+            base64 -w 0 "$FILE" > /tmp/vs_enc.txt
+            RESP=$(curl -sf "https://games.alphazone.com.au/_deploy-relay.php" \
+              -d "key=${{ secrets.GAMES_RELAY_KEY }}&name=${NAME}&target=${TARGET}&mode=w" \
+              --data-urlencode "data@/tmp/vs_enc.txt")
+            echo "  ${TARGET}/${NAME}: $RESP (local: $LOCAL_SIZE bytes)"
+            REMOTE_SIZE=$(echo "$RESP" | sed -n 's/^ok:\([0-9]*\)$/\1/p')
+            if [ "$REMOTE_SIZE" != "$LOCAL_SIZE" ]; then
+              echo "::error::${NAME} upload size mismatch (local $LOCAL_SIZE, remote $REMOTE_SIZE)"
+              exit 1
+            fi
+          }
+          for f in dist/verse/assets/*; do
+            upload "$f" "$(basename "$f")" "verse/assets"
+          done
+          upload dist/verse/index.html index.html verse
+
       # Remove retired games via the relay's rmdir (proven against fireash/).
       # Safe to leave in permanently, it's a no-op once a folder is gone.
       #

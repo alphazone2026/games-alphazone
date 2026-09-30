@@ -1,0 +1,1 @@
+function c(...n){let t=2166136261;for(const e of n){const o=String(e);for(let h=0;h<o.length;h++)t^=o.charCodeAt(h),t=Math.imul(t,16777619)>>>0}return t}const s=(n,t=0)=>(n>>>t)%100003/100003,r=(n,t,e,o=0)=>t+s(n,o)*(e-t),a=(n,t,e=0)=>t.length?t[(n>>>e)%t.length]:void 0;export{r as b,c as h,a as p,s as u};

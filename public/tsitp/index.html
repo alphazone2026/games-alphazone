@@ -1,4 +1,43 @@
-<script type="module" crossorigin src="/tsitp/assets/index-DNM2ixaY.js"></script>
+<script type="module" crossorigin src="/tsitp/assets/index-CLOPZ5XK.js"></script>
+<link rel="modulepreload" crossorigin href="/tsitp/assets/three.module-BijjCszr.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/Materials-vB9MdW9N.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/RNG-CmJm0PUI.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/BufferGeometryUtils-BMuxd-XA.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/Person-Izyat9LB.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/Hash-_G8cG6Ui.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/Roads-CawDFDzd.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/rig-C_SBAxKM.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/Mover-C-Cp5pnw.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/acting-ui2bAPYj.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/Stage-Bwdfo0qR.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/Route-XvqdFSiE.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/CarModel-Bb_LBb3d.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/weather-DTQz8MlZ.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/Sky-DBQmf32r.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/lamps-KXu4EXlq.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/BikeModel-CdomWR4e.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/Dog-DI5xpTbG.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/Bodies-BnX1Ckf8.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/Walkable-GAvULz7s.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/Walker-CRqRW5jF.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/yard-CBUCVaHy.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/Wind-4THtRkpO.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/settings-9dmrdRDI.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/index-BwrUwF5W.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/index-VmrL8FfK.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/memory-Bok-Xqur.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/layers-LBLJEXAs.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/index-DVs3ZGzr.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/index-CmW66KyV.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/clock-BvbiIfom.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/ids-DnF1y_Cn.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/index-B9VuHkEF.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/flow-1hUkgqrq.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/index-BIff_Zeu.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/index-il8-ntkw.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/Riding-CKuYIScJ.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/town-C-Spn6F0.js">
+<link rel="modulepreload" crossorigin href="/tsitp/assets/index-ByBbPfPF.js">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cousins Beach</title>
@@ -18,7 +57,57 @@
     color: #1d2e37; background: rgba(255,255,255,.6); padding: 3px 8px; border-radius: 4px; max-width: 52ch; text-align: right;
   }
   #credits a { color: inherit; }
+  /* THE LOADING SCREEN (Cousins UI, UI2): up before main.js's awaits, gone the
+     moment window.game exists. Plain CSS in the page, because nothing else has
+     loaded yet; its colours and faces are docs/UI-STYLE.md's tokens, copied. */
+  #loading {
+    position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; color: #fbf6ec;
+    background: radial-gradient(circle at 74% 30%, rgba(246,207,115,.5), rgba(246,207,115,0) 22%),
+      linear-gradient(180deg, #243650 0%, #3d5a78 36%, #e59a7c 60%, #2e6f82 62%, #173b4d 100%);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; transition: opacity .45s ease;
+  }
+  #loading.done { opacity: 0; pointer-events: none; }
+  #loading .ld { display: grid; justify-items: center; gap: 10px; text-align: center; padding: 0 20px; }
+  #loading .ld-k { font: 24px/1 "Bradley Hand", "Segoe Print", "Noteworthy", "Chalkboard SE", cursive; color: #f6cf73; transform: rotate(-2deg); }
+  #loading .ld-t { font: 400 clamp(46px, 7vw, 96px)/1 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; text-shadow: 0 2px 30px rgba(0,0,0,.35); }
+  #loading .ld-t em { color: #fff4dc; }
+  #loading svg { width: 120px; height: 22px; color: #f2906f; margin-top: 8px; }
+  #loading svg path { stroke-dasharray: 34 14; animation: ld-wave 1.4s linear infinite; }
+  @keyframes ld-wave { to { stroke-dashoffset: -48; } }
+  #loading .ld-s { margin-top: 6px; font-size: 15px; color: #d9d2c4; min-height: 1.4em; }
+  #loading .ld-e { max-width: 52ch; font-size: 15px; line-height: 1.5; background: rgba(10,16,24,.82); padding: 12px 16px; border-radius: 10px; }
+  #loading .ld-e small { display: block; margin-top: 6px; color: #d9d2c4; font: 12px/1.4 ui-monospace, Menlo, monospace; }
+  @media (prefers-reduced-motion: reduce) { #loading svg path { animation: none; } }
 </style>
+<div id="loading" role="status" aria-live="polite"><div class="ld">
+  <div class="ld-k">a summer next door</div>
+  <div class="ld-t">Cousins <em>Beach</em></div>
+  <svg viewBox="0 0 120 22" fill="none" aria-hidden="true"><path d="M2 12c8-8 16-8 24 0s16 8 24 0 16-8 24 0 16 8 24 0 16-8 20-4" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/></svg>
+  <div class="ld-s">Laying out the town…</div>
+</div></div>
+<script>
+  // Gone when main.js has built the world (window.game), and a plain message if
+  // it never does: a load that throws must not leave a spinner running forever.
+  (() => {
+    const el = document.getElementById('loading');
+    const done = () => { el.classList.add('done'); setTimeout(() => el.remove(), 500); clearInterval(t); };
+    const t = setInterval(() => { if (window.game) done(); }, 120);
+    const fail = (e) => {
+      if (!el.isConnected || el.classList.contains('done')) return;
+      clearInterval(t);
+      const msg = String(e?.reason?.message ?? e?.message ?? e?.reason ?? e ?? '');
+      el.querySelector('.ld-s').innerHTML = '';
+      const box = document.createElement('div');
+      box.className = 'ld-e';
+      box.textContent = 'The town didn\u2019t load. Reloading the page usually fixes it.';
+      const small = document.createElement('small'); small.textContent = msg.slice(0, 200);
+      if (msg) box.appendChild(small);
+      el.querySelector('.ld').appendChild(box);
+    };
+    addEventListener('error', fail);
+    addEventListener('unhandledrejection', fail);
+  })();
+</script>
 <canvas id="view"></canvas>
 <div id="hud">Loading Cousins Beach…</div>
 <div id="credits">Map data &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> (ODbL) &middot;

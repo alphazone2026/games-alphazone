@@ -1,0 +1,1 @@
+import{s as r}from"./Sky-CKO0Uwd9.js";function u(t){const n=r(t)[2];return 1-.45*Math.max(0,Math.min(1,(n+.05)/.25))}const e=new Set;function i(t,n){return t.userData.glow=n,e.add(t),t}function f(t,n){const o=u(n);for(const s of t)s.intensity=s.userData.base*o;const a=.2+.8*(o-.55)/.45;for(const s of e)s.emissiveIntensity=s.userData.glow*a}export{u as l,i as r,f as u};

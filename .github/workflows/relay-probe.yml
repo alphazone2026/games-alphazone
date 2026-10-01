@@ -1,0 +1,28 @@
+name: Relay probe (append)
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe mode=a and 2 MB chunks
+        run: |
+          R=https://games.alphazone.com.au/_deploy-relay.php
+          K='${{ secrets.GAMES_RELAY_KEY }}'
+          T=shared/_probe
+          post() { base64 -w 0 "$1" > /tmp/p.b64; curl -sf "$R" -d "key=$K&name=$2&target=$T&mode=$3" --data-urlencode "data@/tmp/p.b64"; echo " <- $2 $3"; }
+          printf 'hello ' > a.txt; printf 'world' > b.txt
+          post a.txt probe.txt w; post b.txt probe.txt a
+          GOT=$(curl -sf "https://games.alphazone.com.au/$T/probe.txt?n=$RANDOM"); echo "got: [$GOT]"
+          [ "$GOT" = "hello world" ] && echo APPEND_OK || echo APPEND_NO
+          head -c 2097152 /dev/urandom > c1.bin; head -c 2097152 /dev/urandom > c2.bin
+          post c1.bin big.bin w; post c2.bin big.bin a
+          curl -sf "https://games.alphazone.com.au/$T/big.bin?n=$RANDOM" -o got.bin; cat c1.bin c2.bin > want.bin
+          cmp -s got.bin want.bin && echo BIG_OK "$(wc -c < got.bin)" || echo BIG_NO "$(wc -c < got.bin 2>/dev/null)"
+          printf 'x' > z.txt; post z.txt big.bin w
+
+      - name: Clean up probe folder
+        if: always()
+        continue-on-error: true
+        run: |
+          echo "rmdir: $(curl -sf "https://games.alphazone.com.au/_deploy-relay.php" \
+            -d "key=${{ secrets.GAMES_RELAY_KEY }}&op=rmdir&target=shared/_probe")"

@@ -1,1 +1,0 @@
-import{m as r}from"./index-OOxyNR4B.js";import"./yard-Cpd6KsyE.js";import"./three.module-B2EoO__-.js";import"./Hash-_G8cG6Ui.js";import"./Wind-4THtRkpO.js";import"./settings-9dmrdRDI.js";function a(t){t.nature?.draw||(t.nature=r(t)),console.log("nature: gardens",JSON.stringify(t.nature.stats??null))}export{a as mount};

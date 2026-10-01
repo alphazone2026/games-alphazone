@@ -446,6 +446,42 @@ jobs:
           done
           upload dist/verse/index.html index.html verse
 
+      # ---------------------------------------------------------------- #
+      # THE SHARED KOKORO VOICE MODEL (Ben's go 2026-10-02, via Pre-Destiny
+      # MASTER): one copy for every game at /shared/kokoro/, so a player
+      # downloads it once. It is 92 MB, so a file goes up in 2 MB parts, the
+      # first mode=w and the rest mode=a (probe run 36942283625: append and
+      # 2 MB parts proven). It is WALKED, not listed by name, and a file
+      # already live at its local size is skipped, so this only uploads when
+      # the tree changes. A CHANGE OF CONTENT MUST COME UNDER A NEW PATH,
+      # never overwrite in place: same size means skipped.
+      #
+      # continue-on-error so it can never block a game's upload. If there is
+      # no dist/shared/kokoro yet it exits 0.
+      # ---------------------------------------------------------------- #
+      - name: Upload the shared Kokoro voice model
+        continue-on-error: true
+        run: |
+          R=https://games.alphazone.com.au/_deploy-relay.php
+          K='${{ secrets.GAMES_RELAY_KEY }}'
+          [ -d dist/shared/kokoro ] || { echo "no dist/shared/kokoro: nothing to upload"; exit 0; }
+          cd dist
+          find shared/kokoro -type f | sort | while read -r f; do
+            LOCAL=$(wc -c < "$f" | tr -d ' ')
+            LIVE=$(curl -sfI "https://games.alphazone.com.au/$f" | tr -d '\r' | awk 'tolower($1)=="content-length:" {print $2}' | tail -1 || true)
+            if [ "$LIVE" = "$LOCAL" ]; then echo "  $f: live at $LOCAL bytes, skipped"; continue; fi
+            DIR=$(dirname "$f"); NAME=$(basename "$f")
+            rm -f /tmp/kc_*; split -b 2097152 -d -a 4 "$f" /tmp/kc_
+            MODE=w; LAST=""
+            for c in /tmp/kc_*; do
+              base64 -w 0 "$c" > /tmp/kc.b64
+              LAST=$(curl -sf "$R" -d "key=$K&name=$NAME&target=$DIR&mode=$MODE" --data-urlencode "data@/tmp/kc.b64") || { LAST=""; break; }
+              MODE=a
+            done
+            GOT=$(echo "$LAST" | sed -n 's/^ok:\([0-9]*\)$/\1/p')
+            if [ "$GOT" = "$LOCAL" ]; then echo "  $f: uploaded $LOCAL bytes"; else echo "::warning::$f size mismatch (local $LOCAL, server $GOT)"; fi
+          done
+
       # Remove retired games via the relay's rmdir (proven against fireash/).
       # Safe to leave in permanently, it's a no-op once a folder is gone.
       #

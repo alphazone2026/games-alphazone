@@ -1,0 +1,10 @@
+# THE SHARED KOKORO FOLDER (Pre-Destiny MASTER, 2026-10-02). Live voices import kokoro.web.js and ort/*.mjs as ES
+# modules, which need a JavaScript type; the runtime streams its .wasm, which needs application/wasm. Each version lives
+# under its own path (v1/), so a year's immutable cache is safe. The source archives are served as files, not unzipped.
+AddType text/javascript .mjs .js
+AddType application/wasm .wasm
+AddType application/gzip .gz
+RemoveEncoding .gz
+<IfModule mod_headers.c>
+  Header set Cache-Control "public, max-age=31536000, immutable"
+</IfModule>

@@ -1,0 +1,43 @@
+THE SHARED KOKORO FOLDER (games.alphazone.com.au/shared/kokoro/v1/): live voices for the games on this site.
+
+Kokoro-82M weights (model/; onnx-community/Kokoro-82M-v1.0-ONNX, revision 1939ad2a8e416c0acfeecc08a694d14ef25f2231): Apache-2.0
+voices/*.bin (from kokoro-js 1.2.1's package): Apache-2.0
+kokoro.web.js: kokoro-js 1.2.1 (https://github.com/hexgrad/kokoro, its kokoro.js), Apache-2.0. It bundles:
+  @huggingface/transformers 3.5.1 (https://github.com/huggingface/transformers.js): Apache-2.0
+  onnxruntime-web 1.22.0-dev.20250409-89f8206ba4 JavaScript (https://github.com/microsoft/onnxruntime): MIT
+  phonemizer 1.2.1 (https://github.com/xenova/phonemizer.js): its package says Apache-2.0, and it contains a compiled
+  build of eSpeak NG.
+ort/ort-wasm-simd-threaded.jsep.{mjs,wasm}: onnxruntime-web 1.22.0-dev.20250409-89f8206ba4: MIT
+
+eSpeak NG IS FREE SOFTWARE UNDER THE GNU GENERAL PUBLIC LICENSE, VERSION 3 OR (AT YOUR OPTION) ANY LATER VERSION.
+The compiled eSpeak NG inside kokoro.web.js is distributed under GPL-3.0-or-later. It comes WITHOUT ANY WARRANTY; see the
+licence: https://www.gnu.org/licenses/gpl-3.0.html.
+Corresponding source: eSpeak NG, https://github.com/espeak-ng/espeak-ng; built into the phonemizer package 1.2.1 by
+https://github.com/xenova/phonemizer.js (its release 1.2.1); packaged into kokoro.web.js by kokoro-js 1.2.1
+(https://github.com/hexgrad/kokoro). The phonemizer package does not record which eSpeak NG commit it was built from.
+Only players who switch on "High-quality live voices" download kokoro.web.js. No game's own build contains it.
+
+Files:
+  kokoro.web.js
+  ort/ort-wasm-simd-threaded.jsep.mjs
+  ort/ort-wasm-simd-threaded.jsep.wasm
+  model/config.json
+  model/tokenizer.json
+  model/tokenizer_config.json
+  model/onnx/model_quantized.onnx
+  voices/bm_george.bin
+  voices/bf_emma.bin
+  voices/bm_fable.bin
+  voices/bm_lewis.bin
+  voices/am_fenrir.bin
+
+SOURCE ARCHIVES, IN source/ BESIDE THIS FILE (Ben, 2026-10-02: host the source with the compiled code):
+  espeak-ng-1.52.0.tar.gz: eSpeak NG's release 1.52.0 source (github.com/espeak-ng/espeak-ng, tag 1.52.0),
+    sha256 bb4338102ff3b49a81423da8a1a158b420124b055b60fa76cfb4b18677130a23
+  phonemizer.js-6835144b7ee9043129222549c1ed2f6a27216278.tar.gz: phonemizer.js at that commit (2025-01-16 00:29 UTC,
+    a minute before phonemizer 1.2.1 was published to npm at 00:30; the repository has no tags), whose build scripts
+    put eSpeak NG into the phonemizer package,
+    sha256 d829721a393b68e3d904d0783a0551bc60b17b2903638350b5bf473657ff9275
+  COPYING.GPL-3: the GNU General Public License, version 3 (eSpeak NG's own COPYING).
+The phonemizer package does not record the eSpeak NG commit it was built from, so 1.52.0 (2024-12-12, the eSpeak NG
+release current when phonemizer 1.2.1 was published) is the nearest source that can be named.

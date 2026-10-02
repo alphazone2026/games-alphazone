@@ -296,6 +296,11 @@ jobs:
           done
           upload dist/range/index.html index.html range
           upload dist/range/.htaccess .htaccess range
+          # roadmap.json is the Roadmap button's data, served next to index.html
+          # so it can change without a rebuild. Optional until a build carries it.
+          if [ -f dist/range/roadmap.json ]; then
+            upload dist/range/roadmap.json roadmap.json range
+          fi
 
       # ---------------------------------------------------------------- #
       # THE FIFTH 3D GAME, served at /tsitp/. Built from
@@ -351,6 +356,10 @@ jobs:
             upload "$f" "$(basename "$f")" "tsitp/world"
           done
           upload dist/tsitp/index.html index.html tsitp
+          # roadmap.json: the Roadmap button's data, optional until Cousins ships one.
+          if [ -f dist/tsitp/roadmap.json ]; then
+            upload dist/tsitp/roadmap.json roadmap.json tsitp
+          fi
 
       # ---------------------------------------------------------------- #
       # THE SIXTH GAME, served at /kitchen/. Built from

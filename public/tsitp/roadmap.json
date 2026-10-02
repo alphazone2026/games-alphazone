@@ -1,0 +1,176 @@
+{
+  "game": "Cousins Beach",
+  "updated": "2026-10-03",
+  "waves": [
+    {
+      "id": "world",
+      "title": "The town, built from real places",
+      "status": "done",
+      "items": [
+        { "text": "The ground, streets and buildings from real map and survey data", "done": true },
+        { "text": "Every tree where a real tree stands, and the ground's grass, sand, marsh and paving", "done": true },
+        { "text": "The mainland town, the island, the causeway and the beach", "done": true },
+        { "text": "On foot: walk, run and look around (and fly, for building)", "done": true },
+        { "text": "Interiors you can walk into: the club, the petrol stop's shop, houses the story uses", "done": true }
+      ]
+    },
+    {
+      "id": "look",
+      "title": "Light, sky and weather",
+      "status": "done",
+      "items": [
+        { "text": "A summer grade, sun and shadows through the day", "done": true },
+        { "text": "Overcast, rain and night, with street lamps and lit windows", "done": true },
+        { "text": "Fireworks and a bonfire for the evenings that call for them", "done": true },
+        { "text": "A big speed pass: full detail at 60 frames a second on desktop", "done": true }
+      ]
+    },
+    {
+      "id": "people",
+      "title": "The people",
+      "status": "done",
+      "items": [
+        { "text": "The show's families and the town's regulars, each with their own look and outfit", "done": true },
+        { "text": "Walking, sitting, hugging, carrying and acting while they talk", "done": true },
+        { "text": "Townsfolk with their own day: errands, the beach, the shops, evening walks", "done": true }
+      ]
+    },
+    {
+      "id": "getting-around",
+      "title": "Getting around",
+      "status": "done",
+      "items": [
+        { "text": "Bikes and cars, with people getting in and out", "done": true },
+        { "text": "Traffic, parking that fills and empties by the hour, delivery vans", "done": true },
+        { "text": "Boats at the marina, coming and going through the day", "done": true }
+      ]
+    },
+    {
+      "id": "town-alive",
+      "title": "A town that feels lived in",
+      "status": "done",
+      "items": [
+        { "text": "Every yard and street dressed: fences, hedges, gardens, play sets, pools and sheds", "done": true },
+        { "text": "Big empty patches filled: planted lawns and overgrown lots", "done": true },
+        { "text": "A busier morning: dog walkers, joggers, gardeners, kids on bikes", "done": true },
+        { "text": "The waterfront at work, with a bait-and-tackle shop", "done": true }
+      ]
+    },
+    {
+      "id": "story-systems",
+      "title": "How the story plays",
+      "status": "done",
+      "items": [
+        { "text": "Episodes that remember what you said and did", "done": true },
+        { "text": "Answer from choices, or type your own", "done": true },
+        { "text": "Your phone: texts, calls, contacts and a map", "done": true },
+        { "text": "A town clock the story keeps time by", "done": true }
+      ]
+    },
+    {
+      "id": "milestone-1",
+      "title": "Episode 1, scenes 1 and 2 playable",
+      "status": "done",
+      "items": [
+        { "text": "Scenes 1 and 2 play start to finish by hand", "done": true },
+        { "text": "The opening out on the road into town, past the welcome sign", "done": true },
+        { "text": "Drives on the real roads, with directions when you drive yourself, or let Dad drive", "done": true },
+        { "text": "Small jobs played by hand, as minigames", "done": true },
+        { "text": "The car's sound, and an original score in the show's style", "done": true }
+      ]
+    },
+    {
+      "id": "voices",
+      "title": "Real voices",
+      "status": "done",
+      "items": [
+        { "text": "Everyone but you speaks their lines in scenes 1 and 2", "done": true },
+        { "text": "Each character has their own voice", "done": true },
+        { "text": "Voices sound like where they're said: in the car, outside, indoors", "done": true }
+      ]
+    },
+    {
+      "id": "first-person",
+      "title": "First person, all the way",
+      "status": "done",
+      "items": [
+        { "text": "Everything through your own eyes: no camera swaps", "done": true },
+        { "text": "A gentle look toward whoever is speaking (you can always look away)", "done": true },
+        { "text": "Long drives skip ahead with a blink", "done": true },
+        { "text": "Your hands do the jobs", "done": true }
+      ]
+    },
+    {
+      "id": "phone",
+      "title": "The phone, to the ear or on speaker",
+      "status": "done",
+      "items": [
+        { "text": "Answer and the phone goes up to your ear", "done": true },
+        { "text": "Speaker when the moment suits it, or switch yourself (V)", "done": true },
+        { "text": "The caller sounds like a phone: close at the ear, tinny on speaker", "done": true },
+        { "text": "This roadmap", "done": true }
+      ]
+    },
+    {
+      "id": "milestone-2",
+      "title": "The player creator and the new bodies",
+      "status": "next",
+      "items": [
+        { "text": "The player creator: your look, hair, skin, build and clothes", "done": false },
+        { "text": "Everyone on the new bodies from the Human Standard", "done": false },
+        { "text": "Teenagers' body shapes (waiting on your yes to a body-measurements source)", "done": false },
+        { "text": "The characters' looks, outfits and uniforms redone on the new bodies", "done": false },
+        { "text": "Acting and faces for the new bodies", "done": false }
+      ]
+    },
+    {
+      "id": "polish",
+      "title": "Small fixes",
+      "status": "next",
+      "items": [
+        { "text": "Softer edges on the blink", "done": false },
+        { "text": "Better hands for the jobs and the phone (until the Human Standard's hands arrive)", "done": false },
+        { "text": "The arrival view at the petrol stop", "done": false },
+        { "text": "More detail on a few things you use: a sink, a fuse box, a plant pot's lift", "done": false },
+        { "text": "Fewer draw calls on phones", "done": false },
+        { "text": "A timing check that trips when the Mac is busy", "done": false }
+      ]
+    },
+    {
+      "id": "episode-1",
+      "title": "Episode 1, scenes 3 onward, playable",
+      "status": "later",
+      "items": [
+        { "text": "The rest of Episode 1, scene by scene, at the same standard", "done": false },
+        { "text": "Voices for every scene", "done": false },
+        { "text": "A save at each big moment", "done": false }
+      ]
+    },
+    {
+      "id": "town-more",
+      "title": "More of the town",
+      "status": "later",
+      "items": [
+        { "text": "Shops and cafés open, with staff and customers inside", "done": false },
+        { "text": "The beach and the club through the day", "done": false },
+        { "text": "Market days, busier weekends, and weather that changes the town", "done": false }
+      ]
+    },
+    {
+      "id": "episode-2",
+      "title": "Episode 2",
+      "status": "later",
+      "items": [
+        { "text": "Episode 2, carrying on from how you left Episode 1", "done": false }
+      ]
+    },
+    {
+      "id": "music",
+      "title": "Your own music (private)",
+      "status": "later",
+      "items": [
+        { "text": "Pick your own songs for moments in the game; they stay on your device", "done": false }
+      ]
+    }
+  ]
+}

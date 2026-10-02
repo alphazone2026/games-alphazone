@@ -1,0 +1,666 @@
+{
+  "game": "Pre-Destiny",
+  "updated": "2026-10-03",
+  "waves": [
+    {
+      "id": "w1",
+      "title": "The firing range and your Risen",
+      "status": "done",
+      "items": [
+        {
+          "text": "The firing range in the Drill Hall, dressed as an old practice yard",
+          "done": true
+        },
+        {
+          "text": "Three guns: an auto rifle, a hand cannon and a pulse rifle, with aiming, recoil and reloads",
+          "done": true
+        },
+        {
+          "text": "Targets with precision hits and nameplates",
+          "done": true
+        },
+        {
+          "text": "A Destiny 2-style HUD: radar, health, Super bar and ammo",
+          "done": true
+        },
+        {
+          "text": "Your abilities: sprint, jump, grenade, melee, class ability and a Super, each with its own effects and sounds",
+          "done": true
+        },
+        {
+          "text": "The title screen and its music, \"Cold Iron\"",
+          "done": true
+        },
+        {
+          "text": "Choose your kit: Plate, Cloak or Coat",
+          "done": true
+        },
+        {
+          "text": "Customise: kind (Human, Exo or Awoken), colours, crest, skin tone, helmet on or off",
+          "done": true
+        },
+        {
+          "text": "Kind and body mean something: eye light, skin, build and a wordless voice",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "w2",
+      "title": "Online: accounts, friends and fireteams",
+      "status": "done",
+      "items": [
+        {
+          "text": "Sign in or make an account (\"Who's playing?\")",
+          "done": true
+        },
+        {
+          "text": "Characters saved online, so any device carries on where you left off",
+          "done": true
+        },
+        {
+          "text": "More than one Risen on an account, each one saved",
+          "done": true
+        },
+        {
+          "text": "Friends added by name, and who's online",
+          "done": true
+        },
+        {
+          "text": "Setting out from the fire, with the Survey and the valley map",
+          "done": true
+        },
+        {
+          "text": "Fireteams: invite friends to your fire, accept, and set out together",
+          "done": true
+        },
+        {
+          "text": "Co-op: friends see each other and fight the same enemies",
+          "done": true
+        },
+        {
+          "text": "Your armour shows at the fire, on you and on your friends",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "w3",
+      "title": "The opening: three prologues, the Waking and Last Lamps",
+      "status": "done",
+      "items": [
+        {
+          "text": "Prologue A (Human): the town on the river, the last evening",
+          "done": true
+        },
+        {
+          "text": "Prologue B (Exo): the power house, the last night shift",
+          "done": true
+        },
+        {
+          "text": "Prologue C (Awoken): the river path near a dead city, the last dusk",
+          "done": true
+        },
+        {
+          "text": "Fallen that move, take cover and shoot back: Dregs, a shielded Captain that blinks away, a Servitor",
+          "done": true
+        },
+        {
+          "text": "The Waking: your Ghost finds you, centuries later",
+          "done": true
+        },
+        {
+          "text": "A second Risen on your account gets a shorter Waking",
+          "done": true
+        },
+        {
+          "text": "Last Lamps: the lit quarter, your first Super, and the walk back to the fire",
+          "done": true
+        },
+        {
+          "text": "Last Lamps with friends",
+          "done": true
+        },
+        {
+          "text": "A waypoint marker, and a Settings screen (field of view, subtitles, damage numbers)",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "w4",
+      "title": "The big polish, and the valley opens",
+      "status": "done",
+      "items": [
+        {
+          "text": "Damage numbers, staggers and proper death falls",
+          "done": true
+        },
+        {
+          "text": "Enemies you can read: a Captain's blink winds up first, shields flash when they break",
+          "done": true
+        },
+        {
+          "text": "Every gun heard: reports, reloads, hits and footsteps, with muzzle flash, brass and tracers",
+          "done": true
+        },
+        {
+          "text": "Armour detail: rivets, straps and pouches, and each piece its own look",
+          "done": true
+        },
+        {
+          "text": "The character and abilities screens",
+          "done": true
+        },
+        {
+          "text": "The valley in sections, loaded one at a time, with a map on M",
+          "done": true
+        },
+        {
+          "text": "Old Angara as open patrol space, with the story's places walkable inside it",
+          "done": true
+        },
+        {
+          "text": "A sky that keeps time: a day every 40 minutes, the sun by day and the Moon by night",
+          "done": true
+        },
+        {
+          "text": "Bullet impacts that suit each surface, and an Effects detail setting",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "w5",
+      "title": "A normal day before each night",
+      "status": "done",
+      "items": [
+        {
+          "text": "Prologue A by day: the town on the river, the last afternoon",
+          "done": true
+        },
+        {
+          "text": "Prologue B by day: the power house, the last shift change",
+          "done": true
+        },
+        {
+          "text": "Prologue C by day: the road upriver, with a low root cellar to crouch into",
+          "done": true
+        },
+        {
+          "text": "Loading screens: a title card for each prologue, and your Ghost's map with a line from your Ghost",
+          "done": true
+        },
+        {
+          "text": "Rooms to walk into: the neighbour's house, the power house's locker room and canteen",
+          "done": true
+        },
+        {
+          "text": "Real-looking things: worn, bevelled props, and forests and trees that suit each place",
+          "done": true
+        },
+        {
+          "text": "Three simple stats on your armour",
+          "done": true
+        },
+        {
+          "text": "One HUD everywhere, with the ammo bottom-left",
+          "done": true
+        },
+        {
+          "text": "Guns held properly: a two-handed hand cannon, the prologue rifles in both hands",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "w6",
+      "title": "The Far Spans, loot and phones",
+      "status": "done",
+      "items": [
+        {
+          "text": "The Far Spans: the first walk after the Waking, through Old Angara to a lone fire",
+          "done": true
+        },
+        {
+          "text": "Loot: rarities, power and copper",
+          "done": true
+        },
+        {
+          "text": "Armour, earned: you wake in what you died in, then find the watch's kit",
+          "done": true
+        },
+        {
+          "text": "Each new gun gets a look-over the first time you draw it",
+          "done": true
+        },
+        {
+          "text": "Touch controls for phones: a stick to move, drag to look and fire, every mode playable by touch",
+          "done": true
+        },
+        {
+          "text": "A tidier map, with fewer patrol points",
+          "done": true
+        },
+        {
+          "text": "Travel only to places that are finished",
+          "done": true
+        },
+        {
+          "text": "Anonymous crash and play stats, with an off switch in Settings",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "w7",
+      "title": "Ready for friends, and First Light",
+      "status": "done",
+      "items": [
+        {
+          "text": "Gunfeel pass: accuracy, damage falloff, and a sprint you can cancel",
+          "done": true
+        },
+        {
+          "text": "Fair, readable fights: enemies give you a moment before their first shot",
+          "done": true
+        },
+        {
+          "text": "Team revive, and a new leader if the leader drops",
+          "done": true
+        },
+        {
+          "text": "Saved checkpoints in The Far Spans and Last Lamps",
+          "done": true
+        },
+        {
+          "text": "The first public event in patrol: the Market Raid",
+          "done": true
+        },
+        {
+          "text": "Patrol with friends: Old Angara together, events shared",
+          "done": true
+        },
+        {
+          "text": "A Destiny 2-style slide, on X",
+          "done": true
+        },
+        {
+          "text": "Old Angara and the Drill Hall draw faster (a speed pass)",
+          "done": true
+        },
+        {
+          "text": "First Light, the first strike, for three: the River Works and the power house, and a boss with a health bar",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "w8",
+      "title": "Ben's play-test fixes, and the lobby",
+      "status": "done",
+      "items": [
+        {
+          "text": "Sound back in the Human prologue, with townsfolk murmurs, and the Ghost's constant hum turned off",
+          "done": true
+        },
+        {
+          "text": "Believable blockers in the prologues: a collapsed road, overturned carts and crowds, not plain walls",
+          "done": true
+        },
+        {
+          "text": "Empty hands until you pick up your first gun",
+          "done": true
+        },
+        {
+          "text": "The Ghost's light at night, and mission markers that point the right way",
+          "done": true
+        },
+        {
+          "text": "A pause menu in the prologues",
+          "done": true
+        },
+        {
+          "text": "The lobby: Play goes to the fire, The Far Spans is played solo until it's done, and checkpoints with Reset on the cards",
+          "done": true
+        },
+        {
+          "text": "Rejoin your fireteam after a reload or a drop, even from another device",
+          "done": true
+        },
+        {
+          "text": "Walkable wherever it looks walkable: the quay's edge, and no invisible walls at the broken bridge",
+          "done": true
+        },
+        {
+          "text": "Admin tools for player saves: look up, reset, grant and unlock (tested offline, not yet used on live saves)",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "w9",
+      "title": "Old Angara filled, real voices, and menus",
+      "status": "done",
+      "items": [
+        {
+          "text": "The Heights filled: a lane of ruined dachas, a chapel, a quarry with its crane, a fallen radio mast",
+          "done": true
+        },
+        {
+          "text": "More of Old Angara filled: an old ski slope, terraces on the far bank, a rail yard, and a shrine, a lorry and fishing huts on the Shore road",
+          "done": true
+        },
+        {
+          "text": "Four hidden doors placed in Old Angara for lost sectors later (the doors only)",
+          "done": true
+        },
+        {
+          "text": "The ground follows the hills as drawn, so you no longer fall through",
+          "done": true
+        },
+        {
+          "text": "Fallen patrols and scavengers on the move in patrol",
+          "done": true
+        },
+        {
+          "text": "Patrol ambience: Old Angara sounds like a place",
+          "done": true
+        },
+        {
+          "text": "Three more public events: Drill in the Works, The Weir and The Water Tank (four in rotation)",
+          "done": true
+        },
+        {
+          "text": "Spoken voices in the Human prologue, tuned and placed in the world",
+          "done": true
+        },
+        {
+          "text": "The prologue town's clock tower moved out into the square",
+          "done": true
+        },
+        {
+          "text": "Settings on the start screens, so you can choose before you load in",
+          "done": true
+        },
+        {
+          "text": "A Roadmap button on the menus, showing this checklist",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "w10",
+      "title": "The shared human body",
+      "status": "now",
+      "items": [
+        {
+          "text": "New blocky and smooth bodies to try, behind a setting (Classic stays the default)",
+          "done": true
+        },
+        {
+          "text": "The bodies change the moment you pick a new setting",
+          "done": true
+        },
+        {
+          "text": "The smooth aiming hand sits properly on the gun (it sits a little low today)",
+          "done": false
+        },
+        {
+          "text": "Mouths that move when people talk",
+          "done": false
+        },
+        {
+          "text": "Clothes and armour fitted to the new bodies, with real cloth: hoods, long coats, a weave you can see",
+          "done": false
+        },
+        {
+          "text": "Walking, crouching and holding poses on the new bodies",
+          "done": false
+        },
+        {
+          "text": "More variety in people: faces, hair and builds",
+          "done": false
+        },
+        {
+          "text": "The new bodies become the default for everyone",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "w11",
+      "title": "Sound, effects, weather and words",
+      "status": "next",
+      "items": [
+        {
+          "text": "The next sound pass, on the guns",
+          "done": false
+        },
+        {
+          "text": "The Ghost's wordless voice changing with its mood",
+          "done": false
+        },
+        {
+          "text": "The next effects pass: deaths, abilities, Supers, and your friends' tracers",
+          "done": false
+        },
+        {
+          "text": "Weather: mist in the hollows, rain, and snow on the Heights",
+          "done": false
+        },
+        {
+          "text": "A pass over the story's words, played through from the start",
+          "done": false
+        },
+        {
+          "text": "Every gun given a detail pass: bevelled edges, wear and grime",
+          "done": false
+        },
+        {
+          "text": "Every armour piece given a detail pass, by class and rarity",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "w12",
+      "title": "Loose ends before friends play",
+      "status": "next",
+      "items": [
+        {
+          "text": "Ben's two-computer co-op test (it decides whether friends on other networks need a relay)",
+          "done": false
+        },
+        {
+          "text": "A speed check on the Mac's graphics card, with Ben at the Mac",
+          "done": false
+        },
+        {
+          "text": "A test check on enemy timing made reliable (it fails when the Mac is busy)",
+          "done": false
+        },
+        {
+          "text": "Publish the online rules from the admin tools, instead of pasting them by hand",
+          "done": false
+        },
+        {
+          "text": "The friend picker says why a friend can't join yet (\"Hasn't finished The Far Spans\")",
+          "done": false
+        },
+        {
+          "text": "Reloading in the first seconds of setting out no longer loses your fireteam",
+          "done": false
+        },
+        {
+          "text": "Decide what happens to friends when the leader leaves patrol for the fire",
+          "done": false
+        },
+        {
+          "text": "Co-op still to prove: First Light together, and three players in one activity",
+          "done": false
+        },
+        {
+          "text": "Switch on the online service's extra protection (set up, not switched on yet)",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "w13",
+      "title": "The Fire and Gatefire",
+      "status": "next",
+      "items": [
+        {
+          "text": "The Fire as a place you can walk around, built in Gatefire",
+          "done": false
+        },
+        {
+          "text": "People at the fires: refugees, a lamp-keeper, a quartermaster's table, children and a dog",
+          "done": false
+        },
+        {
+          "text": "Townsfolk and refugees on the roads, who run when the Fallen come near",
+          "done": false
+        },
+        {
+          "text": "Gatefire's empty ground filled: the old wall's lost stretch, a boathouse and jetty, a work camp by the tunnel, abandoned carts, a salvage yard",
+          "done": false
+        },
+        {
+          "text": "The camp's own sounds",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "w14",
+      "title": "More guns, progression and controls",
+      "status": "later",
+      "items": [
+        {
+          "text": "More kinds of gun: scout rifle, sub-machine gun, sidearm, shotgun, sniper rifle, fusion rifle and rocket launcher",
+          "done": false
+        },
+        {
+          "text": "Heavy ammo",
+          "done": false
+        },
+        {
+          "text": "Perks and random rolls on guns",
+          "done": false
+        },
+        {
+          "text": "XP and levels",
+          "done": false
+        },
+        {
+          "text": "Traders at The Fire",
+          "done": false
+        },
+        {
+          "text": "Bounties, and a quest tracker",
+          "done": false
+        },
+        {
+          "text": "A vault for spare gear, collections and triumphs",
+          "done": false
+        },
+        {
+          "text": "Gamepad support",
+          "done": false
+        },
+        {
+          "text": "Jumps and slides that feel the same at any frame rate",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "w15",
+      "title": "The whole valley filled",
+      "status": "later",
+      "items": [
+        {
+          "text": "Doors that open in Old Angara: a bakery, a school, a church crypt stair, a station waiting room",
+          "done": false
+        },
+        {
+          "text": "The first lost sector: the Crypt, a short dungeon with a boss and a chest",
+          "done": false
+        },
+        {
+          "text": "The other three lost sectors: the Pump Room, the Cistern and the Cellars",
+          "done": false
+        },
+        {
+          "text": "Patrol beacons: small jobs to pick up in patrol",
+          "done": false
+        },
+        {
+          "text": "Small encounters between places: a refugee to escort, a supply drop, a Shank swarm at dusk",
+          "done": false
+        },
+        {
+          "text": "Wildlife: crows that lift as you pass, deer, herons, a fox",
+          "done": false
+        },
+        {
+          "text": "The Diggings, the Tithe Marches and the Spillway filled, each ahead of its missions",
+          "done": false
+        },
+        {
+          "text": "The Floodmeadow, the High Woods, the Farmsteads and the Shore Line filled",
+          "done": false
+        },
+        {
+          "text": "A public event, Fallen patrols, townsfolk and sound in every section",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "w16",
+      "title": "The story goes on: strikes, The Lists and the raid",
+      "status": "later",
+      "items": [
+        {
+          "text": "The rest of Act 1",
+          "done": false
+        },
+        {
+          "text": "Act 2 of the story",
+          "done": false
+        },
+        {
+          "text": "Act 3, and the Epilogue",
+          "done": false
+        },
+        {
+          "text": "The Fire grows as the story goes on",
+          "done": false
+        },
+        {
+          "text": "More strikes: four in all to start, six by the end",
+          "done": false
+        },
+        {
+          "text": "The Lists, PvP for friends: Duel (1 v 1) and Three Stones (3 v 3), guns only at first",
+          "done": false
+        },
+        {
+          "text": "The Lists, later: abilities and Supers, a 2 v 2 mode, and a six-player free-for-all",
+          "done": false
+        },
+        {
+          "text": "A six-player network test, then the raid",
+          "done": false
+        },
+        {
+          "text": "Expansions: a smaller one first, along the road west, then the Moon as the big one",
+          "done": false
+        }
+      ]
+    }
+  ]
+}
